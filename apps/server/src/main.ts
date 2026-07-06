@@ -1,10 +1,13 @@
+import { join } from "node:path";
 import { CommandBus, EventBus } from "@notes/core";
 import { APP_NAME } from "@notes/shared";
 import { TomeWatcher, type TomeEventMap } from "@notes/tome";
 import Fastify from "fastify";
 import { registerFileCommands } from "./commands/file-commands";
+import { registerIndexCommands } from "./commands/index-commands";
 import { loadConfig } from "./config";
 import { registerErrorHandler } from "./errors";
+import { IndexService } from "./index-service";
 import { createLoggingMiddleware, validationMiddleware } from "./middleware";
 import { registerRoutes } from "./routes";
 import { Tower } from "./tower";
@@ -31,17 +34,30 @@ app.get("/health", async () => ({
   tomePath: config.tomePath,
 }));
 
-registerRoutes(app, bus, ctx);
-
 const watcher = new TomeWatcher(config.tomePath, events);
 
 async function main(): Promise<void> {
   try {
     await tower.active.ensureRoot();
+
+    const indexService = await IndexService.create(
+      tower.active,
+      events,
+      join(config.tomePath, ".notes", "index.db"),
+    );
+    await indexService.buildFromTome();
+    indexService.subscribe();
+    registerIndexCommands(bus, indexService);
+
+    registerRoutes(app, bus, ctx);
+
     await registerWebSocket(app, events);
     watcher.start();
+
     const address = await app.listen({ host: config.host, port: config.port });
-    app.log.info(`${APP_NAME} server listening at ${address}`);
+    app.log.info(
+      `${APP_NAME} server listening at ${address} (indexed ${indexService.index.noteCount()} notes)`,
+    );
   } catch (error) {
     app.log.error(error);
     process.exit(1);

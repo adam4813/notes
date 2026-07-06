@@ -28,4 +28,37 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
     const { path = "" } = request.query as PathQuery;
     return bus.dispatch("file.delete", { path }, ctx);
   });
+
+  app.get("/api/search", async (request) => {
+    const query = request.query as { q?: string; limit?: string };
+    return bus.dispatch(
+      "index.search",
+      { query: query.q ?? "", limit: query.limit ? Number(query.limit) : undefined },
+      ctx,
+    );
+  });
+
+  app.get("/api/backlinks", async (request) => {
+    const { path = "" } = request.query as PathQuery;
+    return bus.dispatch("index.backlinks", { path }, ctx);
+  });
+
+  app.get("/api/outgoing", async (request) => {
+    const { path = "" } = request.query as PathQuery;
+    return bus.dispatch("index.outgoing", { path }, ctx);
+  });
+
+  app.get("/api/tags", async () => bus.dispatch("index.tags", {}, ctx));
+
+  app.get("/api/tag", async (request) => {
+    const { tag = "" } = request.query as { tag?: string };
+    return bus.dispatch("index.notesByTag", { tag }, ctx);
+  });
+
+  app.get("/api/resolve", async (request) => {
+    const { text = "" } = request.query as { text?: string };
+    return bus.dispatch("index.resolve", { text }, ctx);
+  });
+
+  app.post("/api/reindex", async () => bus.dispatch("index.rebuild", {}, ctx));
 }

@@ -7,6 +7,13 @@ export const fileWritePayload = z.object({ path: z.string().min(1), content: z.s
 export const fileMovePayload = z.object({ from: z.string().min(1), to: z.string().min(1) });
 export const emptyPayload = z.object({}).passthrough();
 
+export const searchPayload = z.object({
+  query: z.string(),
+  limit: z.number().int().positive().max(200).optional(),
+});
+export const tagPayload = z.object({ tag: z.string().min(1) });
+export const resolvePayload = z.object({ text: z.string().min(1) });
+
 export type FilePathPayload = z.infer<typeof filePathPayload>;
 export type FileWritePayload = z.infer<typeof fileWritePayload>;
 export type FileMovePayload = z.infer<typeof fileMovePayload>;
@@ -20,4 +27,11 @@ export const commandSchemas: Record<string, z.ZodTypeAny> = {
   "file.rename": fileMovePayload,
   "file.move": fileMovePayload,
   "file.delete": filePathPayload,
+  "index.search": searchPayload,
+  "index.backlinks": filePathPayload,
+  "index.outgoing": filePathPayload,
+  "index.notesByTag": tagPayload,
+  "index.resolve": resolvePayload,
+  "index.tags": emptyPayload,
+  "index.rebuild": emptyPayload,
 };
