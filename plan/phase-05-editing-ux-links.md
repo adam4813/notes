@@ -1,6 +1,6 @@
 # Phase 5 — Rich Editing UX, Links & Backlinks
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 **Depends on:** 4, 2
 
 ## Goal
@@ -65,4 +65,28 @@ Commit message:
 `feat: rich editing toolbar, natural lists/checkboxes, wikilink/tag autocomplete, backlinks`
 
 ## Feedback
-_(none yet)_
+
+**2026-07-06 — Implemented & verified.** Added to `@notes/editor` / web:
+- **Formatting toolbar** (bold, italic, strike, inline code, H1–H3, bullet/ordered/task lists,
+  blockquote, code block, link, horizontal rule) with active-state highlighting via
+  `useEditorState`.
+- **Natural lists & checkboxes:** StarterKit v3 provides Tab/Shift-Tab list indent + task-list
+  checkboxes (verified by e2e). Autocomplete keys don't interfere (only intercepted when open).
+- **Wikilinks:** a ProseMirror decoration renders `[[..]]` clickable; **`[[` autocomplete** from
+  the index inserts a clean link; clicking opens the target (creating it if missing). Fixed
+  TipTap's bracket-escaping so `[[links]]` survive the markdown round-trip (unescape on read).
+- **Tag `#` autocomplete** from the index; `#` unescaped on read for round-trip safety.
+- **Info panels:** right sidebar now shows **Outline** (heading tree, click-to-scroll) above
+  **Backlinks**.
+
+Verified: `typecheck`, `lint`, `test` (41), `build`, and **Playwright** (toolbar bold; `[[`
+autocomplete inserts a link; Tab nests a list item; round-trip; shell).
+
+### GATE — validation questions (answer anytime)
+1. Do list/checkbox/indent behaviors feel natural?
+2. Is the toolbar's scope right (add/remove anything)?
+3. Clicking a **missing** wikilink currently **creates the note silently** — prefer a prompt or
+   a setting?
+
+**Deferred:** live outline refresh while typing (currently refreshes on note switch); hover
+preview for links; block/heading-ref links.

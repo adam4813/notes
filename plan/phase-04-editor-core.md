@@ -1,6 +1,6 @@
 # Phase 4 — Markdown Editor: Modes & Round-trip
 
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** 3
 
 ## Goal
@@ -90,3 +90,6 @@ list/checkbox affordances.
 2. Is the **Split** view sync behavior what you expect?
 3. How should **on-disk vs editor conflicts** resolve (keep mine / reload / merge)? (Current:
    reload when clean, warn when dirty.)
+
+**GATE result (2026-07-06):** User replied **"continue"** — editor approved as-is; kept the
+current conflict policy (reload when clean, warn when dirty). Proceeding to Phase 5.

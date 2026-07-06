@@ -1,11 +1,12 @@
 import { RenderedEditor } from "./rendered-editor";
 import { SourceEditor } from "./source-editor";
-import type { EditorMode } from "./types";
+import type { EditorCallbacks, EditorMode } from "./types";
 
 interface MarkdownEditorProps {
   value: string;
   mode: EditorMode;
   onChange: (markdown: string) => void;
+  callbacks?: EditorCallbacks;
 }
 
 /**
@@ -13,7 +14,7 @@ interface MarkdownEditorProps {
  * source view and a TipTap rendered view; in split mode both are shown and stay
  * in sync through the shared value.
  */
-export function MarkdownEditor({ value, mode, onChange }: MarkdownEditorProps) {
+export function MarkdownEditor({ value, mode, onChange, callbacks }: MarkdownEditorProps) {
   const showSource = mode === "edit" || mode === "split";
   const showRendered = mode === "rendered" || mode === "split";
 
@@ -26,7 +27,7 @@ export function MarkdownEditor({ value, mode, onChange }: MarkdownEditorProps) {
       )}
       {showRendered && (
         <div className="editor-column editor-column--rendered">
-          <RenderedEditor value={value} onChange={onChange} />
+          <RenderedEditor value={value} onChange={onChange} callbacks={callbacks} />
         </div>
       )}
     </div>

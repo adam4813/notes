@@ -50,6 +50,8 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
 
   app.get("/api/tags", async () => bus.dispatch("index.tags", {}, ctx));
 
+  app.get("/api/notes", async () => bus.dispatch("index.notes", {}, ctx));
+
   app.get("/api/tag", async (request) => {
     const { tag = "" } = request.query as { tag?: string };
     return bus.dispatch("index.notesByTag", { tag }, ctx);

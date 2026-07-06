@@ -33,5 +33,6 @@ export const commandSchemas: Record<string, z.ZodTypeAny> = {
   "index.notesByTag": tagPayload,
   "index.resolve": resolvePayload,
   "index.tags": emptyPayload,
+  "index.notes": emptyPayload,
   "index.rebuild": emptyPayload,
 };

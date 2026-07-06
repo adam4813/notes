@@ -178,8 +178,8 @@ Status legend: ⬜ Not Started · 🔄 In Progress · ✅ Complete
 | 1. Tome, FS & Command/Extension Core | [plan/phase-01-tome-core.md](plan/phase-01-tome-core.md) | ✅ Complete | 0 |
 | 2. SQLite Index & Search Engine | [plan/phase-02-index-search.md](plan/phase-02-index-search.md) | ✅ Complete | 1 |
 | 3. App Shell, Layout, Tabs & Panes | [plan/phase-03-app-shell.md](plan/phase-03-app-shell.md) | ✅ Complete | 1 |
-| 4. Markdown Editor — Modes & Round-trip | [plan/phase-04-editor-core.md](plan/phase-04-editor-core.md) | 🔄 In Progress | 3 |
-| 5. Rich Editing UX, Links & Backlinks | [plan/phase-05-editing-ux-links.md](plan/phase-05-editing-ux-links.md) | ⬜ Not Started | 4, 2 |
+| 4. Markdown Editor — Modes & Round-trip | [plan/phase-04-editor-core.md](plan/phase-04-editor-core.md) | ✅ Complete | 3 |
+| 5. Rich Editing UX, Links & Backlinks | [plan/phase-05-editing-ux-links.md](plan/phase-05-editing-ux-links.md) | ✅ Complete | 4, 2 |
 | 6. Table (Lightweight DB) Note Type | [plan/phase-06-table-note.md](plan/phase-06-table-note.md) | ⬜ Not Started | 3, 1 |
 | 7. Canvas Note Type (JSONCanvas) | [plan/phase-07-canvas-note.md](plan/phase-07-canvas-note.md) | ⬜ Not Started | 3, 1 |
 | 8. Kanban Board Note Type | [plan/phase-08-board-note.md](plan/phase-08-board-note.md) | ⬜ Not Started | 3, 1 |
@@ -208,14 +208,14 @@ Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase 
 
 ## 8. Cross-Session Handoff
 
-- **Last session:** 2026-07-06 — **Phases 1–3 complete; Phase 4 (editor) implemented & at its
-  GATE.** Added the split dropdown (feedback), then the hybrid **CodeMirror + TipTap** editor
-  with Edit/Split/Rendered modes, markdown round-trip, and debounced autosave. 41 unit tests +
-  3 Playwright specs + build all green.
-- **Current state:** Editor works end-to-end; **paused at Phase 4's GATE** (a genuine UX call:
-  does rendered-mode editing feel right? conflict resolution policy?). Awaiting user validation.
-- **Next action:** Get GATE feedback on the editor, then **Phase 5 — Rich Editing UX, Links &
-  Backlinks** (toolbar, wikilink/tag autocomplete, list/checkbox Tab behavior).
+- **Last session:** 2026-07-06 — **Phases 1–5 complete.** Split-menu feedback + the hybrid
+  editor (Phase 4) + **rich editing (Phase 5)**: formatting toolbar, `[[` wikilink autocomplete
+  + clickable navigation (bracket-escaping fixed), `#` tag autocomplete, and Outline/Backlinks
+  panels. 41 unit tests + 5 Playwright specs + build all green.
+- **Current state:** Full-featured markdown editing works end-to-end. Editor gate approved; Phase
+  5 validation questions recorded (missing-wikilink behavior, toolbar scope).
+- **Next action:** **Phase 6 — Table (Lightweight DB) Note Type** (Excel-like grid), or address
+  any Phase 5 editor feedback first.
 - **Conventions:** `.github/copilot-instructions.md` is finalized in Phase 0; treat it as the
   binding style/architecture reference for all later phases.
 

@@ -1,7 +1,8 @@
-import { MarkdownEditor, EDITOR_MODES, type EditorMode } from "@notes/editor";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { MarkdownEditor, EDITOR_MODES, type EditorCallbacks, type EditorMode } from "@notes/editor";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/client";
 import { connectTomeChanges } from "../api/ws";
+import { useWorkspace } from "../state/app-context";
 
 type SaveState = "loading" | "saved" | "saving" | "error" | "external";
 
@@ -20,6 +21,7 @@ const SAVE_LABEL: Record<SaveState, string> = {
 };
 
 export function NoteEditor({ path }: { path: string }) {
+  const { dispatch } = useWorkspace();
   const [content, setContent] = useState("");
   const [mode, setMode] = useState<EditorMode>("rendered");
   const [saveState, setSaveState] = useState<SaveState>("loading");
@@ -96,6 +98,26 @@ export function NoteEditor({ path }: { path: string }) {
     });
   }, [path]);
 
+  const callbacks = useMemo<EditorCallbacks>(
+    () => ({
+      onOpenWikilink: (name) => {
+        void (async () => {
+          const resolved = await api.resolve(name);
+          if (resolved.path) {
+            dispatch({ type: "openFile", path: resolved.path, title: name });
+            return;
+          }
+          const newPath = `${name}.md`;
+          await api.create(newPath, `# ${name}\n\n`).catch(() => undefined);
+          dispatch({ type: "openFile", path: newPath, title: name });
+        })();
+      },
+      listNotes: async () => (await api.notes()).notes,
+      listTags: async () => (await api.tags()).tags.map((tag) => tag.tag),
+    }),
+    [dispatch],
+  );
+
   return (
     <div className="note-editor">
       <div className="editor-toolbar-row">
@@ -114,7 +136,7 @@ export function NoteEditor({ path }: { path: string }) {
         </div>
         <span className={`save-status save-status--${saveState}`}>{SAVE_LABEL[saveState]}</span>
       </div>
-      <MarkdownEditor value={content} mode={mode} onChange={handleChange} />
+      <MarkdownEditor value={content} mode={mode} onChange={handleChange} callbacks={callbacks} />
     </div>
   );
 }

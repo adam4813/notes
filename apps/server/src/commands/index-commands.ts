@@ -40,6 +40,11 @@ export function registerIndexCommands(bus: CommandBus, service: IndexService): v
     handler: () => ({ tags: service.index.allTags() }),
   });
 
+  bus.register({
+    name: "index.notes",
+    handler: () => ({ notes: service.index.allNotes() }),
+  });
+
   bus.register<TagPayload, unknown>({
     name: "index.notesByTag",
     handler: (payload) => ({ paths: service.index.notesByTag(payload.tag) }),
