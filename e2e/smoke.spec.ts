@@ -11,8 +11,9 @@ test("app shell: create note, preview, split pane, theme, palette", async ({ pag
   // The note opens in a tab and renders a reading-view heading.
   await expect(page.locator(".markdown-body h1")).toBeVisible();
 
-  // Split the pane into two.
-  await page.getByTitle("Split pane").click();
+  // Open the split dropdown and split the pane into two.
+  await page.getByRole("button", { name: "Split options" }).first().click();
+  await page.getByRole("menuitem", { name: /Split/ }).first().click();
   await expect(page.locator(".pane")).toHaveCount(2);
 
   // Toggle the theme (cycle: system → light → dark) and confirm it applies.

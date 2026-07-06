@@ -66,11 +66,11 @@ export function App() {
       { id: "theme-light", label: "Theme: Light", run: () => dispatch({ type: "setTheme", theme: "light" }) },
       { id: "theme-dark", label: "Theme: Dark", run: () => dispatch({ type: "setTheme", theme: "dark" }) },
       { id: "theme-system", label: "Theme: System", run: () => dispatch({ type: "setTheme", theme: "system" }) },
-      { id: "split-pane", label: "Split editor pane", run: () => dispatch({ type: "splitPane" }) },
+      { id: "split-pane", label: "Split editor pane", run: () => dispatch({ type: "splitPane", paneId: state.activePaneId, mode: "duplicate" }) },
       { id: "new-note", label: "New note", run: () => void createNote() },
       { id: "reindex", label: "Rebuild search index", run: () => void api.reindex() },
     ],
-    [dispatch, createNote],
+    [dispatch, createNote, state.activePaneId],
   );
 
   return (

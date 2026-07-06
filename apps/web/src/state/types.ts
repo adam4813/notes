@@ -28,7 +28,8 @@ export type WorkspaceAction =
   | { type: "closeTab"; paneId: string; tabId: string }
   | { type: "activateTab"; paneId: string; tabId: string }
   | { type: "focusPane"; paneId: string }
-  | { type: "splitPane" }
+  | { type: "splitPane"; paneId: string; mode: "duplicate" | "move" }
+  | { type: "moveTabToOpposite"; paneId: string }
   | { type: "setTheme"; theme: ThemeMode }
   | { type: "setStatus"; status: string };
 

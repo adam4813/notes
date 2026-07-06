@@ -258,8 +258,45 @@ button {
   color: var(--fg-muted);
 }
 
-.tab-split:hover {
+.tab-split:hover:not(:disabled) {
   color: var(--fg);
+}
+
+.tab-split:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.split-wrap {
+  position: relative;
+}
+
+.split-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 40;
+  min-width: 200px;
+  padding: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.split-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 10px;
+  white-space: nowrap;
+}
+
+.split-menu-item:hover {
+  background: var(--active);
 }
 
 .pane-body {

@@ -33,14 +33,42 @@ describe("workspaceReducer", () => {
     expect(state.panes[0].tabs.map((tab) => tab.path)).toEqual(["b.md"]);
   });
 
-  it("splits into a second pane and caps at two panes", () => {
+  it("splits (duplicate) into a second pane and caps at two panes", () => {
     let state = workspaceReducer(initial(), { type: "openFile", path: "a.md", title: "a" });
-    state = workspaceReducer(state, { type: "splitPane" });
+    const paneId = state.panes[0].id;
+    state = workspaceReducer(state, { type: "splitPane", paneId, mode: "duplicate" });
     expect(state.panes).toHaveLength(2);
-    expect(state.panes[1].tabs[0].path).toBe("a.md");
+    expect(state.panes[0].tabs[0].path).toBe("a.md"); // original kept
+    expect(state.panes[1].tabs[0].path).toBe("a.md"); // duplicated
 
-    state = workspaceReducer(state, { type: "splitPane" });
+    state = workspaceReducer(state, {
+      type: "splitPane",
+      paneId: state.panes[1].id,
+      mode: "duplicate",
+    });
     expect(state.panes).toHaveLength(2);
+  });
+
+  it("splits (move) the active tab into the new pane", () => {
+    let state = workspaceReducer(initial(), { type: "openFile", path: "a.md", title: "a" });
+    state = workspaceReducer(state, { type: "openFile", path: "b.md", title: "b" });
+    const paneId = state.panes[0].id;
+    state = workspaceReducer(state, { type: "splitPane", paneId, mode: "move" });
+    expect(state.panes).toHaveLength(2);
+    expect(state.panes[0].tabs.map((tab) => tab.path)).toEqual(["a.md"]); // b moved out
+    expect(state.panes[1].tabs.map((tab) => tab.path)).toEqual(["b.md"]);
+  });
+
+  it("moves the active tab to the opposite group", () => {
+    let state = workspaceReducer(initial(), { type: "openFile", path: "a.md", title: "a" });
+    state = workspaceReducer(state, { type: "openFile", path: "b.md", title: "b" });
+    const left = state.panes[0].id;
+    state = workspaceReducer(state, { type: "splitPane", paneId: left, mode: "move" });
+    // left has [a] active, right has [b]
+    state = workspaceReducer(state, { type: "moveTabToOpposite", paneId: state.panes[0].id });
+    // left had only "a"; moving it collapses back to a single pane containing a and b
+    expect(state.panes).toHaveLength(1);
+    expect(state.panes[0].tabs.map((tab) => tab.path).sort()).toEqual(["a.md", "b.md"]);
   });
 
   it("changes the theme", () => {
