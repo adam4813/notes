@@ -174,7 +174,7 @@ Status legend: ⬜ Not Started · 🔄 In Progress · ✅ Complete
 
 | Phase | Detail File | Status | Depends on |
 |-------|-------------|--------|------------|
-| 0. Foundation & Scaffolding | [plan/phase-00-foundation.md](plan/phase-00-foundation.md) | 🔄 In Progress | — |
+| 0. Foundation & Scaffolding | [plan/phase-00-foundation.md](plan/phase-00-foundation.md) | ✅ Complete | — |
 | 1. Tome, FS & Command/Extension Core | [plan/phase-01-tome-core.md](plan/phase-01-tome-core.md) | ⬜ Not Started | 0 |
 | 2. SQLite Index & Search Engine | [plan/phase-02-index-search.md](plan/phase-02-index-search.md) | ⬜ Not Started | 1 |
 | 3. App Shell, Layout, Tabs & Panes | [plan/phase-03-app-shell.md](plan/phase-03-app-shell.md) | ⬜ Not Started | 1 |
@@ -208,9 +208,12 @@ Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase 
 
 ## 8. Cross-Session Handoff
 
-- **Last session:** 2026-07-05 — implementing **Phase 0 (Foundation & Scaffolding)**.
-- **Current state:** Scaffolding the npm-workspaces monorepo, toolchain, and dev loop.
-- **Next action:** Complete Phase 0, hit its GATE, then Phase 1.
+- **Last session:** 2026-07-05 — **Phase 0 (Foundation & Scaffolding) complete.** Monorepo,
+  Fastify server (:8787) + React/Vite web (:5173), TS/ESLint/Prettier/Vitest/Playwright all
+  green; conventions doc finalized. Committed (`docs:` + `chore:` scaffold).
+- **Current state:** Foundation in place and verified. GATE proceeded on recommended defaults
+  (user unavailable): Fastify, `@notes/*`, extensionless Bundler imports.
+- **Next action:** Implement **Phase 1 — Tome, FS & Command/Extension Core**.
 - **Conventions:** `.github/copilot-instructions.md` is finalized in Phase 0; treat it as the
   binding style/architecture reference for all later phases.
 
