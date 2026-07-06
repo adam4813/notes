@@ -21,6 +21,7 @@ test-results/
 # Default local Tome content directory (dev content, not part of the app repo)
 /tome/
 /dev-tome/
+e2e-tome/
 
 # OS
 .DS_Store

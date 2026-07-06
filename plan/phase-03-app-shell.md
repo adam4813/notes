@@ -1,6 +1,6 @@
 # Phase 3 — App Shell, Layout, Tabs & Panes
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 **Depends on:** 1
 
 ## Goal
@@ -70,4 +70,25 @@ Commit message:
 `feat: app shell with explorer, tabs, split panes, and theming`
 
 ## Feedback
-_(none yet)_
+
+**2026-07-06 — GATE (autonomous):** Built the validatable UI shell; proceeded with
+recommended answers:
+- **Layout/interaction model:** Obsidian-like docking — ribbon, left Explorer, main area with
+  tabs + split panes (max 2 for MVP), right Backlinks panel, status bar, command palette +
+  quick switcher. Feels right for MVP.
+- **State:** **React Context + reducer** (pure, unit-tested) is sufficient; no Zustand yet.
+- **Layout persistence:** theme persists via `localStorage`; **tab/pane layout is in-memory for
+  now** (deferred — see TODO `deferred-layout-persistence`).
+
+Notes rendered via a **read-only markdown reading view** (marked + DOMPurify, clickable
+wikilinks that resolve through the index) — real editing arrives in Phase 4. Live sync: the
+explorer/backlinks refresh on `tome:change` over WebSocket. Canvas files show a placeholder
+view.
+
+**Partial vs spec (deferred, tracked as TODOs):**
+- Explorer: open + live refresh + new note shipped; **context menu (rename/delete/new folder)
+  and drag-drop move deferred** (`deferred-explorer-contextmenu`).
+
+Verified: `typecheck`, `lint`, `test` (39 passing; +5 reducer tests), `build` (Vite prod), and
+**Playwright e2e** — create note → reading view → split pane → theme cycle → command palette.
+Seeded a local sample Tome (gitignored) for manual `npm run dev` validation.

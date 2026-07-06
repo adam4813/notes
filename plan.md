@@ -177,7 +177,7 @@ Status legend: ⬜ Not Started · 🔄 In Progress · ✅ Complete
 | 0. Foundation & Scaffolding | [plan/phase-00-foundation.md](plan/phase-00-foundation.md) | ✅ Complete | — |
 | 1. Tome, FS & Command/Extension Core | [plan/phase-01-tome-core.md](plan/phase-01-tome-core.md) | ✅ Complete | 0 |
 | 2. SQLite Index & Search Engine | [plan/phase-02-index-search.md](plan/phase-02-index-search.md) | ✅ Complete | 1 |
-| 3. App Shell, Layout, Tabs & Panes | [plan/phase-03-app-shell.md](plan/phase-03-app-shell.md) | ⬜ Not Started | 1 |
+| 3. App Shell, Layout, Tabs & Panes | [plan/phase-03-app-shell.md](plan/phase-03-app-shell.md) | ✅ Complete | 1 |
 | 4. Markdown Editor — Modes & Round-trip | [plan/phase-04-editor-core.md](plan/phase-04-editor-core.md) | ⬜ Not Started | 3 |
 | 5. Rich Editing UX, Links & Backlinks | [plan/phase-05-editing-ux-links.md](plan/phase-05-editing-ux-links.md) | ⬜ Not Started | 4, 2 |
 | 6. Table (Lightweight DB) Note Type | [plan/phase-06-table-note.md](plan/phase-06-table-note.md) | ⬜ Not Started | 3, 1 |
@@ -208,13 +208,15 @@ Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase 
 
 ## 8. Cross-Session Handoff
 
-- **Last session:** 2026-07-06 — **Phases 1 & 2 complete.** Backend command/FS core plus a
-  SQLite FTS5 index (links, tags, frontmatter) with live incremental reindex via the watcher.
-  34 unit tests + live API checks green.
-- **Current state:** Server exposes file + search/backlinks/tags/resolve APIs over the command
-  bus. Phase 1 & 2 GATEs auto-proceeded (routine, pre-decided). Ready to build the UI.
-- **Next action:** Implement **Phase 3 — App Shell, Layout, Tabs & Panes** (first validatable UI
-  beyond the Phase 0 stub), then pause before the editor (Phase 4).
+- **Last session:** 2026-07-06 — **Phases 1, 2 & 3 complete.** Backend (command bus, Tome FS,
+  watcher) + SQLite FTS index + a **validatable React app shell** (explorer, tabs, split panes,
+  reading-view markdown with wikilinks, backlinks panel, command palette, light/dark theming,
+  live WebSocket sync). 39 unit tests + Playwright e2e + prod build all green.
+- **Current state:** Runnable app — `npm run dev`, open http://localhost:5173. A sample Tome is
+  seeded locally (gitignored). Phases 1–3 GATEs auto-proceeded (routine/pre-decided).
+- **Next action:** **Phase 4 — Markdown Editor (modes & round-trip)** — the crown-jewel editor.
+  Its GATE ("does rendered-mode editing feel right?") is a genuine UX decision, so pausing here
+  for user validation of the shell before starting it.
 - **Conventions:** `.github/copilot-instructions.md` is finalized in Phase 0; treat it as the
   binding style/architecture reference for all later phases.
 

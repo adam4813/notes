@@ -18,6 +18,7 @@ export default defineConfig({
       url: SERVER_HEALTH,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
+      env: { NOTES_TOME: "e2e-tome" },
     },
     {
       command: "npm run dev:web",
