@@ -1,0 +1,52 @@
+:root {
+  --color-bg: #ffffff;
+  --color-fg: #1a1a1a;
+  --color-muted: #6b7280;
+  --color-accent: #7c3aed;
+  --status-ok: #16a34a;
+  --status-offline: #dc2626;
+  --status-checking: #d97706;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #16161a;
+    --color-fg: #e5e7eb;
+    --color-muted: #9ca3af;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--color-bg);
+  color: var(--color-fg);
+}
+
+.app-shell {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.tagline {
+  color: var(--color-muted);
+}
+
+.status--ok {
+  color: var(--status-ok);
+}
+
+.status--offline {
+  color: var(--status-offline);
+}
+
+.status--checking {
+  color: var(--status-checking);
+}

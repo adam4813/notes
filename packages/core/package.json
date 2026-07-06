@@ -1,0 +1,15 @@
+{
+  "name": "@notes/core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Command bus, event bus, registries, and extension-point contracts (no I/O).",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

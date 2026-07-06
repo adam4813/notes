@@ -1,0 +1,31 @@
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# Playwright
+playwright-report/
+test-results/
+
+# Env
+.env
+.env.*
+
+# SQLite index and Tome-local app data (derived, rebuildable — never commit)
+.notes/
+*.notes-index.db
+*.notes-index.db-*
+
+# Default local Tome content directory (dev content, not part of the app repo)
+/tome/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp

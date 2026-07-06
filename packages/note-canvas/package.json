@@ -1,0 +1,15 @@
+{
+  "name": "@notes/note-canvas",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Canvas note type using the JSONCanvas format (first-party plugin).",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}
