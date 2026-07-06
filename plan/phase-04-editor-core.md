@@ -1,6 +1,6 @@
 # Phase 4 — Markdown Editor: Modes & Round-trip
 
-**Status:** ⬜ Not Started
+**Status:** 🔄 In Progress
 **Depends on:** 3
 
 ## Goal
@@ -65,4 +65,28 @@ Commit message:
 `feat: markdown editor with edit/split/rendered modes and clean round-trip`
 
 ## Feedback
-_(none yet)_
+
+**2026-07-06 — Implementation complete; awaiting user GATE (critical decision).**
+
+Built the hybrid editor in `@notes/editor`:
+- **CodeMirror 6** source view + **TipTap/ProseMirror** rendered (WYSIWYG) view, driven by a
+  single markdown `value`. `tiptap-markdown` handles serialization; StarterKit v3 bundles
+  `list-keymap` (Tab/Shift-Tab list indent) and TaskList/TaskItem give checkboxes.
+- **Modes:** Edit / Split / Rendered via a segmented switch; **Split** shows both editors kept
+  in sync through the shared value (echo-guarded so there are no update loops).
+- **Autosave:** debounced (600ms) write through the command bus; Saved/Saving/Error status.
+- **External change:** reloads from disk when there are **no unsaved edits**; otherwise shows
+  "Changed on disk" (non-destructive).
+
+Verified: `typecheck`, `lint`, `test` (41), `build`, and **Playwright** — typing in rendered
+mode round-trips into the CodeMirror source; split shows both editors.
+
+**Deferred to Phase 5 (per plan):** formatting toolbar, wikilink/tag autocomplete + rendering
+inside the editor (currently `[[links]]` show as literal text in the editor), and refined
+list/checkbox affordances.
+
+### 🛑 GATE — awaiting your input
+1. Does **rendered-mode editing feel right**, and is the markdown output clean enough for git?
+2. Is the **Split** view sync behavior what you expect?
+3. How should **on-disk vs editor conflicts** resolve (keep mine / reload / merge)? (Current:
+   reload when clean, warn when dirty.)

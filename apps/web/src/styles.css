@@ -481,3 +481,164 @@ button {
   padding: 10px;
   color: var(--fg-muted);
 }
+
+/* Note editor */
+.note-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.editor-toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.mode-switch {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.mode-btn {
+  background: transparent;
+  border: none;
+  padding: 4px 12px;
+  color: var(--fg-muted);
+}
+
+.mode-btn--active {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.save-status {
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+
+.save-status--error {
+  color: var(--status-offline);
+}
+
+.save-status--external {
+  color: var(--status-checking, #d97706);
+}
+
+.markdown-editor {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.editor-column {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+}
+
+.editor-column--source {
+  border-right: 1px solid var(--border);
+}
+
+.markdown-editor--edit .editor-column--source,
+.markdown-editor--rendered .editor-column--rendered {
+  border-right: none;
+}
+
+/* CodeMirror */
+.cm-host,
+.cm-host .cm-editor {
+  height: 100%;
+}
+
+.cm-host .cm-editor {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  font-size: 13px;
+}
+
+.cm-host .cm-content {
+  padding: 16px;
+}
+
+.cm-host .cm-focused {
+  outline: none;
+}
+
+.cm-host .cm-gutters {
+  background: var(--bg-elevated);
+  border-right: 1px solid var(--border);
+  color: var(--fg-muted);
+}
+
+.cm-host .cm-activeLine {
+  background: var(--hover);
+}
+
+/* TipTap rendered view */
+.tiptap-host {
+  height: 100%;
+}
+
+.tiptap-host .ProseMirror {
+  min-height: 100%;
+  padding: 24px 32px 64px;
+  max-width: 820px;
+  margin: 0 auto;
+  outline: none;
+  line-height: 1.65;
+}
+
+.tiptap-host .ProseMirror :first-child {
+  margin-top: 0;
+}
+
+.tiptap-host .ProseMirror h1,
+.tiptap-host .ProseMirror h2,
+.tiptap-host .ProseMirror h3 {
+  line-height: 1.25;
+}
+
+.tiptap-host .ProseMirror pre {
+  background: var(--bg-sunken);
+  padding: 12px;
+  border-radius: 8px;
+  overflow: auto;
+}
+
+.tiptap-host .ProseMirror code {
+  background: var(--bg-sunken);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.tiptap-host .ProseMirror pre code {
+  padding: 0;
+  background: none;
+}
+
+.tiptap-host .ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.5rem;
+}
+
+.tiptap-host .ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.tiptap-host .ProseMirror blockquote {
+  border-left: 3px solid var(--border);
+  margin-left: 0;
+  padding-left: 12px;
+  color: var(--fg-muted);
+}

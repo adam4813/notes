@@ -178,7 +178,7 @@ Status legend: ⬜ Not Started · 🔄 In Progress · ✅ Complete
 | 1. Tome, FS & Command/Extension Core | [plan/phase-01-tome-core.md](plan/phase-01-tome-core.md) | ✅ Complete | 0 |
 | 2. SQLite Index & Search Engine | [plan/phase-02-index-search.md](plan/phase-02-index-search.md) | ✅ Complete | 1 |
 | 3. App Shell, Layout, Tabs & Panes | [plan/phase-03-app-shell.md](plan/phase-03-app-shell.md) | ✅ Complete | 1 |
-| 4. Markdown Editor — Modes & Round-trip | [plan/phase-04-editor-core.md](plan/phase-04-editor-core.md) | ⬜ Not Started | 3 |
+| 4. Markdown Editor — Modes & Round-trip | [plan/phase-04-editor-core.md](plan/phase-04-editor-core.md) | 🔄 In Progress | 3 |
 | 5. Rich Editing UX, Links & Backlinks | [plan/phase-05-editing-ux-links.md](plan/phase-05-editing-ux-links.md) | ⬜ Not Started | 4, 2 |
 | 6. Table (Lightweight DB) Note Type | [plan/phase-06-table-note.md](plan/phase-06-table-note.md) | ⬜ Not Started | 3, 1 |
 | 7. Canvas Note Type (JSONCanvas) | [plan/phase-07-canvas-note.md](plan/phase-07-canvas-note.md) | ⬜ Not Started | 3, 1 |
@@ -208,15 +208,14 @@ Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase 
 
 ## 8. Cross-Session Handoff
 
-- **Last session:** 2026-07-06 — **Phases 1, 2 & 3 complete.** Backend (command bus, Tome FS,
-  watcher) + SQLite FTS index + a **validatable React app shell** (explorer, tabs, split panes,
-  reading-view markdown with wikilinks, backlinks panel, command palette, light/dark theming,
-  live WebSocket sync). 39 unit tests + Playwright e2e + prod build all green.
-- **Current state:** Runnable app — `npm run dev`, open http://localhost:5173. A sample Tome is
-  seeded locally (gitignored). Phases 1–3 GATEs auto-proceeded (routine/pre-decided).
-- **Next action:** **Phase 4 — Markdown Editor (modes & round-trip)** — the crown-jewel editor.
-  Its GATE ("does rendered-mode editing feel right?") is a genuine UX decision, so pausing here
-  for user validation of the shell before starting it.
+- **Last session:** 2026-07-06 — **Phases 1–3 complete; Phase 4 (editor) implemented & at its
+  GATE.** Added the split dropdown (feedback), then the hybrid **CodeMirror + TipTap** editor
+  with Edit/Split/Rendered modes, markdown round-trip, and debounced autosave. 41 unit tests +
+  3 Playwright specs + build all green.
+- **Current state:** Editor works end-to-end; **paused at Phase 4's GATE** (a genuine UX call:
+  does rendered-mode editing feel right? conflict resolution policy?). Awaiting user validation.
+- **Next action:** Get GATE feedback on the editor, then **Phase 5 — Rich Editing UX, Links &
+  Backlinks** (toolbar, wikilink/tag autocomplete, list/checkbox Tab behavior).
 - **Conventions:** `.github/copilot-instructions.md` is finalized in Phase 0; treat it as the
   binding style/architecture reference for all later phases.
 

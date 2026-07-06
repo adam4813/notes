@@ -8,8 +8,8 @@ test("app shell: create note, preview, split pane, theme, palette", async ({ pag
   // Create a note (self-contained, independent of existing Tome content).
   await page.getByRole("button", { name: "＋ New note" }).click();
 
-  // The note opens in a tab and renders a reading-view heading.
-  await expect(page.locator(".markdown-body h1")).toBeVisible();
+  // The note opens in a tab with the rendered (WYSIWYG) editor.
+  await expect(page.locator(".ProseMirror")).toBeVisible();
 
   // Open the split dropdown and split the pane into two.
   await page.getByRole("button", { name: "Split options" }).first().click();
