@@ -19,3 +19,5 @@ export type TermKey = keyof typeof TERMS;
 export function term(key: TermKey): string {
   return TERMS[key];
 }
+
+export * from "./schemas";

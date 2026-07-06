@@ -10,8 +10,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fastify/websocket": "^11.0.1",
+    "@notes/core": "*",
     "@notes/shared": "*",
-    "fastify": "^5.1.0"
+    "@notes/tome": "*",
+    "fastify": "^5.1.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "tsx": "^4.19.2"

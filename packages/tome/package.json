@@ -11,5 +11,9 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@notes/core": "*",
+    "chokidar": "^4.0.1"
   }
 }

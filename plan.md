@@ -175,7 +175,7 @@ Status legend: ⬜ Not Started · 🔄 In Progress · ✅ Complete
 | Phase | Detail File | Status | Depends on |
 |-------|-------------|--------|------------|
 | 0. Foundation & Scaffolding | [plan/phase-00-foundation.md](plan/phase-00-foundation.md) | ✅ Complete | — |
-| 1. Tome, FS & Command/Extension Core | [plan/phase-01-tome-core.md](plan/phase-01-tome-core.md) | ⬜ Not Started | 0 |
+| 1. Tome, FS & Command/Extension Core | [plan/phase-01-tome-core.md](plan/phase-01-tome-core.md) | ✅ Complete | 0 |
 | 2. SQLite Index & Search Engine | [plan/phase-02-index-search.md](plan/phase-02-index-search.md) | ⬜ Not Started | 1 |
 | 3. App Shell, Layout, Tabs & Panes | [plan/phase-03-app-shell.md](plan/phase-03-app-shell.md) | ⬜ Not Started | 1 |
 | 4. Markdown Editor — Modes & Round-trip | [plan/phase-04-editor-core.md](plan/phase-04-editor-core.md) | ⬜ Not Started | 3 |
@@ -208,12 +208,13 @@ Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase 
 
 ## 8. Cross-Session Handoff
 
-- **Last session:** 2026-07-05 — **Phase 0 (Foundation & Scaffolding) complete.** Monorepo,
-  Fastify server (:8787) + React/Vite web (:5173), TS/ESLint/Prettier/Vitest/Playwright all
-  green; conventions doc finalized. Committed (`docs:` + `chore:` scaffold).
-- **Current state:** Foundation in place and verified. GATE proceeded on recommended defaults
-  (user unavailable): Fastify, `@notes/*`, extensionless Bundler imports.
-- **Next action:** Implement **Phase 1 — Tome, FS & Command/Extension Core**.
+- **Last session:** 2026-07-06 — **Phase 1 (Tome, FS & Command/Extension Core) complete.**
+  Tome file system (path-safe CRUD, atomic writes, chokidar watcher), pure `@notes/core`
+  (event bus, registry, command bus + middleware, note-type registry), Tower session, and
+  Fastify REST + WebSocket wired through the command bus. 23 unit tests + live API check green.
+- **Current state:** Backend command/FS core in place; user validated Phase 0 UI. Phase 1 GATE
+  auto-proceeded (routine, pre-decided). Continuing toward a validatable app shell.
+- **Next action:** Implement **Phase 2 — SQLite Index & Search**, then **Phase 3 — App Shell**.
 - **Conventions:** `.github/copilot-instructions.md` is finalized in Phase 0; treat it as the
   binding style/architecture reference for all later phases.
 
