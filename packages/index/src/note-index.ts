@@ -221,11 +221,8 @@ export class NoteIndex {
     if (!target) {
       return undefined;
     }
-    const like = `%${target.replace(/[%_]/g, "")}.md`;
-    const rows = this.db
-      .prepare("SELECT path FROM notes WHERE lower(path) LIKE ?")
-      .all(like) as { path: string }[];
-
+    // Match by basename or path-without-extension across any note type (.md, .canvas, …).
+    const rows = this.db.prepare("SELECT path FROM notes").all() as { path: string }[];
     const matches = rows
       .filter(
         (row) =>

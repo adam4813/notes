@@ -20,7 +20,8 @@ function flattenFiles(entries: TomeEntry[]): string[] {
 }
 
 function isIndexable(path: string): boolean {
-  return path.toLowerCase().endsWith(".md");
+  const lower = path.toLowerCase();
+  return lower.endsWith(".md") || lower.endsWith(".canvas");
 }
 
 /**

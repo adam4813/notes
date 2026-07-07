@@ -87,6 +87,16 @@ describe("NoteIndex", () => {
     index.close();
   });
 
+  it("indexes and resolves non-markdown notes (canvas)", () => {
+    const index = new NoteIndex();
+    index.rebuild([...fixture, file("diagram.canvas", '{"nodes":[],"edges":[]}')]);
+
+    expect(index.resolveWikilink("diagram")).toBe("diagram.canvas");
+    expect(index.allNotes().map((note) => note.title)).toContain("diagram");
+
+    index.close();
+  });
+
   it("rebuilds deterministically", () => {
     const index = new NoteIndex();
     index.rebuild(fixture);

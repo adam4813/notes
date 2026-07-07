@@ -16,12 +16,46 @@ interface CanvasViewProps {
   value: string;
   onChange: (text: string) => void;
   onOpenFile?: (path: string) => void;
+  path: string;
 }
 
 interface Viewport {
   x: number;
   y: number;
   scale: number;
+}
+
+const MAX_FIT_ZOOM = 1;
+
+function viewportStorageKey(path: string): string {
+  return `notes.canvas.viewport:${path}`;
+}
+
+/** Centers all nodes within the container, capped at MAX_FIT_ZOOM. */
+function computeFit(nodes: CanvasNode[], width: number, height: number): Viewport {
+  if (nodes.length === 0) {
+    return { x: width / 2, y: height / 2, scale: 1 };
+  }
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const node of nodes) {
+    minX = Math.min(minX, node.x);
+    minY = Math.min(minY, node.y);
+    maxX = Math.max(maxX, node.x + node.width);
+    maxY = Math.max(maxY, node.y + node.height);
+  }
+  const pad = 48;
+  const contentWidth = Math.max(1, maxX - minX);
+  const contentHeight = Math.max(1, maxY - minY);
+  const scale = Math.min(
+    MAX_FIT_ZOOM,
+    Math.max(0.2, Math.min((width - pad * 2) / contentWidth, (height - pad * 2) / contentHeight)),
+  );
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+  return { x: width / 2 - centerX * scale, y: height / 2 - centerY * scale, scale };
 }
 
 type Selection = { kind: "node" | "edge"; id: string } | null;
@@ -43,7 +77,7 @@ function center(node: CanvasNode): { x: number; y: number } {
   return { x: node.x + node.width / 2, y: node.y + node.height / 2 };
 }
 
-export function CanvasView({ value, onChange, onOpenFile }: CanvasViewProps) {
+export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProps) {
   const [data, setData] = useState<CanvasData>(() => parseCanvas(value));
   const [viewport, setViewport] = useState<Viewport>({ x: 40, y: 40, scale: 1 });
   const [selection, setSelection] = useState<Selection>(null);
@@ -57,6 +91,7 @@ export function CanvasView({ value, onChange, onOpenFile }: CanvasViewProps) {
   viewportRef.current = viewport;
   const lastSerialized = useRef(value);
   const dragRef = useRef<DragState>(null);
+  const didInit = useRef(false);
 
   useEffect(() => {
     if (value !== lastSerialized.current) {
@@ -64,6 +99,47 @@ export function CanvasView({ value, onChange, onOpenFile }: CanvasViewProps) {
       lastSerialized.current = value;
     }
   }, [value]);
+
+  // Initial viewport: restore the last position, else fit all nodes (max zoom 1).
+  useEffect(() => {
+    if (didInit.current) {
+      return;
+    }
+    const rect = containerRef.current?.getBoundingClientRect();
+    const width = rect?.width ?? 800;
+    const height = rect?.height ?? 600;
+    let next: Viewport | null = null;
+    try {
+      const saved = window.localStorage.getItem(viewportStorageKey(path));
+      if (saved) {
+        const parsed = JSON.parse(saved) as Viewport;
+        if (typeof parsed.x === "number" && typeof parsed.y === "number" && parsed.scale > 0) {
+          next = parsed;
+        }
+      }
+    } catch {
+      next = null;
+    }
+    setViewport(next ?? computeFit(dataRef.current.nodes, width, height));
+    didInit.current = true;
+  }, [path]);
+
+  // Persist the viewport per note.
+  useEffect(() => {
+    if (!didInit.current) {
+      return;
+    }
+    try {
+      window.localStorage.setItem(viewportStorageKey(path), JSON.stringify(viewport));
+    } catch {
+      // ignore storage errors
+    }
+  }, [viewport, path]);
+
+  const resetView = () => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    setViewport(computeFit(dataRef.current.nodes, rect?.width ?? 800, rect?.height ?? 600));
+  };
 
   const pushChange = (next: CanvasData) => {
     lastSerialized.current = serializeCanvas(next);
@@ -292,8 +368,8 @@ export function CanvasView({ value, onChange, onOpenFile }: CanvasViewProps) {
           Delete
         </button>
         <span className="canvas-meta">{Math.round(viewport.scale * 100)}%</span>
-        <button className="btn-ghost" onClick={() => setViewport({ x: 40, y: 40, scale: 1 })}>
-          Reset view
+        <button className="btn-ghost" onClick={resetView}>
+          Fit view
         </button>
       </div>
       <div

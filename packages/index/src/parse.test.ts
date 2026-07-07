@@ -27,8 +27,18 @@ describe("parseNote", () => {
     expect(parseNote("notes/c.md", "no heading here").title).toBe("c");
   });
 
-  it("reads the note type from frontmatter, defaulting to markdown", () => {
-    expect(parseNote("d.md", "plain").type).toBe("markdown");
-    expect(parseNote("e.md", "---\ntype: table\n---\n").type).toBe("table");
+  it("falls back gracefully when frontmatter is malformed", () => {
+    const parsed = parseNote("bad.md", "---\n## title: Broken\n\n# Heading\n");
+    expect(parsed.title).toBe("Heading");
+    expect(parsed.type).toBe("markdown");
+    expect(parsed.frontmatter).toEqual({});
+    expect(parsed.bodyText).toContain("# Heading");
+  });
+
+  it("treats .canvas files as canvas notes titled by filename", () => {
+    const parsed = parseNote("boards/plan.canvas", '{"nodes":[],"edges":[]}');
+    expect(parsed.type).toBe("canvas");
+    expect(parsed.title).toBe("plan");
+    expect(parsed.links).toEqual([]);
   });
 });

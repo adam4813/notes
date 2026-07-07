@@ -167,6 +167,8 @@ export function NoteEditor({ path }: { path: string }) {
       </div>
       {isCanvas ? (
         <CanvasView
+          key={path}
+          path={path}
           value={content}
           onChange={handleChange}
           onOpenFile={(target) => dispatch({ type: "openFile", path: target, title: basename(target) })}

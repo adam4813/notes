@@ -79,10 +79,45 @@ function deriveTitle(path: string, frontmatter: Record<string, unknown>, body: s
   return basename(path).replace(/\.[^.]+$/, "");
 }
 
+function parseFrontmatter(content: string): { frontmatter: Record<string, unknown>; body: string } {
+  const normalizedContent = content.replace(/^\uFEFF/, "");
+  const frontmatterMatch = normalizedContent.match(/^---\s*\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+
+  if (!frontmatterMatch) {
+    return {
+      frontmatter: {},
+      body: content,
+    };
+  }
+
+  try {
+    const parsed = matter(content);
+    return {
+      frontmatter: (parsed.data ?? {}) as Record<string, unknown>,
+      body: parsed.content,
+    };
+  } catch {
+    return {
+      frontmatter: {},
+      body: content,
+    };
+  }
+}
+
 export function parseNote(path: string, content: string): ParsedNote {
-  const parsed = matter(content);
-  const frontmatter = (parsed.data ?? {}) as Record<string, unknown>;
-  const body = parsed.content;
+  if (path.toLowerCase().endsWith(".canvas")) {
+    return {
+      path,
+      title: basename(path).replace(/\.[^.]+$/, ""),
+      type: "canvas",
+      frontmatter: {},
+      tags: [],
+      links: [],
+      bodyText: "",
+    };
+  }
+
+  const { frontmatter, body } = parseFrontmatter(content);
   const type = typeof frontmatter.type === "string" ? frontmatter.type : "markdown";
 
   return {
