@@ -22,9 +22,13 @@ export interface TagCount {
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const hasBody = init?.body !== undefined && init.body !== null;
   const response = await fetch(url, {
     ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    headers: {
+      ...(hasBody ? { "Content-Type": "application/json" } : {}),
+      ...(init?.headers ?? {}),
+    },
   });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as { message?: string; error?: string };
@@ -50,6 +54,8 @@ export const api = {
     }),
   remove: (path: string) =>
     request<{ path: string }>(`/api/file?${query({ path })}`, { method: "DELETE" }),
+  mkdir: (path: string) =>
+    request<{ path: string }>("/api/folder", { method: "POST", body: JSON.stringify({ path }) }),
   rename: (from: string, to: string) =>
     request<{ from: string; to: string }>("/api/file/rename", {
       method: "POST",

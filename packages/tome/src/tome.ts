@@ -43,6 +43,10 @@ export class Tome {
     await mkdir(this.root, { recursive: true });
   }
 
+  async mkdir(relativePath: string): Promise<void> {
+    await mkdir(this.resolve(relativePath), { recursive: true });
+  }
+
   async exists(relativePath: string): Promise<boolean> {
     try {
       await access(this.resolve(relativePath), constants.F_OK);

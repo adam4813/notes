@@ -44,6 +44,14 @@ export function registerFileCommands(bus: CommandBus, getTome: () => Tome): void
   }
 
   bus.register<FilePathPayload, { path: string }>({
+    name: "file.mkdir",
+    handler: async (payload) => {
+      await getTome().mkdir(payload.path);
+      return { path: payload.path };
+    },
+  });
+
+  bus.register<FilePathPayload, { path: string }>({
     name: "file.delete",
     handler: async (payload) => {
       await getTome().delete(payload.path);

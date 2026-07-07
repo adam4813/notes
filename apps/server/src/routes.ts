@@ -29,6 +29,8 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
     return bus.dispatch("file.delete", { path }, ctx);
   });
 
+  app.post("/api/folder", async (request) => bus.dispatch("file.mkdir", request.body, ctx));
+
   app.get("/api/search", async (request) => {
     const query = request.query as { q?: string; limit?: string };
     return bus.dispatch(

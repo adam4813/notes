@@ -164,6 +164,15 @@ export function Explorer() {
     await refresh();
   };
 
+  const newFolder = async (dir: string) => {
+    const input = window.prompt("New folder name");
+    if (!input) {
+      return;
+    }
+    await api.mkdir(dir ? `${dir}/${input}` : input);
+    await refresh();
+  };
+
   const openMenu = (event: MouseEvent, node?: FileEntry) => {
     event.preventDefault();
     event.stopPropagation();
@@ -186,6 +195,7 @@ export function Explorer() {
         { label: "New note", run: () => services.createNote(dir) },
         { label: "New table", run: () => services.createTable(dir) },
         { label: "New canvas", run: () => services.createCanvas(dir) },
+        { label: "New folder…", run: () => void newFolder(dir) },
         ...(node
           ? [
               { label: "Rename…", run: () => void renameNode(node) },

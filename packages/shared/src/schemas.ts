@@ -27,6 +27,7 @@ export const commandSchemas: Record<string, z.ZodTypeAny> = {
   "file.rename": fileMovePayload,
   "file.move": fileMovePayload,
   "file.delete": filePathPayload,
+  "file.mkdir": filePathPayload,
   "index.search": searchPayload,
   "index.backlinks": filePathPayload,
   "index.outgoing": filePathPayload,

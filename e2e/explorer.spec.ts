@@ -17,5 +17,13 @@ test("explorer: rename a note via the right-click menu", async ({ page }) => {
   page.once("dialog", (dialog) => dialog.accept(renamed));
   await page.getByRole("menuitem", { name: /Rename/ }).click();
 
-  await expect(page.locator(".tree-file", { hasText: renamed })).toBeVisible();
+  const renamedRow = page.locator(".tree-file", { hasText: renamed });
+  await expect(renamedRow).toBeVisible();
+
+  // Delete it via the context menu.
+  await renamedRow.click({ button: "right" });
+  await expect(page.locator(".context-menu")).toBeVisible();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("menuitem", { name: "Delete" }).click();
+  await expect(page.locator(".tree-file", { hasText: renamed })).toHaveCount(0);
 });

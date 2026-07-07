@@ -54,6 +54,12 @@ describe("Tome", () => {
     expect(tree.map((entry) => entry.name)).toEqual(["a-folder", "b-note.md"]);
   });
 
+  it("creates nested directories", async () => {
+    await tome.mkdir("a/b/c");
+    const tree = await tome.listTree();
+    expect(tree.some((entry) => entry.name === "a" && entry.type === "directory")).toBe(true);
+  });
+
   it("rejects reads that escape the root", async () => {
     await expect(tome.read("../escape.md")).rejects.toBeInstanceOf(PathEscapeError);
   });
