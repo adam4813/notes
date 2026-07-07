@@ -6,7 +6,7 @@ test("a markdown note can wikilink to a canvas and navigate to it", async ({ pag
   // Create a canvas note.
   await page.getByTitle("Command palette (Ctrl/Cmd+P)").click();
   await page.getByTestId("palette-input").fill("New canvas");
-  await page.getByRole("button", { name: "New canvas" }).click();
+  await page.getByRole("button", { name: "New canvas", exact: true }).click();
   await expect(page.getByTestId("canvas-viewport")).toBeVisible();
 
   const canvasPath = (await page.locator(".status-path").textContent())?.trim() ?? "";

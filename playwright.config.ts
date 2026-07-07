@@ -6,7 +6,8 @@ const SERVER_HEALTH = "http://127.0.0.1:8787/health";
 export default defineConfig({
   testDir: "./e2e",
   timeout: 30_000,
-  fullyParallel: true,
+  fullyParallel: false,
+  workers: 1,
   use: {
     baseURL: WEB_URL,
     trace: "on-first-retry",

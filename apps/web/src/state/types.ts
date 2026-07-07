@@ -30,6 +30,10 @@ export type WorkspaceAction =
   | { type: "focusPane"; paneId: string }
   | { type: "splitPane"; paneId: string; mode: "duplicate" | "move" }
   | { type: "moveTabToOpposite"; paneId: string }
+  | { type: "renamePath"; from: string; to: string; title: string }
+  | { type: "renamePrefix"; from: string; to: string }
+  | { type: "closePath"; path: string }
+  | { type: "closePrefix"; path: string }
   | { type: "setTheme"; theme: ThemeMode }
   | { type: "setStatus"; status: string };
 

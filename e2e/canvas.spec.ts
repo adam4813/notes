@@ -5,7 +5,7 @@ test("canvas note: create, add a text node, and persist", async ({ page }) => {
 
   await page.getByTitle("Command palette (Ctrl/Cmd+P)").click();
   await page.getByTestId("palette-input").fill("New canvas");
-  await page.getByRole("button", { name: "New canvas" }).click();
+  await page.getByRole("button", { name: "New canvas", exact: true }).click();
 
   await expect(page.getByTestId("canvas-viewport")).toBeVisible();
 
@@ -16,7 +16,7 @@ test("canvas note: create, add a text node, and persist", async ({ page }) => {
 
   // Confirm it persisted as JSONCanvas (autosave is debounced → poll).
   const path = (await page.locator(".status-path").textContent())?.trim() ?? "";
-  expect(path).toMatch(/canvas-\d+\.canvas/);
+  expect(path).toMatch(/New Canvas.*\.canvas/);
   await expect
     .poll(
       async () => {

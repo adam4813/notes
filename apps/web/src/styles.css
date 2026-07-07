@@ -184,6 +184,10 @@ button {
 }
 
 /* File tree */
+.explorer {
+  min-height: 100%;
+}
+
 .tree-root,
 .tree-children {
   list-style: none;
@@ -208,6 +212,42 @@ button {
 
 .tree-row:hover {
   background: var(--hover);
+}
+
+.tree-row--drop {
+  outline: 1px dashed var(--accent);
+  background: var(--active);
+}
+
+/* Context menu */
+.context-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 168px;
+  padding: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+}
+
+.context-item {
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: var(--fg);
+}
+
+.context-item:hover {
+  background: var(--active);
+}
+
+.context-item--danger {
+  color: var(--status-offline);
 }
 
 .tree-caret {

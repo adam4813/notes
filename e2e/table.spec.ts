@@ -6,7 +6,7 @@ test("table note: create, edit a cell, add a column, and persist", async ({ page
   // Create a table note via the command palette (ribbon button waits for mount).
   await page.getByTitle("Command palette (Ctrl/Cmd+P)").click();
   await page.getByTestId("palette-input").fill("New table");
-  await page.getByRole("button", { name: "New table" }).click();
+  await page.getByRole("button", { name: "New table", exact: true }).click();
 
   const grid = page.locator(".data-grid");
   await expect(grid).toBeVisible();
@@ -29,7 +29,7 @@ test("table note: create, edit a cell, add a column, and persist", async ({ page
 
   // Confirm it persisted to disk (autosave is debounced, so poll the file).
   const path = (await page.locator(".status-path").textContent())?.trim() ?? "";
-  expect(path).toMatch(/table-\d+\.md/);
+  expect(path).toMatch(/New Table.*\.md/);
   await expect
     .poll(
       async () => {

@@ -4,6 +4,7 @@ import { TableGrid } from "@notes/note-tables";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/client";
 import { connectTomeChanges } from "../api/ws";
+import { useAppServices } from "../state/app-services";
 import { useWorkspace } from "../state/app-context";
 
 function basename(path: string): string {
@@ -37,6 +38,7 @@ const SAVE_LABEL: Record<SaveState, string> = {
 
 export function NoteEditor({ path }: { path: string }) {
   const { dispatch } = useWorkspace();
+  const { markModified } = useAppServices();
   const [content, setContent] = useState("");
   const [mode, setMode] = useState<EditorMode>("rendered");
   const [saveState, setSaveState] = useState<SaveState>("loading");
@@ -87,12 +89,13 @@ export function NoteEditor({ path }: { path: string }) {
       contentRef.current = value;
       dirtyRef.current = true;
       setSaveState("unsaved");
+      markModified(path);
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
       }
       saveTimer.current = setTimeout(() => void save(value), 600);
     },
-    [save],
+    [save, markModified, path],
   );
 
   // Reload on external changes when there are no unsaved local edits.

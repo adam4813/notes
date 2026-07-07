@@ -24,6 +24,54 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
     case "setStatus":
       return { ...state, status: action.status };
 
+    case "renamePath":
+      return {
+        ...state,
+        panes: state.panes.map((pane) => ({
+          ...pane,
+          tabs: pane.tabs.map((tab) =>
+            tab.path === action.from ? { ...tab, path: action.to, title: action.title } : tab,
+          ),
+        })),
+      };
+
+    case "renamePrefix": {
+      const prefix = `${action.from}/`;
+      return {
+        ...state,
+        panes: state.panes.map((pane) => ({
+          ...pane,
+          tabs: pane.tabs.map((tab) =>
+            tab.path.startsWith(prefix)
+              ? { ...tab, path: `${action.to}/${tab.path.slice(prefix.length)}` }
+              : tab,
+          ),
+        })),
+      };
+    }
+
+    case "closePath":
+    case "closePrefix": {
+      const matches = (path: string) =>
+        action.type === "closePath" ? path === action.path : path.startsWith(`${action.path}/`);
+      const panes = state.panes
+        .map((pane) => {
+          const tabs = pane.tabs.filter((tab) => !matches(tab.path));
+          const activeStillOpen = tabs.some((tab) => tab.id === pane.activeTabId);
+          return {
+            ...pane,
+            tabs,
+            activeTabId: activeStillOpen ? pane.activeTabId : tabs[tabs.length - 1]?.id,
+          };
+        })
+        .filter((pane) => pane.tabs.length > 0);
+      const finalPanes = panes.length > 0 ? panes : [{ id: generateId("pane"), tabs: [] }];
+      const activePaneId = finalPanes.some((pane) => pane.id === state.activePaneId)
+        ? state.activePaneId
+        : finalPanes[0].id;
+      return { ...state, panes: finalPanes, activePaneId };
+    }
+
     case "focusPane":
       return { ...state, activePaneId: action.paneId };
 

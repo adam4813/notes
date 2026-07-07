@@ -6,7 +6,7 @@ test("editor round-trips rendered edits into the markdown source", async ({ page
 
   const rendered = page.locator(".ProseMirror").first();
   await expect(rendered).toBeVisible();
-  await expect(rendered).toContainText("untitled");
+  await expect(rendered).toContainText("New Note");
 
   // Type into the rendered (WYSIWYG) editor.
   await rendered.click();

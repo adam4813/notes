@@ -34,13 +34,13 @@ test("wikilink autocomplete inserts a link from the index", async ({ page }) => 
   const rendered = page.locator(".ProseMirror").first();
   await rendered.click();
   await page.keyboard.press("Control+End");
-  await page.keyboard.type("[[unt");
+  await page.keyboard.type("[[New");
 
   await expect(page.locator(".suggest-popup")).toBeVisible();
   await page.keyboard.press("Enter");
 
   await page.getByRole("tab", { name: "Edit", exact: true }).click();
-  await expect(page.locator(".cm-content")).toContainText("[[untitled");
+  await expect(page.locator(".cm-content")).toContainText("[[New");
 });
 
 test("tab indents a list item into a nested list", async ({ page }) => {
