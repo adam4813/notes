@@ -22,6 +22,11 @@ test("table note: create, edit a cell, add a column, and persist", async ({ page
   await page.getByRole("button", { name: "＋ Column" }).click();
   await expect(page.locator(".grid-head-name")).toHaveCount(4);
 
+  // Select cells show an always-on dropdown (no double-click needed).
+  const statusSelect = page.locator(".grid-select").first();
+  await statusSelect.selectOption("Done");
+  await expect(statusSelect).toHaveValue("Done");
+
   // Confirm it persisted to disk (autosave is debounced, so poll the file).
   const path = (await page.locator(".status-path").textContent())?.trim() ?? "";
   expect(path).toMatch(/table-\d+\.md/);

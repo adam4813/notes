@@ -82,6 +82,14 @@ export function App() {
     [dispatch, createNote, createTable, state.activePaneId],
   );
 
+  const newActions = useMemo(
+    () => [
+      { id: "note", label: "Markdown note", run: () => void createNote() },
+      { id: "table", label: "Table", run: () => void createTable() },
+    ],
+    [createNote, createTable],
+  );
+
   return (
     <div className="shell">
       <Ribbon
@@ -90,7 +98,7 @@ export function App() {
         onQuickOpen={() => setPaletteMode("files")}
       />
       <div className="shell-body">
-        <Sidebar onNewNote={() => void createNote()} />
+        <Sidebar newActions={newActions} />
         <Workspace />
         <RightPanel />
       </div>

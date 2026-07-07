@@ -175,6 +175,26 @@ export function TableGrid({ value, onChange }: TableGridProps) {
     [commit, model],
   );
 
+  const editColumnOptions = useCallback(
+    (c: number) => {
+      const current = model.columns[c];
+      const raw = window.prompt("Options (comma-separated)", (current.options ?? []).join(", "));
+      if (raw === null) {
+        return;
+      }
+      const options = raw
+        .split(",")
+        .map((option) => option.trim())
+        .filter(Boolean);
+      const columns = model.columns.map((column, index) =>
+        index === c ? { ...column, options } : column,
+      );
+      commit({ ...model, columns });
+      setMenuCol(null);
+    },
+    [commit, model],
+  );
+
   const sortByColumn = useCallback(
     (c: number, direction: "asc" | "desc") => {
       const type = model.columns[c].type;
@@ -238,32 +258,27 @@ export function TableGrid({ value, onChange }: TableGridProps) {
       );
     }
 
+    if (column.type === "select") {
+      const options = column.options ?? [];
+      const known = cellValue === "" || options.includes(cellValue);
+      return (
+        <select
+          className="grid-select"
+          value={cellValue}
+          onChange={(event) => setCell(r, c, event.target.value)}
+        >
+          <option value="" />
+          {!known && <option value={cellValue}>{cellValue}</option>}
+          {options.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
     if (isEditing) {
-      if (column.type === "select") {
-        return (
-          <select
-            autoFocus
-            className="grid-input"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onBlur={() => commitEdit(null)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                commitEdit("down");
-              } else if (event.key === "Escape") {
-                setEditing(null);
-              }
-            }}
-          >
-            <option value="" />
-            {(column.options ?? []).map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        );
-      }
       return (
         <input
           autoFocus
@@ -288,9 +303,7 @@ export function TableGrid({ value, onChange }: TableGridProps) {
       );
     }
 
-    return (
-      <span className={`grid-value grid-value--${column.type}`}>{cellValue}</span>
-    );
+    return <span className={`grid-value grid-value--${column.type}`}>{cellValue}</span>;
   };
 
   return (
@@ -346,6 +359,9 @@ export function TableGrid({ value, onChange }: TableGridProps) {
                           {type}
                         </button>
                       ))}
+                      {column.type === "select" && (
+                        <button onClick={() => editColumnOptions(c)}>Edit options…</button>
+                      )}
                       <button className="grid-menu-danger" onClick={() => deleteColumn(c)}>
                         Delete column
                       </button>

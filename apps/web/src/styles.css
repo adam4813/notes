@@ -100,6 +100,49 @@ button {
   background: var(--hover);
 }
 
+.new-button {
+  position: relative;
+  display: inline-flex;
+}
+
+.new-button-main {
+  border-radius: 6px 0 0 6px;
+}
+
+.new-button-caret {
+  border-radius: 0 6px 6px 0;
+  padding: 4px 6px;
+  border-left: 1px solid var(--border);
+}
+
+.new-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 30;
+  min-width: 160px;
+  padding: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+}
+
+.new-menu-item {
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: var(--fg);
+}
+
+.new-menu-item:hover {
+  background: var(--active);
+}
+
 /* Sidebar */
 .sidebar,
 .right-panel {
@@ -971,6 +1014,21 @@ tr:hover .grid-row-delete {
   background: var(--bg);
   color: var(--fg);
   font: inherit;
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.grid-select {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  padding: 3px 6px;
+}
+
+.grid-select:focus {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
