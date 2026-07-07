@@ -512,6 +512,21 @@ button {
   border-left: 1px solid rgba(255, 255, 255, 0.25);
 }
 
+.settings-view {
+  height: 100%;
+  overflow: auto;
+  padding: 0 8px 24px;
+}
+
+.settings-view-header {
+  padding: 16px 18px 4px;
+}
+
+.settings-view-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
 /* Settings modal */
 .modal-overlay {
   position: fixed;

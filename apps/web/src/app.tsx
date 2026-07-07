@@ -8,6 +8,7 @@ import { Palette, type PaletteCommand } from "./components/palette";
 import { RightPanel } from "./components/right-panel";
 import { Ribbon } from "./components/ribbon";
 import { SettingsModal } from "./components/settings-modal";
+import { SETTINGS_TAB_PATH } from "./components/settings-view";
 import { Sidebar } from "./components/sidebar";
 import { StatusBar } from "./components/status-bar";
 import { Workspace } from "./components/workspace";
@@ -41,6 +42,9 @@ export function App() {
   const { state, dispatch } = useWorkspace();
   const [paletteMode, setPaletteMode] = useState<PaletteMode>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [openSettingsInTab, setOpenSettingsInTabState] = useState(
+    () => globalThis.localStorage?.getItem("notes.settings.openInTab") === "true",
+  );
   const plugins = usePlugins();
   const treeRef = useRef(state.tree);
   treeRef.current = state.tree;
@@ -85,6 +89,30 @@ export function App() {
   const markModified = useCallback((path: string) => {
     provisionalRef.current.delete(path);
   }, []);
+
+  const openSettings = useCallback(() => {
+    if (openSettingsInTab) {
+      dispatch({ type: "openFile", path: SETTINGS_TAB_PATH, title: "Settings" });
+    } else {
+      setSettingsOpen(true);
+    }
+  }, [openSettingsInTab, dispatch]);
+
+  // Persist the preference and convert the currently-open surface live.
+  const setOpenSettingsInTab = useCallback(
+    (next: boolean) => {
+      setOpenSettingsInTabState(next);
+      globalThis.localStorage?.setItem("notes.settings.openInTab", String(next));
+      if (next) {
+        setSettingsOpen(false);
+        dispatch({ type: "openFile", path: SETTINGS_TAB_PATH, title: "Settings" });
+      } else {
+        dispatch({ type: "closePath", path: SETTINGS_TAB_PATH });
+        setSettingsOpen(true);
+      }
+    },
+    [dispatch],
+  );
 
   useEffect(() => {
     void refreshTree();
@@ -147,14 +175,14 @@ export function App() {
       { id: "new-canvas", label: "New canvas", run: () => createCanvas() },
       { id: "new-board", label: "New board", run: () => createBoard() },
       { id: "reindex", label: "Rebuild search index", run: () => void api.reindex() },
-      { id: "open-settings", label: "Open settings", run: () => setSettingsOpen(true) },
+      { id: "open-settings", label: "Open settings", run: openSettings },
       ...plugins.pluginCommands.map((command) => ({
         id: command.id,
         label: command.label,
         run: command.run,
       })),
     ],
-    [dispatch, createNote, createTable, createCanvas, createBoard, plugins.pluginCommands, state.activePaneId],
+    [dispatch, createNote, createTable, createCanvas, createBoard, plugins.pluginCommands, state.activePaneId, openSettings],
   );
 
   const newActions = useMemo(
@@ -176,8 +204,22 @@ export function App() {
       createBoard,
       setActiveDocument: (doc: { path: string; content: string; type: string } | null) =>
         plugins.documentSignal.set(doc),
+      plugins: { list: plugins.list, toggle: plugins.toggle },
+      openSettingsInTab,
+      setOpenSettingsInTab,
     }),
-    [markModified, createNote, createTable, createCanvas, createBoard, plugins.documentSignal],
+    [
+      markModified,
+      createNote,
+      createTable,
+      createCanvas,
+      createBoard,
+      plugins.documentSignal,
+      plugins.list,
+      plugins.toggle,
+      openSettingsInTab,
+      setOpenSettingsInTab,
+    ],
   );
 
   return (
@@ -187,7 +229,7 @@ export function App() {
           onNewNote={() => createNote()}
           onCommand={() => setPaletteMode("commands")}
           onQuickOpen={() => setPaletteMode("files")}
-          onSettings={() => setSettingsOpen(true)}
+          onSettings={openSettings}
         />
         <div className="shell-body">
           <Sidebar newActions={newActions} />
@@ -209,6 +251,8 @@ export function App() {
             plugins={plugins.list}
             theme={state.theme}
             onToggle={plugins.toggle}
+            openInTab={openSettingsInTab}
+            onOpenInTabChange={setOpenSettingsInTab}
             onClose={() => setSettingsOpen(false)}
           />
         )}
