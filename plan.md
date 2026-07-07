@@ -166,6 +166,19 @@ Kept structurally viable but explicitly **not built** in MVP:
 - **Multi-Tome Towers** — the Tower session is modeled to reference multiple Tomes, but MVP
   opens a single Tome; multi-Tome switching/UI is deferred.
 
+### Post-MVP note-type ideas (captured, not scheduled)
+
+These are explicitly **out of MVP** but recorded so the architecture stays compatible:
+
+- **Calendar note type** — a calendar with multiple views (month/week/day/agenda).
+- **Grid note type** — canvas-like but a cell grid where each cell is interactive (tile-map
+  editor / graph-paper shade+color), with **layers** and **tokens**.
+- **Embeddable/widgetable note types** — any non-standard note type (table, canvas, board,
+  calendar, grid) should be embeddable as a widget **inside standard markdown notes** (e.g. a
+  calendar followed by a table in one note). Implies an embed block/editor extension plus a
+  shared renderer registry keyed by note type. The Phase 9 plugin API and the note-type
+  registry are the natural seams for this.
+
 ---
 
 ## 6. Implementation Progress
