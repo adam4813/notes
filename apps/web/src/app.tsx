@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { emptyTableMarkdown } from "@notes/note-tables";
 import { api } from "./api/client";
 import { connectTomeChanges } from "./api/ws";
 import { Palette, type PaletteCommand } from "./components/palette";
@@ -25,6 +26,13 @@ export function App() {
   const createNote = useCallback(async () => {
     const name = `untitled-${Date.now()}.md`;
     await api.create(name, `# ${name.replace(/\.md$/, "")}\n\n`);
+    await refreshTree();
+    dispatch({ type: "openFile", path: name, title: name.replace(/\.md$/, "") });
+  }, [dispatch, refreshTree]);
+
+  const createTable = useCallback(async () => {
+    const name = `table-${Date.now()}.md`;
+    await api.create(name, emptyTableMarkdown());
     await refreshTree();
     dispatch({ type: "openFile", path: name, title: name.replace(/\.md$/, "") });
   }, [dispatch, refreshTree]);
@@ -68,9 +76,10 @@ export function App() {
       { id: "theme-system", label: "Theme: System", run: () => dispatch({ type: "setTheme", theme: "system" }) },
       { id: "split-pane", label: "Split editor pane", run: () => dispatch({ type: "splitPane", paneId: state.activePaneId, mode: "duplicate" }) },
       { id: "new-note", label: "New note", run: () => void createNote() },
+      { id: "new-table", label: "New table", run: () => void createTable() },
       { id: "reindex", label: "Rebuild search index", run: () => void api.reindex() },
     ],
-    [dispatch, createNote, state.activePaneId],
+    [dispatch, createNote, createTable, state.activePaneId],
   );
 
   return (

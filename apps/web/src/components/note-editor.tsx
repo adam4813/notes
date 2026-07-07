@@ -1,10 +1,19 @@
 import { MarkdownEditor, EDITOR_MODES, type EditorCallbacks, type EditorMode } from "@notes/editor";
+import { TableGrid } from "@notes/note-tables";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/client";
 import { connectTomeChanges } from "../api/ws";
 import { useWorkspace } from "../state/app-context";
 
-type SaveState = "loading" | "saved" | "saving" | "error" | "external";
+function getFrontmatterType(content: string): string | undefined {
+  const block = /^---\n([\s\S]*?)\n---/.exec(content);
+  if (!block) {
+    return undefined;
+  }
+  return /^type:\s*(.+)$/m.exec(block[1])?.[1].trim();
+}
+
+type SaveState = "loading" | "saved" | "saving" | "unsaved" | "error" | "external";
 
 const MODE_LABEL: Record<EditorMode, string> = {
   edit: "Edit",
@@ -16,6 +25,7 @@ const SAVE_LABEL: Record<SaveState, string> = {
   loading: "Loading…",
   saved: "Saved",
   saving: "Saving…",
+  unsaved: "Unsaved…",
   error: "Save failed",
   external: "Changed on disk",
 };
@@ -71,6 +81,7 @@ export function NoteEditor({ path }: { path: string }) {
       setContent(value);
       contentRef.current = value;
       dirtyRef.current = true;
+      setSaveState("unsaved");
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
       }
@@ -118,25 +129,39 @@ export function NoteEditor({ path }: { path: string }) {
     [dispatch],
   );
 
+  if (saveState === "loading") {
+    return <div className="note-loading">Loading…</div>;
+  }
+
+  const isTable = getFrontmatterType(content) === "table";
+
   return (
     <div className="note-editor">
       <div className="editor-toolbar-row">
-        <div className="mode-switch" role="tablist">
-          {EDITOR_MODES.map((candidate) => (
-            <button
-              key={candidate}
-              role="tab"
-              aria-selected={candidate === mode}
-              className={`mode-btn ${candidate === mode ? "mode-btn--active" : ""}`}
-              onClick={() => setMode(candidate)}
-            >
-              {MODE_LABEL[candidate]}
-            </button>
-          ))}
-        </div>
+        {isTable ? (
+          <span className="note-type-badge">Table</span>
+        ) : (
+          <div className="mode-switch" role="tablist">
+            {EDITOR_MODES.map((candidate) => (
+              <button
+                key={candidate}
+                role="tab"
+                aria-selected={candidate === mode}
+                className={`mode-btn ${candidate === mode ? "mode-btn--active" : ""}`}
+                onClick={() => setMode(candidate)}
+              >
+                {MODE_LABEL[candidate]}
+              </button>
+            ))}
+          </div>
+        )}
         <span className={`save-status save-status--${saveState}`}>{SAVE_LABEL[saveState]}</span>
       </div>
-      <MarkdownEditor value={content} mode={mode} onChange={handleChange} callbacks={callbacks} />
+      {isTable ? (
+        <TableGrid value={content} onChange={handleChange} />
+      ) : (
+        <MarkdownEditor value={content} mode={mode} onChange={handleChange} callbacks={callbacks} />
+      )}
     </div>
   );
 }

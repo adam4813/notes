@@ -11,5 +11,17 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@notes/core": "*",
+    "papaparse": "^5.5.4",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.5.2"
+  },
+  "peerDependencies": {
+    "react": "^18",
+    "react-dom": "^18"
   }
 }

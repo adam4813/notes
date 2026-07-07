@@ -1,6 +1,6 @@
 # Phase 6 — Table (Lightweight Database) Note Type
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 **Depends on:** 3, 1
 
 ## Goal
@@ -65,4 +65,25 @@ Commit message:
 `feat: table note type with excel-like editing (first-party plugin)`
 
 ## Feedback
-_(none yet)_
+
+**2026-07-06 — Implemented & verified.** `@notes/note-tables`:
+- **Format:** table note = `.md` with `type: table` frontmatter carrying the **column schema**
+  (name, type, options) + an embedded ` ```csv ` block. Round-trip stable (yaml + papaparse),
+  plain-CSV-friendly. Registered as a `NoteTypeProvider` on the server registry (dogfooding);
+  `note.detectType` command/route added.
+- **Grid:** Excel-like — keyboard nav (arrows/Tab/Enter), edit-in-place, typed cell editors
+  (text/number/date/checkbox/select), sticky header, add/delete rows & columns, rename column,
+  change type, sort asc/desc, single-cell copy/paste, and a clear Unsaved→Saved status.
+- **Web:** `NoteEditor` routes `type: table` notes to the grid (autosave shared with markdown);
+  **New table** command.
+
+Verified: `typecheck`, `lint`, `test` (46; +5 format), `build`, and **Playwright** (create
+table → edit cell → add column → persists to disk).
+
+### GATE — validation questions
+1. Does the grid feel close enough to lightweight Excel for MVP?
+2. Is "frontmatter schema + embedded CSV" the right storage (vs sidecar/plain CSV)?
+3. Which column types are must-haves beyond text/number/date/checkbox/select?
+
+**Deferred (`deferred-grid-advanced`):** multi-range selection, fill-down, undo/redo, column
+reorder, and filtering.

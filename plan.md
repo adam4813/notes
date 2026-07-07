@@ -180,7 +180,7 @@ Status legend: ⬜ Not Started · 🔄 In Progress · ✅ Complete
 | 3. App Shell, Layout, Tabs & Panes | [plan/phase-03-app-shell.md](plan/phase-03-app-shell.md) | ✅ Complete | 1 |
 | 4. Markdown Editor — Modes & Round-trip | [plan/phase-04-editor-core.md](plan/phase-04-editor-core.md) | ✅ Complete | 3 |
 | 5. Rich Editing UX, Links & Backlinks | [plan/phase-05-editing-ux-links.md](plan/phase-05-editing-ux-links.md) | ✅ Complete | 4, 2 |
-| 6. Table (Lightweight DB) Note Type | [plan/phase-06-table-note.md](plan/phase-06-table-note.md) | ⬜ Not Started | 3, 1 |
+| 6. Table (Lightweight DB) Note Type | [plan/phase-06-table-note.md](plan/phase-06-table-note.md) | ✅ Complete | 3, 1 |
 | 7. Canvas Note Type (JSONCanvas) | [plan/phase-07-canvas-note.md](plan/phase-07-canvas-note.md) | ⬜ Not Started | 3, 1 |
 | 8. Kanban Board Note Type | [plan/phase-08-board-note.md](plan/phase-08-board-note.md) | ⬜ Not Started | 3, 1 |
 | 9. Plugin System Hardening & Loading | [plan/phase-09-plugin-system.md](plan/phase-09-plugin-system.md) | ⬜ Not Started | 6, 7, 8 |
@@ -208,14 +208,13 @@ Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase 
 
 ## 8. Cross-Session Handoff
 
-- **Last session:** 2026-07-06 — **Phases 1–5 complete.** Split-menu feedback + the hybrid
-  editor (Phase 4) + **rich editing (Phase 5)**: formatting toolbar, `[[` wikilink autocomplete
-  + clickable navigation (bracket-escaping fixed), `#` tag autocomplete, and Outline/Backlinks
-  panels. 41 unit tests + 5 Playwright specs + build all green.
-- **Current state:** Full-featured markdown editing works end-to-end. Editor gate approved; Phase
-  5 validation questions recorded (missing-wikilink behavior, toolbar scope).
-- **Next action:** **Phase 6 — Table (Lightweight DB) Note Type** (Excel-like grid), or address
-  any Phase 5 editor feedback first.
+- **Last session:** 2026-07-06 — **Phases 1–6 complete.** Editor + rich editing + the **table
+  (lightweight-database) note type**: Excel-like grid (typed cells, add/del/rename/type/sort,
+  copy/paste), stored as `type: table` frontmatter schema + embedded CSV; registered as a
+  note-type provider. 46 unit tests + 6 Playwright specs + build all green.
+- **Current state:** Markdown + table note types work end-to-end. Table gate validation questions
+  recorded (grid feel, storage format, column types).
+- **Next action:** **Phase 7 — Canvas Note Type (JSONCanvas)**, then **Phase 8 — Kanban Board**.
 - **Conventions:** `.github/copilot-instructions.md` is finalized in Phase 0; treat it as the
   binding style/architecture reference for all later phases.
 

@@ -13,6 +13,7 @@
     "@fastify/websocket": "^11.0.1",
     "@notes/core": "*",
     "@notes/index": "*",
+    "@notes/note-tables": "*",
     "@notes/shared": "*",
     "@notes/tome": "*",
     "fastify": "^5.1.0",
