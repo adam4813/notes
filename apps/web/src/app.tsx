@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { formatCombo } from "@notes/core";
 import { emptyCanvas } from "@notes/note-canvas";
 import { emptyBoard } from "@notes/note-boards";
 import { emptyTableMarkdown } from "@notes/note-tables";
 import { api, type FileEntry } from "./api/client";
 import { connectTomeChanges } from "./api/ws";
-import { Palette, type PaletteCommand } from "./components/palette";
+import { Palette } from "./components/palette";
 import { RightPanel } from "./components/right-panel";
 import { Ribbon } from "./components/ribbon";
 import { SettingsModal } from "./components/settings-modal";
@@ -15,8 +16,11 @@ import { Workspace } from "./components/workspace";
 import { AppServicesProvider } from "./state/app-services";
 import { useWorkspace } from "./state/app-context";
 import { usePlugins } from "./state/use-plugins";
+import { useHotkeys } from "./state/use-hotkeys";
+import { loadRecentCommands, pushRecentCommand, type AppCommand } from "./state/commands";
 import { flattenFiles } from "./state/selectors";
-import { applyTheme } from "./theme/theme";
+import { applyAccent, applyTheme, loadAccent, ACCENT_PRESETS } from "./theme/theme";
+import type { SettingsBodyProps } from "./components/settings-view";
 
 type PaletteMode = "files" | "commands" | null;
 
@@ -45,6 +49,8 @@ export function App() {
   const [openSettingsInTab, setOpenSettingsInTabState] = useState(
     () => globalThis.localStorage?.getItem("notes.settings.openInTab") === "true",
   );
+  const [accent, setAccentState] = useState(() => loadAccent());
+  const [recentCommandIds, setRecentCommandIds] = useState<string[]>(() => loadRecentCommands());
   const plugins = usePlugins();
   const treeRef = useRef(state.tree);
   treeRef.current = state.tree;
@@ -86,6 +92,23 @@ export function App() {
     [createOfType],
   );
 
+  // Explicitly-named note (quick switcher "create on miss"); not provisional.
+  const createNamedNote = useCallback(
+    (name: string) => {
+      const safe = name.replace(/[\\/:]+/g, "-").trim();
+      if (!safe) {
+        return;
+      }
+      const path = safe.toLowerCase().endsWith(".md") ? safe : `${safe}.md`;
+      void (async () => {
+        await api.create(path, `# ${baseNoExt(path)}\n\n`);
+        await refreshTree();
+        dispatch({ type: "openFile", path, title: baseNoExt(path) });
+      })();
+    },
+    [dispatch, refreshTree],
+  );
+
   const markModified = useCallback((path: string) => {
     provisionalRef.current.delete(path);
   }, []);
@@ -123,6 +146,12 @@ export function App() {
   }, [state.theme]);
 
   useEffect(() => {
+    applyAccent(accent);
+  }, [accent]);
+
+  const setAccent = useCallback((color: string) => setAccentState(color), []);
+
+  useEffect(() => {
     return connectTomeChanges((change) => {
       void refreshTree();
       dispatch({ type: "setStatus", status: `${change.kind}: ${change.path}` });
@@ -143,47 +172,81 @@ export function App() {
     }
   }, [state.panes, refreshTree]);
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      const mod = event.ctrlKey || event.metaKey;
-      if (mod && event.key.toLowerCase() === "p") {
-        event.preventDefault();
-        setPaletteMode("commands");
-      } else if (mod && event.key.toLowerCase() === "o") {
-        event.preventDefault();
-        setPaletteMode("files");
-      } else if (event.key === "Escape") {
-        setPaletteMode(null);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  const commands = useMemo<PaletteCommand[]>(
+  const commands = useMemo<AppCommand[]>(
     () => [
-      { id: "theme-light", label: "Theme: Light", run: () => dispatch({ type: "setTheme", theme: "light" }) },
-      { id: "theme-dark", label: "Theme: Dark", run: () => dispatch({ type: "setTheme", theme: "dark" }) },
-      { id: "theme-system", label: "Theme: System", run: () => dispatch({ type: "setTheme", theme: "system" }) },
+      {
+        id: "command-palette",
+        title: "Command palette",
+        category: "Go",
+        icon: "⌘",
+        defaultHotkey: "Mod+P",
+        run: () => setPaletteMode("commands"),
+      },
+      {
+        id: "quick-open",
+        title: "Quick open note",
+        category: "Go",
+        icon: "🔍",
+        defaultHotkey: "Mod+O",
+        run: () => setPaletteMode("files"),
+      },
+      {
+        id: "open-settings",
+        title: "Open settings",
+        category: "Go",
+        icon: "⚙",
+        defaultHotkey: "Mod+,",
+        run: openSettings,
+      },
+      { id: "new-note", title: "New note", category: "Create", defaultHotkey: "Mod+N", run: () => createNote() },
+      { id: "new-table", title: "New table", category: "Create", run: () => createTable() },
+      { id: "new-canvas", title: "New canvas", category: "Create", run: () => createCanvas() },
+      { id: "new-board", title: "New board", category: "Create", run: () => createBoard() },
       {
         id: "split-pane",
-        label: "Split editor pane",
+        title: "Split editor pane",
+        category: "View",
+        defaultHotkey: "Mod+\\",
         run: () => dispatch({ type: "splitPane", paneId: state.activePaneId, mode: "duplicate" }),
       },
-      { id: "new-note", label: "New note", run: () => createNote() },
-      { id: "new-table", label: "New table", run: () => createTable() },
-      { id: "new-canvas", label: "New canvas", run: () => createCanvas() },
-      { id: "new-board", label: "New board", run: () => createBoard() },
-      { id: "reindex", label: "Rebuild search index", run: () => void api.reindex() },
-      { id: "open-settings", label: "Open settings", run: openSettings },
+      { id: "theme-light", title: "Light", category: "Theme", run: () => dispatch({ type: "setTheme", theme: "light" }) },
+      { id: "theme-dark", title: "Dark", category: "Theme", run: () => dispatch({ type: "setTheme", theme: "dark" }) },
+      { id: "theme-system", title: "System", category: "Theme", run: () => dispatch({ type: "setTheme", theme: "system" }) },
+      { id: "reindex", title: "Rebuild search index", category: "Index", run: () => void api.reindex() },
       ...plugins.pluginCommands.map((command) => ({
         id: command.id,
-        label: command.label,
+        title: command.label,
+        category: "Plugin",
+        defaultHotkey: command.defaultHotkey,
         run: command.run,
       })),
     ],
-    [dispatch, createNote, createTable, createCanvas, createBoard, plugins.pluginCommands, state.activePaneId, openSettings],
+    [
+      dispatch,
+      createNote,
+      createTable,
+      createCanvas,
+      createBoard,
+      plugins.pluginCommands,
+      state.activePaneId,
+      openSettings,
+    ],
   );
+
+  const hotkeys = useHotkeys(commands);
+
+  const hotkeyFor = useCallback(
+    (commandId: string): string | undefined => {
+      const combo = hotkeys.comboFor(commandId);
+      return combo ? formatCombo(combo, hotkeys.platform) : undefined;
+    },
+    [hotkeys],
+  );
+
+  const runCommand = useCallback((command: AppCommand) => {
+    setRecentCommandIds((current) => pushRecentCommand(command.id, current));
+    command.run();
+  }, []);
 
   const newActions = useMemo(
     () => [
@@ -195,6 +258,45 @@ export function App() {
     [createNote, createTable, createCanvas, createBoard],
   );
 
+  const settingsProps = useMemo<SettingsBodyProps>(
+    () => ({
+      plugins: plugins.list,
+      onToggle: plugins.toggle,
+      theme: state.theme,
+      onThemeChange: (theme) => dispatch({ type: "setTheme", theme }),
+      accent,
+      accentPresets: ACCENT_PRESETS,
+      onAccentChange: setAccent,
+      openInTab: openSettingsInTab,
+      onOpenInTabChange: setOpenSettingsInTab,
+      hotkeys: {
+        commands: commands.map((command) => ({
+          id: command.id,
+          title: command.title,
+          category: command.category,
+        })),
+        comboFor: hotkeys.comboFor,
+        format: (combo) => formatCombo(combo, hotkeys.platform),
+        isCustom: hotkeys.isCustom,
+        rebind: hotkeys.rebind,
+        reset: hotkeys.reset,
+        conflicts: hotkeys.conflicts,
+      },
+    }),
+    [
+      plugins.list,
+      plugins.toggle,
+      state.theme,
+      dispatch,
+      accent,
+      setAccent,
+      openSettingsInTab,
+      setOpenSettingsInTab,
+      commands,
+      hotkeys,
+    ],
+  );
+
   const services = useMemo(
     () => ({
       markModified,
@@ -204,9 +306,7 @@ export function App() {
       createBoard,
       setActiveDocument: (doc: { path: string; content: string; type: string } | null) =>
         plugins.documentSignal.set(doc),
-      plugins: { list: plugins.list, toggle: plugins.toggle },
-      openSettingsInTab,
-      setOpenSettingsInTab,
+      settings: settingsProps,
     }),
     [
       markModified,
@@ -215,10 +315,7 @@ export function App() {
       createCanvas,
       createBoard,
       plugins.documentSignal,
-      plugins.list,
-      plugins.toggle,
-      openSettingsInTab,
-      setOpenSettingsInTab,
+      settingsProps,
     ],
   );
 
@@ -242,19 +339,16 @@ export function App() {
             mode={paletteMode}
             files={flattenFiles(state.tree)}
             commands={commands}
+            recentCommandIds={recentCommandIds}
+            hotkeyFor={hotkeyFor}
             onOpenFile={(path, title) => dispatch({ type: "openFile", path, title })}
+            onRunCommand={runCommand}
+            onCreateNote={createNamedNote}
             onClose={() => setPaletteMode(null)}
           />
         )}
         {settingsOpen && (
-          <SettingsModal
-            plugins={plugins.list}
-            theme={state.theme}
-            onToggle={plugins.toggle}
-            openInTab={openSettingsInTab}
-            onOpenInTabChange={setOpenSettingsInTab}
-            onClose={() => setSettingsOpen(false)}
-          />
+          <SettingsModal {...settingsProps} onClose={() => setSettingsOpen(false)} />
         )}
       </div>
     </AppServicesProvider>

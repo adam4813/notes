@@ -36,6 +36,10 @@ export function usePlugins(): PluginsApi {
         setStatusItems((prev) => [...prev, item]);
         return () => setStatusItems((prev) => prev.filter((i) => i.id !== item.id));
       },
+      setThemeToken: (name, value) => {
+        document.documentElement.style.setProperty(name, value);
+        return () => document.documentElement.style.removeProperty(name);
+      },
       document: documentSignal,
       storage: window.localStorage,
     };

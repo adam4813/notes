@@ -103,6 +103,11 @@ export class PluginManager {
         entry.disposers.push(disposer);
         return disposer;
       },
+      setThemeToken: (name, value) => {
+        const disposer = this.host.setThemeToken(name, value);
+        entry.disposers.push(disposer);
+        return disposer;
+      },
       document: this.host.document,
       settings,
     };

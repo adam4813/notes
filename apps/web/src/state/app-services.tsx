@@ -1,11 +1,5 @@
-import type { PluginInfo } from "@notes/plugin-host";
 import { createContext, useContext, type ReactNode } from "react";
-
-/** Plugin surface a settings view needs (subset of the usePlugins API). */
-export interface PluginsView {
-  list: PluginInfo[];
-  toggle: (id: string, enabled: boolean) => void;
-}
+import type { SettingsBodyProps } from "../components/settings-view";
 
 export interface AppServices {
   /** Marks a note as modified so it is no longer a discardable provisional note. */
@@ -16,15 +10,32 @@ export interface AppServices {
   createBoard: (dir?: string) => void;
   /** Publishes the active document to plugins (status bar, etc.). */
   setActiveDocument: (doc: { path: string; content: string; type: string } | null) => void;
-  /** Plugin list + toggle, so a settings tab can render without prop drilling. */
-  plugins: PluginsView;
-  /** Whether settings should open in a tab (true) or a modal dialog (false). */
-  openSettingsInTab: boolean;
-  /** Switches the settings surface between tab and dialog, converting live. */
-  setOpenSettingsInTab: (openInTab: boolean) => void;
+  /** Everything the settings surface needs, so a settings tab can render. */
+  settings: SettingsBodyProps;
 }
 
 const noop = () => {};
+
+const defaultSettings: SettingsBodyProps = {
+  plugins: [],
+  onToggle: noop,
+  theme: "system",
+  onThemeChange: noop,
+  accent: "",
+  accentPresets: [],
+  onAccentChange: noop,
+  openInTab: false,
+  onOpenInTabChange: noop,
+  hotkeys: {
+    commands: [],
+    comboFor: () => undefined,
+    format: (combo) => combo,
+    isCustom: () => false,
+    rebind: noop,
+    reset: noop,
+    conflicts: {},
+  },
+};
 
 const AppServicesContext = createContext<AppServices>({
   markModified: noop,
@@ -33,9 +44,7 @@ const AppServicesContext = createContext<AppServices>({
   createCanvas: noop,
   createBoard: noop,
   setActiveDocument: noop,
-  plugins: { list: [], toggle: noop },
-  openSettingsInTab: false,
-  setOpenSettingsInTab: noop,
+  settings: defaultSettings,
 });
 
 export function AppServicesProvider({

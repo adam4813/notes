@@ -13,6 +13,8 @@ export interface PluginCommand {
   id: string;
   label: string;
   run: () => void;
+  /** Optional default hotkey combo, e.g. "Mod+Shift+W". */
+  defaultHotkey?: string;
 }
 
 /**
@@ -40,6 +42,8 @@ export interface PluginContext {
   readonly manifest: PluginManifest;
   registerCommand: (command: PluginCommand) => Disposer;
   addStatusBarItem: (item: StatusBarItem) => Disposer;
+  /** Overrides a CSS design token (e.g. "--accent"). Returns a disposer. */
+  setThemeToken: (name: string, value: string) => Disposer;
   readonly document: DocumentSignal;
   readonly settings: PluginSettings;
 }
@@ -54,6 +58,7 @@ export interface NotesPlugin {
 export interface PluginHost {
   registerCommand: (command: PluginCommand) => Disposer;
   addStatusBarItem: (item: StatusBarItem) => Disposer;
+  setThemeToken: (name: string, value: string) => Disposer;
   document: DocumentSignal;
   storage: {
     getItem: (key: string) => string | null;

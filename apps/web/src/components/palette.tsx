@@ -1,28 +1,40 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FileEntry } from "../api/client";
-
-export interface PaletteCommand {
-  id: string;
-  label: string;
-  run: () => void;
-}
+import { fuzzyRank } from "../lib/fuzzy";
+import type { AppCommand } from "../state/commands";
 
 interface PaletteResult {
   key: string;
   label: string;
+  hint?: string;
   run: () => void;
 }
 
 interface PaletteProps {
   mode: "files" | "commands";
   files: FileEntry[];
-  commands: PaletteCommand[];
+  commands: AppCommand[];
+  recentCommandIds: string[];
+  hotkeyFor: (commandId: string) => string | undefined;
   onOpenFile: (path: string, title: string) => void;
+  onRunCommand: (command: AppCommand) => void;
+  onCreateNote: (name: string) => void;
   onClose: () => void;
 }
 
-export function Palette({ mode, files, commands, onOpenFile, onClose }: PaletteProps) {
+export function Palette({
+  mode,
+  files,
+  commands,
+  recentCommandIds,
+  hotkeyFor,
+  onOpenFile,
+  onRunCommand,
+  onCreateNote,
+  onClose,
+}: PaletteProps) {
   const [query, setQuery] = useState("");
+  const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -30,26 +42,68 @@ export function Palette({ mode, files, commands, onOpenFile, onClose }: PaletteP
   }, []);
 
   const results = useMemo<PaletteResult[]>(() => {
-    const needle = query.trim().toLowerCase();
-    if (mode === "commands") {
-      return commands
-        .filter((command) => command.label.toLowerCase().includes(needle))
-        .map((command) => ({ key: command.id, label: command.label, run: command.run }));
-    }
-    return files
-      .filter((file) => file.path.toLowerCase().includes(needle))
-      .slice(0, 50)
-      .map((file) => ({
-        key: file.path,
-        label: file.path,
-        run: () => onOpenFile(file.path, file.name.replace(/\.[^.]+$/, "")),
-      }));
-  }, [query, mode, files, commands, onOpenFile]);
+    const trimmed = query.trim();
 
-  const runFirst = () => {
-    const first = results[0];
-    if (first) {
-      first.run();
+    if (mode === "commands") {
+      const toResult = (command: AppCommand): PaletteResult => ({
+        key: command.id,
+        label: command.title,
+        hint: hotkeyFor(command.id),
+        run: () => onRunCommand(command),
+      });
+
+      if (trimmed.length === 0) {
+        // Recents first, then everything else in registration order.
+        const recent = recentCommandIds
+          .map((id) => commands.find((command) => command.id === id))
+          .filter((command): command is AppCommand => Boolean(command));
+        const rest = commands.filter((command) => !recentCommandIds.includes(command.id));
+        return [...recent, ...rest].map(toResult);
+      }
+
+      return fuzzyRank(trimmed, commands, (command) =>
+        command.category ? `${command.category} ${command.title}` : command.title,
+      ).map((ranked) => toResult(ranked.item));
+    }
+
+    const ranked = fuzzyRank(trimmed, files, (file) => file.path)
+      .slice(0, 50)
+      .map<PaletteResult>((entry) => ({
+        key: entry.item.path,
+        label: entry.item.path,
+        run: () => onOpenFile(entry.item.path, entry.item.name.replace(/\.[^.]+$/, "")),
+      }));
+
+    // Create-on-miss: offer to make a note named after the query.
+    if (trimmed.length > 0 && !files.some((file) => file.path === trimmed)) {
+      ranked.push({
+        key: "__create__",
+        label: `Create note "${trimmed}"`,
+        hint: "Enter",
+        run: () => onCreateNote(trimmed),
+      });
+    }
+    return ranked;
+  }, [
+    query,
+    mode,
+    files,
+    commands,
+    recentCommandIds,
+    hotkeyFor,
+    onOpenFile,
+    onRunCommand,
+    onCreateNote,
+  ]);
+
+  useEffect(() => {
+    setActive(0);
+  }, [query, mode]);
+
+  const runAt = (index: number) => {
+    const result = results[index];
+    if (result) {
+      result.run();
       onClose();
     }
   };
@@ -61,28 +115,34 @@ export function Palette({ mode, files, commands, onOpenFile, onClose }: PaletteP
           ref={inputRef}
           className="palette-input"
           data-testid="palette-input"
-          placeholder={mode === "commands" ? "Run a command…" : "Open a note…"}
+          placeholder={mode === "commands" ? "Run a command…" : "Open or create a note…"}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              runFirst();
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
+              setActive((index) => Math.min(index + 1, results.length - 1));
+            } else if (event.key === "ArrowUp") {
+              event.preventDefault();
+              setActive((index) => Math.max(index - 1, 0));
+            } else if (event.key === "Enter") {
+              event.preventDefault();
+              runAt(active);
             } else if (event.key === "Escape") {
               onClose();
             }
           }}
         />
         <ul className="palette-list">
-          {results.map((result) => (
+          {results.map((result, index) => (
             <li key={result.key}>
               <button
-                className="palette-item"
-                onClick={() => {
-                  result.run();
-                  onClose();
-                }}
+                className={`palette-item ${index === active ? "palette-item--active" : ""}`}
+                onMouseEnter={() => setActive(index)}
+                onClick={() => runAt(index)}
               >
-                {result.label}
+                <span className="palette-item-label">{result.label}</span>
+                {result.hint && <kbd className="palette-item-hint">{result.hint}</kbd>}
               </button>
             </li>
           ))}

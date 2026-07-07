@@ -6,6 +6,7 @@ import { PluginManager } from "./plugin-manager";
 function makeHost() {
   const commands = new Map<string, PluginCommand>();
   const statusItems = new Map<string, StatusBarItem>();
+  const tokens = new Map<string, string>();
   const store = new Map<string, string>();
   const host: PluginHost = {
     registerCommand: (command) => {
@@ -16,13 +17,17 @@ function makeHost() {
       statusItems.set(item.id, item);
       return () => statusItems.delete(item.id);
     },
+    setThemeToken: (name, value) => {
+      tokens.set(name, value);
+      return () => tokens.delete(name);
+    },
     document: new Signal(null),
     storage: {
       getItem: (key) => store.get(key) ?? null,
       setItem: (key, value) => store.set(key, value),
     },
   };
-  return { host, commands, statusItems, store };
+  return { host, commands, statusItems, tokens, store };
 }
 
 function samplePlugin(overrides: Partial<NotesPlugin> = {}): NotesPlugin {
@@ -92,6 +97,22 @@ describe("PluginManager", () => {
     // Partial contributions are rolled back.
     expect(commands.size).toBe(0);
     expect(manager.list()[0].error).toContain("activate failed");
+  });
+
+  it("registers and tears down theme-token contributions", async () => {
+    const { host, tokens } = makeHost();
+    const manager = new PluginManager(host);
+    manager.register(
+      samplePlugin({
+        activate: (ctx) => {
+          ctx.setThemeToken("--accent", "#123456");
+        },
+      }),
+    );
+    await manager.enable("sample");
+    expect(tokens.get("--accent")).toBe("#123456");
+    manager.disable("sample");
+    expect(tokens.has("--accent")).toBe(false);
   });
 
   it("persists enabled state and re-activates it", async () => {

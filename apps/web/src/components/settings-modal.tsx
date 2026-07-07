@@ -1,23 +1,10 @@
-import type { PluginInfo } from "@notes/plugin-host";
-import { SettingsBody } from "./settings-view";
+import { SettingsBody, type SettingsBodyProps } from "./settings-view";
 
-interface SettingsModalProps {
-  plugins: PluginInfo[];
-  theme: string;
-  onToggle: (id: string, enabled: boolean) => void;
-  openInTab: boolean;
-  onOpenInTabChange: (openInTab: boolean) => void;
+interface SettingsModalProps extends SettingsBodyProps {
   onClose: () => void;
 }
 
-export function SettingsModal({
-  plugins,
-  theme,
-  onToggle,
-  openInTab,
-  onOpenInTabChange,
-  onClose,
-}: SettingsModalProps) {
+export function SettingsModal({ onClose, ...body }: SettingsModalProps) {
   return (
     <div className="modal-overlay" onMouseDown={onClose}>
       <div className="modal" onMouseDown={(event) => event.stopPropagation()}>
@@ -27,13 +14,7 @@ export function SettingsModal({
             ×
           </button>
         </div>
-        <SettingsBody
-          plugins={plugins}
-          theme={theme}
-          onToggle={onToggle}
-          openInTab={openInTab}
-          onOpenInTabChange={onOpenInTabChange}
-        />
+        <SettingsBody {...body} />
       </div>
     </div>
   );

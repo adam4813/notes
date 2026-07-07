@@ -1,6 +1,6 @@
 # Phase 10 — Command Palette, Hotkeys & Theming
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 **Depends on:** 3, 5
 
 ## Goal
@@ -56,4 +56,14 @@ Commit message:
 `feat: command palette, quick switcher, rebindable hotkeys, and theming system`
 
 ## Feedback
-_(none yet)_
+**2025 session (autonomous GATE resolution — user away):**
+- **Hotkeys/palette:** Accepted defaults — `Mod+P` palette, `Mod+O` quick-open, `Mod+N` new note,
+  `Mod+\` split, `Mod+,` settings; palette adds fuzzy search, recents, ↑/↓/Enter nav, and hotkey
+  hints. Rebinding is click-to-capture with conflict detection; overrides persist as data.
+- **Theming scope (decision):** MVP ships accent presets + light/dark/system. A custom color
+  picker and full token/custom-CSS theming are deferred (structure is ready: tokens are CSS
+  variables and plugins can already override them via `ctx.setThemeToken`). Deferred TODO created.
+- **Built-in themes:** Deferred beyond light/dark for MVP; the token seam makes adding named
+  themes cheap later (deferred TODO).
+- No blocking issues; typecheck, lint, 76 unit tests, 14 Playwright specs, and build all pass.
+

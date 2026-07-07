@@ -4,6 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Notes</title>
+    <script>
+      // Set theme + accent before first paint to avoid a flash of the wrong theme.
+      (function () {
+        try {
+          var mode = localStorage.getItem("notes.theme") || "system";
+          var resolved =
+            mode === "system"
+              ? window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light"
+              : mode;
+          document.documentElement.dataset.theme = resolved;
+          var accent = localStorage.getItem("notes.accent");
+          if (accent) {
+            document.documentElement.style.setProperty("--accent", accent);
+          }
+        } catch (error) {
+          /* ignore storage access errors */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

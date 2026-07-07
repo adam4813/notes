@@ -54,8 +54,9 @@ surfaced in Settings with the error.
 | Member | Purpose |
 |--------|---------|
 | `ctx.manifest` | The validated manifest. |
-| `ctx.registerCommand({ id, label, run })` | Adds a command to the command palette. Returns a disposer. |
+| `ctx.registerCommand({ id, label, run, defaultHotkey? })` | Adds a command to the command palette, optionally with a default hotkey (e.g. `"Mod+Shift+W"`). Returns a disposer. |
 | `ctx.addStatusBarItem({ id, mount })` | Adds a status-bar item. `mount(el)` receives a host element and may return a disposer. |
+| `ctx.setThemeToken(name, value)` | Overrides a CSS design token (e.g. `ctx.setThemeToken("--accent", "#f00")`). Returns a disposer that restores the token. |
 | `ctx.document.get()` | The active document `{ path, content, type }` or `null`. |
 | `ctx.document.subscribe(cb)` | Reacts to active-document changes. Returns a disposer. |
 | `ctx.settings.get(key, fallback)` / `set(key, value)` | Per-plugin persisted settings (data). |

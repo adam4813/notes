@@ -4,3 +4,4 @@ export * from "./registry";
 export * from "./command-bus";
 export * from "./note-type-registry";
 export * from "./markdown-note-type";
+export * from "./hotkeys";

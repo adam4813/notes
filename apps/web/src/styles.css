@@ -577,6 +577,111 @@ button {
   margin: 0 0 12px;
 }
 
+.settings-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0;
+}
+
+.settings-label {
+  width: 72px;
+  color: var(--fg-muted);
+  font-size: 13px;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.segmented-btn {
+  background: transparent;
+  border: none;
+  padding: 5px 12px;
+  color: var(--fg);
+}
+
+.segmented-btn--active {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.accent-swatches {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.accent-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+}
+
+.accent-swatch--active {
+  border-color: var(--fg);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+.hotkey-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hotkey-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+
+.hotkey-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hotkey-conflict {
+  font-size: 12px;
+  color: var(--status-offline);
+}
+
+.hotkey-row--conflict .hotkey-combo {
+  border-color: var(--status-offline);
+}
+
+.hotkey-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hotkey-combo {
+  min-width: 96px;
+  font-size: 12px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  color: var(--fg);
+}
+
+.hotkey-combo--capturing {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.hotkey-reset {
+  padding: 2px 6px;
+}
+
 .plugin-list {
   list-style: none;
   margin: 0;
@@ -667,7 +772,10 @@ button {
 }
 
 .palette-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   width: 100%;
   text-align: left;
   background: transparent;
@@ -676,7 +784,24 @@ button {
   padding: 8px 10px;
 }
 
-.palette-item:hover {
+.palette-item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-item-hint {
+  flex: none;
+  font-size: 11px;
+  color: var(--fg-muted);
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.palette-item:hover,
+.palette-item--active {
   background: var(--active);
 }
 
