@@ -6,6 +6,7 @@ export interface AppServices {
   createNote: (dir?: string) => void;
   createTable: (dir?: string) => void;
   createCanvas: (dir?: string) => void;
+  createBoard: (dir?: string) => void;
 }
 
 const noop = () => {};
@@ -15,6 +16,7 @@ const AppServicesContext = createContext<AppServices>({
   createNote: noop,
   createTable: noop,
   createCanvas: noop,
+  createBoard: noop,
 });
 
 export function AppServicesProvider({

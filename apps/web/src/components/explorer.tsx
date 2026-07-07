@@ -195,6 +195,7 @@ export function Explorer() {
         { label: "New note", run: () => services.createNote(dir) },
         { label: "New table", run: () => services.createTable(dir) },
         { label: "New canvas", run: () => services.createCanvas(dir) },
+        { label: "New board", run: () => services.createBoard(dir) },
         { label: "New folder…", run: () => void newFolder(dir) },
         ...(node
           ? [

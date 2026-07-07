@@ -182,7 +182,7 @@ Status legend: ⬜ Not Started · 🔄 In Progress · ✅ Complete
 | 5. Rich Editing UX, Links & Backlinks | [plan/phase-05-editing-ux-links.md](plan/phase-05-editing-ux-links.md) | ✅ Complete | 4, 2 |
 | 6. Table (Lightweight DB) Note Type | [plan/phase-06-table-note.md](plan/phase-06-table-note.md) | ✅ Complete | 3, 1 |
 | 7. Canvas Note Type (JSONCanvas) | [plan/phase-07-canvas-note.md](plan/phase-07-canvas-note.md) | ✅ Complete | 3, 1 |
-| 8. Kanban Board Note Type | [plan/phase-08-board-note.md](plan/phase-08-board-note.md) | ⬜ Not Started | 3, 1 |
+| 8. Kanban Board Note Type | [plan/phase-08-board-note.md](plan/phase-08-board-note.md) | ✅ Complete | 3, 1 |
 | 9. Plugin System Hardening & Loading | [plan/phase-09-plugin-system.md](plan/phase-09-plugin-system.md) | ⬜ Not Started | 6, 7, 8 |
 | 10. Command Palette, Hotkeys & Theming | [plan/phase-10-commands-theming.md](plan/phase-10-commands-theming.md) | ⬜ Not Started | 3, 5 |
 | 11. Search, Tags & Info Panels UI | [plan/phase-11-search-tags-ui.md](plan/phase-11-search-tags-ui.md) | ⬜ Not Started | 2, 3, 5 |
@@ -208,13 +208,15 @@ Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase 
 
 ## 8. Cross-Session Handoff
 
-- **Last session:** 2026-07-06 — **Phases 1–7 complete.** Editor + rich editing + table +
-  **canvas note type** (JSONCanvas: pan/zoom, text/file/link nodes, move/resize/connect/delete).
-  Plus feedback: new-note type dropdown, always-on/editable select cells. 49 unit tests + 7
+- **Last session:** 2026-07-06 — **Phases 1–8 complete.** All four note types done: markdown
+  (rich editor), table, canvas, and **kanban board** (markdown-backed, drag cards). Plus many
+  feedback fixes (split menu, explorer context menu + move/rename/delete, folder creation,
+  friendly naming + discard-on-close, delete bug, canvas linking/viewport). 55 unit tests + 10
   Playwright specs + build all green.
-- **Current state:** Markdown, table, and canvas note types all work end-to-end via one
-  `NoteEditor` host. Note types registered on the server registry. Canvas gate questions recorded.
-- **Next action:** **Phase 8 — Kanban Board note type** (markdown-backed), then Phase 9 (plugins).
+- **Current state:** Full note-type suite works end-to-end; all registered as note-type
+  providers. Explorer supports rename/delete/move/new folder.
+- **Next action:** **Phase 9 — Plugin System Hardening & Loading** (formalize the extension API,
+  load local plugins), then 10 (palette/hotkeys/theming), 11 (search/tags UI), 12 (polish).
 - **Conventions:** `.github/copilot-instructions.md` is finalized in Phase 0; treat it as the
   binding style/architecture reference for all later phases.
 

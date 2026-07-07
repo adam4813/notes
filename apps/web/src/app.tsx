@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { emptyCanvas } from "@notes/note-canvas";
+import { emptyBoard } from "@notes/note-boards";
 import { emptyTableMarkdown } from "@notes/note-tables";
 import { api, type FileEntry } from "./api/client";
 import { connectTomeChanges } from "./api/ws";
@@ -72,6 +73,10 @@ export function App() {
     (dir?: string) => createOfType("New Canvas", ".canvas", () => emptyCanvas(), dir),
     [createOfType],
   );
+  const createBoard = useCallback(
+    (dir?: string) => createOfType("New Board", ".md", () => emptyBoard(), dir),
+    [createOfType],
+  );
 
   const markModified = useCallback((path: string) => {
     provisionalRef.current.delete(path);
@@ -136,9 +141,10 @@ export function App() {
       { id: "new-note", label: "New note", run: () => createNote() },
       { id: "new-table", label: "New table", run: () => createTable() },
       { id: "new-canvas", label: "New canvas", run: () => createCanvas() },
+      { id: "new-board", label: "New board", run: () => createBoard() },
       { id: "reindex", label: "Rebuild search index", run: () => void api.reindex() },
     ],
-    [dispatch, createNote, createTable, createCanvas, state.activePaneId],
+    [dispatch, createNote, createTable, createCanvas, createBoard, state.activePaneId],
   );
 
   const newActions = useMemo(
@@ -146,13 +152,14 @@ export function App() {
       { id: "note", label: "Markdown note", run: () => createNote() },
       { id: "table", label: "Table", run: () => createTable() },
       { id: "canvas", label: "Canvas", run: () => createCanvas() },
+      { id: "board", label: "Board", run: () => createBoard() },
     ],
-    [createNote, createTable, createCanvas],
+    [createNote, createTable, createCanvas, createBoard],
   );
 
   const services = useMemo(
-    () => ({ markModified, createNote, createTable, createCanvas }),
-    [markModified, createNote, createTable, createCanvas],
+    () => ({ markModified, createNote, createTable, createCanvas, createBoard }),
+    [markModified, createNote, createTable, createCanvas, createBoard],
   );
 
   return (

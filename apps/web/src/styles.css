@@ -1073,6 +1073,152 @@ tr:hover .grid-row-delete {
   outline-offset: -2px;
 }
 
+/* Kanban board note */
+.board-note {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.board-scroll {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  height: 100%;
+  overflow-x: auto;
+  padding: 12px;
+}
+
+.board-column {
+  flex: 0 0 260px;
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.board-column-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 8px;
+}
+
+.board-column-name {
+  font-weight: 600;
+  cursor: text;
+}
+
+.board-column-count {
+  color: var(--fg-muted);
+  font-size: 12px;
+}
+
+.board-column-del {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  border-radius: 4px;
+  padding: 0 6px;
+}
+
+.board-column-del:hover {
+  color: var(--status-offline);
+  background: var(--hover);
+}
+
+.board-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  min-height: 8px;
+}
+
+.board-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  cursor: grab;
+}
+
+.board-card--done .board-card-text {
+  text-decoration: line-through;
+  color: var(--fg-muted);
+}
+
+.board-card-text {
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.board-card-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  outline: none;
+}
+
+.board-card-del {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  opacity: 0;
+  border-radius: 4px;
+}
+
+.board-card:hover .board-card-del {
+  opacity: 1;
+}
+
+.board-card-del:hover {
+  color: var(--status-offline);
+}
+
+.board-add-card,
+.board-add-input {
+  margin-top: 6px;
+  width: 100%;
+  text-align: left;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--fg-muted);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.board-add-input {
+  border-style: solid;
+  color: var(--fg);
+  outline: none;
+}
+
+.board-add-column {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--fg-muted);
+  padding: 8px 14px;
+}
+
+.board-add-column:hover {
+  color: var(--fg);
+  background: var(--hover);
+}
+
 /* Canvas note */
 .canvas-note {
   display: flex;

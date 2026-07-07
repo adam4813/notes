@@ -1,7 +1,22 @@
 # Phase 8 — Kanban Board Note Type
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 **Depends on:** 3, 1
+
+## Feedback
+
+**2026-07-06 — Implemented & verified.** `@notes/note-boards`: markdown-backed board
+(`type: board` frontmatter; `##` columns; `- [ ]`/`- [x]` cards). `BoardView` — columns with
+cards, add card (inline), toggle done, edit (double-click), delete card, **drag cards between
+columns**, add/rename/delete column. Registered as a `NoteTypeProvider`; **New board** in the
+type dropdown, palette, and explorer menu; routed through `NoteEditor` (autosave).
+
+Verified: `typecheck`, `lint`, `test` (55; +3 format round-trip), `build`, **Playwright**
+(create board → add card → persists). _Also fixed a CSS regression that briefly broke canvas
+layout._
+
+**Deferred (`deferred-board-advanced`):** card↔note links, due dates/labels, archive, and
+reorder within a column.
 
 ## Goal
 

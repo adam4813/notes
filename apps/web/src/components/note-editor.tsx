@@ -1,5 +1,6 @@
 import { MarkdownEditor, EDITOR_MODES, type EditorCallbacks, type EditorMode } from "@notes/editor";
 import { CanvasView } from "@notes/note-canvas";
+import { BoardView } from "@notes/note-boards";
 import { TableGrid } from "@notes/note-tables";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/client";
@@ -142,13 +143,17 @@ export function NoteEditor({ path }: { path: string }) {
   }
 
   const isCanvas = path.toLowerCase().endsWith(".canvas");
-  const isTable = !isCanvas && getFrontmatterType(content) === "table";
+  const frontType = isCanvas ? undefined : getFrontmatterType(content);
+  const isBoard = frontType === "board";
+  const isTable = frontType === "table";
 
   return (
     <div className="note-editor">
       <div className="editor-toolbar-row">
         {isCanvas ? (
           <span className="note-type-badge">Canvas</span>
+        ) : isBoard ? (
+          <span className="note-type-badge">Board</span>
         ) : isTable ? (
           <span className="note-type-badge">Table</span>
         ) : (
@@ -176,6 +181,8 @@ export function NoteEditor({ path }: { path: string }) {
           onChange={handleChange}
           onOpenFile={(target) => dispatch({ type: "openFile", path: target, title: basename(target) })}
         />
+      ) : isBoard ? (
+        <BoardView value={content} onChange={handleChange} />
       ) : isTable ? (
         <TableGrid value={content} onChange={handleChange} />
       ) : (
