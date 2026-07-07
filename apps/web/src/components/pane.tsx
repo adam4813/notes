@@ -18,7 +18,17 @@ export function Pane({ pane }: { pane: PaneModel }) {
         {activeTab ? (
           <ViewHost path={activeTab.path} />
         ) : (
-          <div className="pane-empty">Select a note to open it here.</div>
+          <div className="pane-empty">
+            <span>Select a note to open it here.</span>
+            {state.panes.length > 1 && (
+              <button
+                className="btn-ghost pane-close"
+                onClick={() => dispatch({ type: "closePane", paneId: pane.id })}
+              >
+                Close split
+              </button>
+            )}
+          </div>
         )}
       </div>
     </section>

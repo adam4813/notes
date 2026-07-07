@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useAppServices } from "../state/app-services";
 import { useWorkspace } from "../state/app-context";
-import type { Pane, WorkspaceAction } from "../state/types";
+import type { Pane, Tab, WorkspaceAction } from "../state/types";
 
 interface SplitMenuItem {
   label: string;
@@ -10,6 +11,11 @@ interface SplitMenuItem {
 function buildSplitMenu(pane: Pane, paneCount: number): SplitMenuItem[] {
   const hasActiveTab = pane.tabs.some((tab) => tab.id === pane.activeTabId);
   const items: SplitMenuItem[] = [];
+
+  // Splitting an empty pane just produces two empty panes with no way out.
+  if (pane.tabs.length === 0) {
+    return items;
+  }
 
   if (paneCount < 2) {
     items.push({
@@ -34,7 +40,9 @@ function buildSplitMenu(pane: Pane, paneCount: number): SplitMenuItem[] {
 
 export function TabBar({ pane }: { pane: Pane }) {
   const { state, dispatch } = useWorkspace();
+  const services = useAppServices();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [tabMenu, setTabMenu] = useState<{ x: number; y: number; tab: Tab } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,9 +67,42 @@ export function TabBar({ pane }: { pane: Pane }) {
     };
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (!tabMenu) {
+      return;
+    }
+    const close = () => setTabMenu(null);
+    const onKey = (event: KeyboardEvent) => event.key === "Escape" && setTabMenu(null);
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [tabMenu]);
+
   const close = (event: MouseEvent, tabId: string) => {
     event.stopPropagation();
     dispatch({ type: "closeTab", paneId: pane.id, tabId });
+  };
+
+  const openTabMenu = (event: MouseEvent, tab: Tab) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setTabMenu({ x: event.clientX, y: event.clientY, tab });
+  };
+
+  const tabMenuItems = (tab: Tab): { label: string; run: () => void; danger?: boolean }[] => {
+    const items: { label: string; run: () => void; danger?: boolean }[] = [
+      { label: "Close", run: () => dispatch({ type: "closeTab", paneId: pane.id, tabId: tab.id }) },
+    ];
+    if (!tab.path.startsWith("notes://")) {
+      items.push(
+        { label: "Rename…", run: () => void services.renamePath(tab.path) },
+        { label: "Delete", run: () => void services.deletePath(tab.path), danger: true },
+      );
+    }
+    return items;
   };
 
   const items = buildSplitMenu(pane, state.panes.length);
@@ -74,6 +115,7 @@ export function TabBar({ pane }: { pane: Pane }) {
             key={tab.id}
             className={`tab ${tab.id === pane.activeTabId ? "tab--active" : ""}`}
             onClick={() => dispatch({ type: "activateTab", paneId: pane.id, tabId: tab.id })}
+            onContextMenu={(event) => openTabMenu(event, tab)}
           >
             <span className="tab-title">{tab.title}</span>
             <button className="tab-close" title="Close" onClick={(event) => close(event, tab.id)}>
@@ -113,6 +155,29 @@ export function TabBar({ pane }: { pane: Pane }) {
           </div>
         )}
       </div>
+
+      {tabMenu && (
+        <div
+          className="context-menu"
+          role="menu"
+          style={{ left: tabMenu.x, top: tabMenu.y }}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          {tabMenuItems(tabMenu.tab).map((item) => (
+            <button
+              key={item.label}
+              role="menuitem"
+              className={`context-item ${item.danger ? "context-item--danger" : ""}`}
+              onClick={() => {
+                item.run();
+                setTabMenu(null);
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

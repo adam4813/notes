@@ -71,6 +71,23 @@ describe("workspaceReducer", () => {
     expect(state.panes[0].tabs.map((tab) => tab.path).sort()).toEqual(["a.md", "b.md"]);
   });
 
+  it("closes an empty split pane and keeps at least one pane", () => {
+    let state = workspaceReducer(initial(), { type: "openFile", path: "a.md", title: "a" });
+    const paneId = state.panes[0].id;
+    state = workspaceReducer(state, { type: "splitPane", paneId, mode: "duplicate" });
+    expect(state.panes).toHaveLength(2);
+
+    // Closing one pane leaves the other.
+    const target = state.panes[1].id;
+    state = workspaceReducer(state, { type: "closePane", paneId: target });
+    expect(state.panes).toHaveLength(1);
+    expect(state.activePaneId).toBe(state.panes[0].id);
+
+    // Closing the last remaining pane is a no-op.
+    state = workspaceReducer(state, { type: "closePane", paneId: state.panes[0].id });
+    expect(state.panes).toHaveLength(1);
+  });
+
   it("changes the theme", () => {
     const state = workspaceReducer(initial(), { type: "setTheme", theme: "dark" });
     expect(state.theme).toBe("dark");

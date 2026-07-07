@@ -113,13 +113,59 @@ export function App() {
     provisionalRef.current.delete(path);
   }, []);
 
+  const renamePath = useCallback(
+    async (path: string) => {
+      const name = path.split("/").pop() ?? path;
+      const input = window.prompt("Rename note", name);
+      if (!input || input === name) {
+        return;
+      }
+      const dir = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
+      const to = dir ? `${dir}/${input}` : input;
+      markModified(path);
+      await api.rename(path, to);
+      dispatch({ type: "renamePath", from: path, to, title: baseNoExt(to) });
+      await refreshTree();
+    },
+    [dispatch, refreshTree, markModified],
+  );
+
+  const deletePath = useCallback(
+    async (path: string) => {
+      const name = path.split("/").pop() ?? path;
+      if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) {
+        return;
+      }
+      markModified(path);
+      await api.remove(path);
+      dispatch({ type: "closePath", path });
+      await refreshTree();
+    },
+    [dispatch, refreshTree, markModified],
+  );
+
   const openSettings = useCallback(() => {
-    if (openSettingsInTab) {
-      dispatch({ type: "openFile", path: SETTINGS_TAB_PATH, title: "Settings" });
-    } else {
-      setSettingsOpen(true);
+    if (!openSettingsInTab) {
+      setSettingsOpen((open) => !open);
+      return;
     }
-  }, [openSettingsInTab, dispatch]);
+    // Tab mode: focus the settings tab, or close it if it's already focused.
+    for (const pane of state.panes) {
+      const tab = pane.tabs.find((candidate) => candidate.path === SETTINGS_TAB_PATH);
+      if (!tab) {
+        continue;
+      }
+      const focused = state.activePaneId === pane.id && pane.activeTabId === tab.id;
+      if (focused) {
+        dispatch({ type: "closeTab", paneId: pane.id, tabId: tab.id });
+      } else {
+        dispatch({ type: "focusPane", paneId: pane.id });
+        dispatch({ type: "activateTab", paneId: pane.id, tabId: tab.id });
+      }
+      return;
+    }
+    dispatch({ type: "openFile", path: SETTINGS_TAB_PATH, title: "Settings" });
+  }, [openSettingsInTab, state.panes, state.activePaneId, dispatch]);
 
   // Persist the preference and convert the currently-open surface live.
   const setOpenSettingsInTab = useCallback(
@@ -300,6 +346,8 @@ export function App() {
   const services = useMemo(
     () => ({
       markModified,
+      renamePath,
+      deletePath,
       createNote,
       createTable,
       createCanvas,
@@ -310,6 +358,8 @@ export function App() {
     }),
     [
       markModified,
+      renamePath,
+      deletePath,
       createNote,
       createTable,
       createCanvas,

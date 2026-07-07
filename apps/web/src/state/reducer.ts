@@ -135,6 +135,17 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       return { ...state, panes, activePaneId: newPane.id };
     }
 
+    case "closePane": {
+      if (state.panes.length <= 1) {
+        return state;
+      }
+      const panes = state.panes.filter((pane) => pane.id !== action.paneId);
+      const activePaneId = panes.some((pane) => pane.id === state.activePaneId)
+        ? state.activePaneId
+        : panes[0].id;
+      return { ...state, panes, activePaneId };
+    }
+
     case "moveTabToOpposite": {
       if (state.panes.length < 2) {
         return state;
