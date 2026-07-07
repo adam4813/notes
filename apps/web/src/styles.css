@@ -1032,3 +1032,173 @@ tr:hover .grid-row-delete {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
+
+/* Canvas note */
+.canvas-note {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.canvas-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.canvas-meta {
+  margin-left: auto;
+  color: var(--fg-muted);
+  font-size: 12px;
+}
+
+.canvas-viewport {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--border) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.canvas-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.canvas-edges {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.canvas-edge {
+  stroke: var(--fg-muted);
+  stroke-width: 2;
+  fill: none;
+}
+
+.canvas-edge--selected {
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
+.canvas-edge--preview {
+  stroke: var(--accent);
+  stroke-dasharray: 5 4;
+}
+
+.canvas-edge-hit {
+  stroke: transparent;
+  stroke-width: 14;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+.canvas-node {
+  position: absolute;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  cursor: grab;
+  display: flex;
+}
+
+.canvas-node--selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+.canvas-text {
+  padding: 8px 10px;
+  white-space: pre-wrap;
+  overflow: auto;
+  width: 100%;
+}
+
+.canvas-text-input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  resize: none;
+  padding: 8px 10px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  outline: none;
+}
+
+.canvas-file,
+.canvas-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.canvas-file-name,
+.canvas-link a {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fg);
+}
+
+.canvas-link a {
+  color: var(--accent);
+}
+
+.canvas-open {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.canvas-connect {
+  position: absolute;
+  right: -6px;
+  top: calc(50% - 6px);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  cursor: crosshair;
+}
+
+.canvas-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, var(--fg-muted) 50%);
+}
+
+.canvas-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--fg-muted);
+  pointer-events: none;
+}

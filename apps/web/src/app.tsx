@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { emptyCanvas } from "@notes/note-canvas";
 import { emptyTableMarkdown } from "@notes/note-tables";
 import { api } from "./api/client";
 import { connectTomeChanges } from "./api/ws";
@@ -35,6 +36,13 @@ export function App() {
     await api.create(name, emptyTableMarkdown());
     await refreshTree();
     dispatch({ type: "openFile", path: name, title: name.replace(/\.md$/, "") });
+  }, [dispatch, refreshTree]);
+
+  const createCanvas = useCallback(async () => {
+    const name = `canvas-${Date.now()}.canvas`;
+    await api.create(name, emptyCanvas());
+    await refreshTree();
+    dispatch({ type: "openFile", path: name, title: name.replace(/\.canvas$/, "") });
   }, [dispatch, refreshTree]);
 
   useEffect(() => {
@@ -77,17 +85,19 @@ export function App() {
       { id: "split-pane", label: "Split editor pane", run: () => dispatch({ type: "splitPane", paneId: state.activePaneId, mode: "duplicate" }) },
       { id: "new-note", label: "New note", run: () => void createNote() },
       { id: "new-table", label: "New table", run: () => void createTable() },
+      { id: "new-canvas", label: "New canvas", run: () => void createCanvas() },
       { id: "reindex", label: "Rebuild search index", run: () => void api.reindex() },
     ],
-    [dispatch, createNote, createTable, state.activePaneId],
+    [dispatch, createNote, createTable, createCanvas, state.activePaneId],
   );
 
   const newActions = useMemo(
     () => [
       { id: "note", label: "Markdown note", run: () => void createNote() },
       { id: "table", label: "Table", run: () => void createTable() },
+      { id: "canvas", label: "Canvas", run: () => void createCanvas() },
     ],
-    [createNote, createTable],
+    [createNote, createTable, createCanvas],
   );
 
   return (

@@ -181,7 +181,7 @@ Status legend: ⬜ Not Started · 🔄 In Progress · ✅ Complete
 | 4. Markdown Editor — Modes & Round-trip | [plan/phase-04-editor-core.md](plan/phase-04-editor-core.md) | ✅ Complete | 3 |
 | 5. Rich Editing UX, Links & Backlinks | [plan/phase-05-editing-ux-links.md](plan/phase-05-editing-ux-links.md) | ✅ Complete | 4, 2 |
 | 6. Table (Lightweight DB) Note Type | [plan/phase-06-table-note.md](plan/phase-06-table-note.md) | ✅ Complete | 3, 1 |
-| 7. Canvas Note Type (JSONCanvas) | [plan/phase-07-canvas-note.md](plan/phase-07-canvas-note.md) | ⬜ Not Started | 3, 1 |
+| 7. Canvas Note Type (JSONCanvas) | [plan/phase-07-canvas-note.md](plan/phase-07-canvas-note.md) | ✅ Complete | 3, 1 |
 | 8. Kanban Board Note Type | [plan/phase-08-board-note.md](plan/phase-08-board-note.md) | ⬜ Not Started | 3, 1 |
 | 9. Plugin System Hardening & Loading | [plan/phase-09-plugin-system.md](plan/phase-09-plugin-system.md) | ⬜ Not Started | 6, 7, 8 |
 | 10. Command Palette, Hotkeys & Theming | [plan/phase-10-commands-theming.md](plan/phase-10-commands-theming.md) | ⬜ Not Started | 3, 5 |
@@ -208,13 +208,13 @@ Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase 
 
 ## 8. Cross-Session Handoff
 
-- **Last session:** 2026-07-06 — **Phases 1–6 complete.** Editor + rich editing + the **table
-  (lightweight-database) note type**: Excel-like grid (typed cells, add/del/rename/type/sort,
-  copy/paste), stored as `type: table` frontmatter schema + embedded CSV; registered as a
-  note-type provider. 46 unit tests + 6 Playwright specs + build all green.
-- **Current state:** Markdown + table note types work end-to-end. Table gate validation questions
-  recorded (grid feel, storage format, column types).
-- **Next action:** **Phase 7 — Canvas Note Type (JSONCanvas)**, then **Phase 8 — Kanban Board**.
+- **Last session:** 2026-07-06 — **Phases 1–7 complete.** Editor + rich editing + table +
+  **canvas note type** (JSONCanvas: pan/zoom, text/file/link nodes, move/resize/connect/delete).
+  Plus feedback: new-note type dropdown, always-on/editable select cells. 49 unit tests + 7
+  Playwright specs + build all green.
+- **Current state:** Markdown, table, and canvas note types all work end-to-end via one
+  `NoteEditor` host. Note types registered on the server registry. Canvas gate questions recorded.
+- **Next action:** **Phase 8 — Kanban Board note type** (markdown-backed), then Phase 9 (plugins).
 - **Conventions:** `.github/copilot-instructions.md` is finalized in Phase 0; treat it as the
   binding style/architecture reference for all later phases.
 

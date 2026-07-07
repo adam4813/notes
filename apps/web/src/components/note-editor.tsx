@@ -1,9 +1,14 @@
 import { MarkdownEditor, EDITOR_MODES, type EditorCallbacks, type EditorMode } from "@notes/editor";
+import { CanvasView } from "@notes/note-canvas";
 import { TableGrid } from "@notes/note-tables";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/client";
 import { connectTomeChanges } from "../api/ws";
 import { useWorkspace } from "../state/app-context";
+
+function basename(path: string): string {
+  return (path.split("/").pop() ?? path).replace(/\.[^.]+$/, "");
+}
 
 function getFrontmatterType(content: string): string | undefined {
   const block = /^---\n([\s\S]*?)\n---/.exec(content);
@@ -133,12 +138,15 @@ export function NoteEditor({ path }: { path: string }) {
     return <div className="note-loading">Loading…</div>;
   }
 
-  const isTable = getFrontmatterType(content) === "table";
+  const isCanvas = path.toLowerCase().endsWith(".canvas");
+  const isTable = !isCanvas && getFrontmatterType(content) === "table";
 
   return (
     <div className="note-editor">
       <div className="editor-toolbar-row">
-        {isTable ? (
+        {isCanvas ? (
+          <span className="note-type-badge">Canvas</span>
+        ) : isTable ? (
           <span className="note-type-badge">Table</span>
         ) : (
           <div className="mode-switch" role="tablist">
@@ -157,7 +165,13 @@ export function NoteEditor({ path }: { path: string }) {
         )}
         <span className={`save-status save-status--${saveState}`}>{SAVE_LABEL[saveState]}</span>
       </div>
-      {isTable ? (
+      {isCanvas ? (
+        <CanvasView
+          value={content}
+          onChange={handleChange}
+          onOpenFile={(target) => dispatch({ type: "openFile", path: target, title: basename(target) })}
+        />
+      ) : isTable ? (
         <TableGrid value={content} onChange={handleChange} />
       ) : (
         <MarkdownEditor value={content} mode={mode} onChange={handleChange} callbacks={callbacks} />

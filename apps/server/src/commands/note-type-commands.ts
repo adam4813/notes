@@ -1,4 +1,5 @@
 import { markdownNoteType, NoteTypeRegistry, type CommandBus } from "@notes/core";
+import { canvasNoteType } from "@notes/note-canvas";
 import { tableNoteType } from "@notes/note-tables";
 import type { Tome } from "@notes/tome";
 
@@ -19,6 +20,7 @@ export function registerNoteTypeCommands(bus: CommandBus, getTome: () => Tome): 
   const registry = new NoteTypeRegistry();
   registry.register(markdownNoteType, { fallback: true });
   registry.register(tableNoteType);
+  registry.register(canvasNoteType);
 
   bus.register<{ path: string }, { type: string | null }>({
     name: "note.detectType",

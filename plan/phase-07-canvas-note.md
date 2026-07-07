@@ -1,6 +1,6 @@
 # Phase 7 — Canvas Note Type (JSONCanvas)
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 **Depends on:** 3, 1
 
 ## Goal
@@ -60,4 +60,25 @@ Commit message:
 `feat: canvas note type with jsoncanvas format (first-party plugin)`
 
 ## Feedback
-_(none yet)_
+
+**2026-07-06 — Implemented & verified.** `@notes/note-canvas`:
+- **Format:** JSONCanvas (`.canvas`) parse/serialize (nodes text/file/link/group + edges),
+  round-trip stable; registered as a `NoteTypeProvider` on the server.
+- **Surface:** custom infinite canvas — pan (drag background), zoom (wheel, cursor-anchored),
+  dotted grid, world transform, selection, reset-view.
+- **Nodes:** create Text/Note/Link from the toolbar; **drag to move**, corner **resize**, edit
+  text inline, delete; file nodes open the referenced note; link nodes open the URL.
+- **Edges:** drag from a node's connect handle to another node; arrowheads; select + delete.
+- **Web:** `NoteEditor` now hosts markdown/table/**canvas**; **New canvas** in the type dropdown
+  and command palette; autosave shared.
+
+Verified: `typecheck`, `lint`, `test` (49; +3 format), `build`, and **Playwright** (create
+canvas → add text node → persists as JSONCanvas).
+
+### GATE — validation questions
+1. Is JSONCanvas fidelity enough (strict Obsidian interop) or should we extend it?
+2. Custom canvas vs a library (React Flow) — happy with the custom one?
+3. Should note-embed nodes render the note inline (vs the current name + open button)?
+
+**Deferred (`deferred-canvas-advanced`):** group nodes, edge labels + side anchors, live
+note-embed preview, and viewport persistence.
