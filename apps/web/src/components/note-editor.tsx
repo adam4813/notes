@@ -39,7 +39,7 @@ const SAVE_LABEL: Record<SaveState, string> = {
 
 export function NoteEditor({ path }: { path: string }) {
   const { dispatch } = useWorkspace();
-  const { markModified } = useAppServices();
+  const { markModified, setActiveDocument } = useAppServices();
   const [content, setContent] = useState("");
   const [mode, setMode] = useState<EditorMode>("rendered");
   const [saveState, setSaveState] = useState<SaveState>("loading");
@@ -137,6 +137,18 @@ export function NoteEditor({ path }: { path: string }) {
     }),
     [dispatch],
   );
+
+  // Publish the active document to plugins (word count, etc.).
+  useEffect(() => {
+    if (saveState === "loading") {
+      return;
+    }
+    const type = path.toLowerCase().endsWith(".canvas")
+      ? "canvas"
+      : getFrontmatterType(content) ?? "markdown";
+    setActiveDocument({ path, content, type });
+    return () => setActiveDocument(null);
+  }, [path, content, saveState, setActiveDocument]);
 
   if (saveState === "loading") {
     return <div className="note-loading">Loading…</div>;

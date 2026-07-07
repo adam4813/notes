@@ -1,1 +1,4 @@
-export const PACKAGE_NAME = "@notes/plugin-host";
+export * from "./manifest";
+export * from "./context";
+export * from "./signal";
+export * from "./plugin-manager";

@@ -7,11 +7,13 @@ import { connectTomeChanges } from "./api/ws";
 import { Palette, type PaletteCommand } from "./components/palette";
 import { RightPanel } from "./components/right-panel";
 import { Ribbon } from "./components/ribbon";
+import { SettingsModal } from "./components/settings-modal";
 import { Sidebar } from "./components/sidebar";
 import { StatusBar } from "./components/status-bar";
 import { Workspace } from "./components/workspace";
 import { AppServicesProvider } from "./state/app-services";
 import { useWorkspace } from "./state/app-context";
+import { usePlugins } from "./state/use-plugins";
 import { flattenFiles } from "./state/selectors";
 import { applyTheme } from "./theme/theme";
 
@@ -38,6 +40,8 @@ function nextName(dir: string, base: string, ext: string, tree: FileEntry[]): st
 export function App() {
   const { state, dispatch } = useWorkspace();
   const [paletteMode, setPaletteMode] = useState<PaletteMode>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const plugins = usePlugins();
   const treeRef = useRef(state.tree);
   treeRef.current = state.tree;
   // Paths of freshly-created notes not yet modified/named (discarded on close).
@@ -143,8 +147,14 @@ export function App() {
       { id: "new-canvas", label: "New canvas", run: () => createCanvas() },
       { id: "new-board", label: "New board", run: () => createBoard() },
       { id: "reindex", label: "Rebuild search index", run: () => void api.reindex() },
+      { id: "open-settings", label: "Open settings", run: () => setSettingsOpen(true) },
+      ...plugins.pluginCommands.map((command) => ({
+        id: command.id,
+        label: command.label,
+        run: command.run,
+      })),
     ],
-    [dispatch, createNote, createTable, createCanvas, createBoard, state.activePaneId],
+    [dispatch, createNote, createTable, createCanvas, createBoard, plugins.pluginCommands, state.activePaneId],
   );
 
   const newActions = useMemo(
@@ -158,8 +168,16 @@ export function App() {
   );
 
   const services = useMemo(
-    () => ({ markModified, createNote, createTable, createCanvas, createBoard }),
-    [markModified, createNote, createTable, createCanvas, createBoard],
+    () => ({
+      markModified,
+      createNote,
+      createTable,
+      createCanvas,
+      createBoard,
+      setActiveDocument: (doc: { path: string; content: string; type: string } | null) =>
+        plugins.documentSignal.set(doc),
+    }),
+    [markModified, createNote, createTable, createCanvas, createBoard, plugins.documentSignal],
   );
 
   return (
@@ -169,13 +187,14 @@ export function App() {
           onNewNote={() => createNote()}
           onCommand={() => setPaletteMode("commands")}
           onQuickOpen={() => setPaletteMode("files")}
+          onSettings={() => setSettingsOpen(true)}
         />
         <div className="shell-body">
           <Sidebar newActions={newActions} />
           <Workspace />
           <RightPanel />
         </div>
-        <StatusBar />
+        <StatusBar pluginItems={plugins.statusItems} />
         {paletteMode && (
           <Palette
             mode={paletteMode}
@@ -183,6 +202,14 @@ export function App() {
             commands={commands}
             onOpenFile={(path, title) => dispatch({ type: "openFile", path, title })}
             onClose={() => setPaletteMode(null)}
+          />
+        )}
+        {settingsOpen && (
+          <SettingsModal
+            plugins={plugins.list}
+            theme={state.theme}
+            onToggle={plugins.toggle}
+            onClose={() => setSettingsOpen(false)}
           />
         )}
       </div>

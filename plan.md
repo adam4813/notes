@@ -196,7 +196,7 @@ Status legend: ⬜ Not Started · 🔄 In Progress · ✅ Complete
 | 6. Table (Lightweight DB) Note Type | [plan/phase-06-table-note.md](plan/phase-06-table-note.md) | ✅ Complete | 3, 1 |
 | 7. Canvas Note Type (JSONCanvas) | [plan/phase-07-canvas-note.md](plan/phase-07-canvas-note.md) | ✅ Complete | 3, 1 |
 | 8. Kanban Board Note Type | [plan/phase-08-board-note.md](plan/phase-08-board-note.md) | ✅ Complete | 3, 1 |
-| 9. Plugin System Hardening & Loading | [plan/phase-09-plugin-system.md](plan/phase-09-plugin-system.md) | ⬜ Not Started | 6, 7, 8 |
+| 9. Plugin System Hardening & Loading | [plan/phase-09-plugin-system.md](plan/phase-09-plugin-system.md) | ✅ Complete | 6, 7, 8 |
 | 10. Command Palette, Hotkeys & Theming | [plan/phase-10-commands-theming.md](plan/phase-10-commands-theming.md) | ⬜ Not Started | 3, 5 |
 | 11. Search, Tags & Info Panels UI | [plan/phase-11-search-tags-ui.md](plan/phase-11-search-tags-ui.md) | ⬜ Not Started | 2, 3, 5 |
 | 12. MVP Polish, Performance & Hardening | [plan/phase-12-polish.md](plan/phase-12-polish.md) | ⬜ Not Started | 4–11 |
@@ -221,15 +221,19 @@ Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase 
 
 ## 8. Cross-Session Handoff
 
-- **Last session:** 2026-07-06 — **Phases 1–8 complete.** All four note types done: markdown
-  (rich editor), table, canvas, and **kanban board** (markdown-backed, drag cards). Plus many
-  feedback fixes (split menu, explorer context menu + move/rename/delete, folder creation,
-  friendly naming + discard-on-close, delete bug, canvas linking/viewport). 55 unit tests + 10
-  Playwright specs + build all green.
-- **Current state:** Full note-type suite works end-to-end; all registered as note-type
-  providers. Explorer supports rename/delete/move/new folder.
-- **Next action:** **Phase 9 — Plugin System Hardening & Loading** (formalize the extension API,
-  load local plugins), then 10 (palette/hotkeys/theming), 11 (search/tags UI), 12 (polish).
+- **Last session:** 2026-07-07 — **Phase 9 (Plugin System) complete.** `@notes/plugin-host`
+  (zod manifest, `PluginContext` API: commands + status-bar + active-document signal +
+  per-plugin settings, `PluginManager` with disposer tracking/error capture/persisted enabled
+  set), Settings modal (⚙) for enable/disable, sample Word Count plugin (public-API only),
+  `docs/plugins.md`. GATE resolved autonomously (user away): API sufficient for MVP; trusted
+  in-process loading accepted (sandboxing deferred); global installs + per-Tome enable/disable
+  is the future model (deferred TODO `deferred-plugin-per-tome`). 60 unit tests + 11 Playwright
+  specs + build all green.
+- **Current state:** Full note-type suite + extensible plugin system, all registered through the
+  same extension seam. Explorer supports rename/delete/move/new folder.
+- **Next action:** **Phase 10 — Command Palette, Hotkeys & Theming** polish, then 11 (search/tags
+  UI), 12 (MVP polish). Post-MVP backlog: calendar note, grid note, embeddable note types,
+  per-Tome plugin loader, folder drag/move.
 - **Conventions:** `.github/copilot-instructions.md` is finalized in Phase 0; treat it as the
   binding style/architecture reference for all later phases.
 

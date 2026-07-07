@@ -17,9 +17,10 @@ interface RibbonProps {
   onNewNote: () => void;
   onCommand: () => void;
   onQuickOpen: () => void;
+  onSettings: () => void;
 }
 
-export function Ribbon({ onNewNote, onCommand, onQuickOpen }: RibbonProps) {
+export function Ribbon({ onNewNote, onCommand, onQuickOpen, onSettings }: RibbonProps) {
   const { state, dispatch } = useWorkspace();
   return (
     <header className="ribbon">
@@ -33,6 +34,9 @@ export function Ribbon({ onNewNote, onCommand, onQuickOpen }: RibbonProps) {
         </button>
         <button className="btn-ghost" title="Command palette (Ctrl/Cmd+P)" onClick={onCommand}>
           ⌘
+        </button>
+        <button className="btn-ghost" title="Settings" aria-label="Settings" onClick={onSettings}>
+          ⚙
         </button>
         <button
           className="btn-ghost"

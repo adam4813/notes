@@ -7,6 +7,8 @@ export interface AppServices {
   createTable: (dir?: string) => void;
   createCanvas: (dir?: string) => void;
   createBoard: (dir?: string) => void;
+  /** Publishes the active document to plugins (status bar, etc.). */
+  setActiveDocument: (doc: { path: string; content: string; type: string } | null) => void;
 }
 
 const noop = () => {};
@@ -17,6 +19,7 @@ const AppServicesContext = createContext<AppServices>({
   createTable: noop,
   createCanvas: noop,
   createBoard: noop,
+  setActiveDocument: noop,
 });
 
 export function AppServicesProvider({

@@ -1,6 +1,6 @@
 # Phase 9 — Plugin System Hardening & Loading
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 **Depends on:** 6, 7, 8
 
 ## Goal
@@ -68,4 +68,17 @@ Commit message:
 `feat: plugin manifest, local loader, settings UI, and author docs`
 
 ## Feedback
-_(none yet)_
+**2025 session (autonomous GATE resolution — user away):**
+- **API surface:** Accepted as sufficient for MVP — commands, status-bar items, active-document
+  signal, and per-plugin settings cover the current first-party needs and the sample plugin.
+  Additional extension points (editor decorations, ribbon items, view providers) can be added
+  incrementally through the same `PluginContext` without breaking changes.
+- **Trusted loading:** Accepted for MVP. Plugins run in-process/trusted; sandboxing and a
+  third-party marketplace are deferred to post-MVP. The manifest already declares `permissions`
+  and `entry.server` so a capability model + server half can be layered on later.
+- **Location/enablement (decision):** Global installs with per-Tome enable/disable is the
+  intended future model. For MVP, plugins are bundled locally (`apps/web/src/plugins/`) and the
+  enabled set is persisted in `localStorage`. Deferred TODO created to move the enabled set into
+  Tome-local settings data and add a `.notes/plugins/` loader.
+- No blocking issues; typecheck, lint, 60 unit tests, and 11 Playwright specs all pass.
+
