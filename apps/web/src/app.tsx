@@ -12,6 +12,7 @@ import { Ribbon } from "./components/ribbon";
 import { SettingsModal } from "./components/settings-modal";
 import { SETTINGS_TAB_PATH } from "./components/settings-view";
 import { HelpOverlay } from "./components/help-overlay";
+import { TomeReplace } from "./components/tome-replace";
 import { Sidebar } from "./components/sidebar";
 import { StatusBar } from "./components/status-bar";
 import { Toaster } from "./components/toaster";
@@ -52,6 +53,7 @@ export function App() {
   const [paletteMode, setPaletteMode] = useState<PaletteMode>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [replaceOpen, setReplaceOpen] = useState(false);
   const [openSettingsInTab, setOpenSettingsInTabState] = useState(
     () => globalThis.localStorage?.getItem("notes.settings.openInTab") === "true",
   );
@@ -370,6 +372,12 @@ export function App() {
       { id: "theme-system", title: "System", category: "Theme", run: () => dispatch({ type: "setTheme", theme: "system" }) },
       { id: "reindex", title: "Rebuild search index", category: "Index", run: () => void api.reindex() },
       {
+        id: "replace-tome",
+        title: "Find & replace in Tome",
+        category: "Edit",
+        run: () => setReplaceOpen(true),
+      },
+      {
         id: "help-shortcuts",
         title: "Keyboard shortcuts",
         category: "Help",
@@ -541,6 +549,9 @@ export function App() {
             hotkeyFor={hotkeyFor}
             onClose={() => setHelpOpen(false)}
           />
+        )}
+        {replaceOpen && (
+          <TomeReplace onClose={() => setReplaceOpen(false)} onChanged={() => void refreshTree()} />
         )}
         <Toaster />
       </div>

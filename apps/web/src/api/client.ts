@@ -25,6 +25,7 @@ export interface SearchFilters {
   tag?: string;
   type?: string;
   path?: string;
+  limit?: number;
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -74,6 +75,7 @@ export const api = {
         ...(filters.tag ? { tag: filters.tag } : {}),
         ...(filters.type ? { type: filters.type } : {}),
         ...(filters.path ? { path: filters.path } : {}),
+        ...(filters.limit ? { limit: String(filters.limit) } : {}),
       })}`,
     ),
   tag: (tag: string) => request<{ paths: string[] }>(`/api/tag?${query({ tag })}`),

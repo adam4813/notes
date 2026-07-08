@@ -516,6 +516,53 @@ button {
   font-size: 12px;
 }
 
+/* Tome-wide find & replace */
+.tome-replace-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tome-replace-summary {
+  margin: 12px 0 6px;
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+
+.tome-replace-hits {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.tome-replace-hit {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.tome-replace-count {
+  color: var(--fg-muted);
+}
+
+.tome-replace-run {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+}
+
+.tome-replace-run:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .property-key {
   color: var(--fg-muted);
   min-width: 72px;
