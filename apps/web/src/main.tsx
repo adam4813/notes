@@ -22,3 +22,11 @@ createRoot(container).render(
     </ErrorBoundary>
   </StrictMode>,
 );
+
+// Register the app-shell service worker in production for offline loading.
+const isProd = (import.meta as { env?: { PROD?: boolean } }).env?.PROD ?? false;
+if (isProd && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+  });
+}

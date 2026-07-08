@@ -7,6 +7,7 @@ import { emptyGrid } from "@notes/note-grid";
 import { emptyMermaid } from "@notes/note-mermaid";
 import { emptyTableMarkdown } from "@notes/note-tables";
 import { api, type FileEntry } from "./api/client";
+import { flushQueue, pendingCount } from "./api/offline-queue";
 import { connectTomeChanges } from "./api/ws";
 import { Palette } from "./components/palette";
 import { RightPanel } from "./components/right-panel";
@@ -281,6 +282,24 @@ export function App() {
   useEffect(() => {
     applyTheme(state.theme);
   }, [state.theme]);
+
+  // Flush any offline-buffered writes on load and whenever connectivity returns.
+  useEffect(() => {
+    const sync = () => {
+      if (pendingCount() === 0) {
+        return;
+      }
+      void flushQueue(api.write).then((flushed) => {
+        if (flushed > 0) {
+          notify(`Synced ${flushed} offline change(s)`, { kind: "success" });
+          void refreshTree();
+        }
+      });
+    };
+    sync();
+    window.addEventListener("online", sync);
+    return () => window.removeEventListener("online", sync);
+  }, [notify, refreshTree]);
 
   // Prune restored/open tabs whose files no longer exist. Runs only when the
   // tree changes (not on tab edits) to avoid racing with rename/refresh.

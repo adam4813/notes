@@ -7,6 +7,7 @@ import { MermaidView } from "@notes/note-mermaid";
 import { TableGrid } from "@notes/note-tables";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/client";
+import { queueWrite } from "../api/offline-queue";
 import { connectTomeChanges } from "../api/ws";
 import { useAppServices } from "../state/app-services";
 import { useWorkspace } from "../state/app-context";
@@ -25,7 +26,7 @@ function getFrontmatterType(content: string): string | undefined {
   return /^type:\s*(.+)$/m.exec(block[1])?.[1].trim();
 }
 
-type SaveState = "loading" | "saved" | "saving" | "unsaved" | "error" | "external";
+type SaveState = "loading" | "saved" | "saving" | "unsaved" | "error" | "external" | "offline";
 
 const MODE_LABEL: Record<EditorMode, string> = {
   edit: "Edit",
@@ -40,6 +41,7 @@ const SAVE_LABEL: Record<SaveState, string> = {
   unsaved: "Unsaved…",
   error: "Save failed",
   external: "Changed on disk",
+  offline: "Saved offline",
 };
 
 export function NoteEditor({ path }: { path: string }) {
@@ -88,9 +90,12 @@ export function NoteEditor({ path }: { path: string }) {
         dirtyRef.current = false;
         setSaveState("saved");
       } catch {
-        setSaveState("error");
-        notify("Couldn't save changes — they're kept in the editor. Retrying may help.", {
-          kind: "error",
+        // Never lose the edit: buffer it locally to sync when back online.
+        queueWrite({ path, content: value });
+        dirtyRef.current = false;
+        setSaveState("offline");
+        notify("Offline — your changes are saved locally and will sync automatically.", {
+          kind: "info",
         });
       }
     },
