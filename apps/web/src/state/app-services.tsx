@@ -14,6 +14,7 @@ export interface AppServices {
   createBoard: (dir?: string) => void;
   createMermaid: (dir?: string) => void;
   createCalendar: (dir?: string) => void;
+  createGrid: (dir?: string) => void;
   /** Seeds a small sample Tome on first run. */
   seedSampleNotes: () => void;
   /** Map of note path → indexed note type (markdown/table/board/canvas). */
@@ -61,6 +62,7 @@ const AppServicesContext = createContext<AppServices>({
   createBoard: noop,
   createMermaid: noop,
   createCalendar: noop,
+  createGrid: noop,
   seedSampleNotes: noop,
   noteTypes: {},
   setActiveDocument: noop,

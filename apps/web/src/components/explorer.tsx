@@ -46,6 +46,7 @@ const TYPE_LABEL: Record<string, string> = {
   canvas: "Canvas",
   mermaid: "Diagram",
   calendar: "Calendar",
+  grid: "Grid",
 };
 
 function ExplorerNode({
@@ -244,6 +245,7 @@ export function Explorer() {
         { label: "New board", run: () => services.createBoard(dir) },
         { label: "New diagram", run: () => services.createMermaid(dir) },
         { label: "New calendar", run: () => services.createCalendar(dir) },
+        { label: "New grid", run: () => services.createGrid(dir) },
         { label: "New folder…", run: () => void newFolder(dir) },
         ...(node
           ? [

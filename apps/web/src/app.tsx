@@ -3,6 +3,7 @@ import { formatCombo } from "@notes/core";
 import { emptyCanvas } from "@notes/note-canvas";
 import { emptyBoard } from "@notes/note-boards";
 import { emptyCalendar } from "@notes/note-calendar";
+import { emptyGrid } from "@notes/note-grid";
 import { emptyMermaid } from "@notes/note-mermaid";
 import { emptyTableMarkdown } from "@notes/note-tables";
 import { api, type FileEntry } from "./api/client";
@@ -109,6 +110,10 @@ export function App() {
   );
   const createCalendar = useCallback(
     (dir?: string) => createOfType("New Calendar", ".md", () => emptyCalendar(), dir),
+    [createOfType],
+  );
+  const createGrid = useCallback(
+    (dir?: string) => createOfType("New Grid", ".md", () => emptyGrid(), dir),
     [createOfType],
   );
 
@@ -366,6 +371,7 @@ export function App() {
       { id: "new-board", title: "New board", category: "Create", run: () => createBoard() },
       { id: "new-mermaid", title: "New diagram", category: "Create", run: () => createMermaid() },
       { id: "new-calendar", title: "New calendar", category: "Create", run: () => createCalendar() },
+      { id: "new-grid", title: "New grid", category: "Create", run: () => createGrid() },
       {
         id: "split-pane",
         title: "Split editor pane",
@@ -407,6 +413,7 @@ export function App() {
       createBoard,
       createMermaid,
       createCalendar,
+      createGrid,
       plugins.pluginCommands,
       state.activePaneId,
       openSettings,
@@ -438,8 +445,9 @@ export function App() {
       { id: "board", label: "Board", run: () => createBoard() },
       { id: "mermaid", label: "Diagram (Mermaid)", run: () => createMermaid() },
       { id: "calendar", label: "Calendar", run: () => createCalendar() },
+      { id: "grid", label: "Grid", run: () => createGrid() },
     ],
-    [createNote, createTable, createCanvas, createBoard, createMermaid, createCalendar],
+    [createNote, createTable, createCanvas, createBoard, createMermaid, createCalendar, createGrid],
   );
 
   const settingsProps = useMemo<SettingsBodyProps>(
@@ -499,6 +507,7 @@ export function App() {
       createBoard,
       createMermaid,
       createCalendar,
+      createGrid,
       seedSampleNotes,
       noteTypes,
       setActiveDocument: (doc: { path: string; content: string; type: string } | null) =>
@@ -515,6 +524,7 @@ export function App() {
       createBoard,
       createMermaid,
       createCalendar,
+      createGrid,
       seedSampleNotes,
       noteTypes,
       plugins.documentSignal,
