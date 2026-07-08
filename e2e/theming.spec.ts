@@ -20,4 +20,10 @@ test("theming: accent color and theme apply from settings", async ({ page }) => 
   await expect
     .poll(() => page.evaluate(() => document.documentElement.dataset.theme ?? ""))
     .toBe("dark");
+
+  // A built-in named theme also applies.
+  await page.getByRole("radio", { name: "Solarized", exact: true }).click();
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.dataset.theme ?? ""))
+    .toBe("solarized");
 });

@@ -20,7 +20,7 @@ export const ACCENT_PRESETS: { id: string; label: string; value: string }[] = [
   { id: "rose", label: "Rose", value: "#e11d48" },
 ];
 
-export function resolveTheme(mode: ThemeMode): "light" | "dark" {
+export function resolveTheme(mode: ThemeMode): string {
   if (mode === "system") {
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }

@@ -51,6 +51,8 @@ const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
   { value: "system", label: "System" },
+  { value: "solarized", label: "Solarized" },
+  { value: "contrast", label: "High contrast" },
 ];
 
 /** Shared settings content, reused by both the modal and the tab view. */

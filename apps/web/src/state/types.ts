@@ -1,6 +1,6 @@
 import type { FileEntry } from "../api/client";
 
-export type ThemeMode = "light" | "dark" | "system";
+export type ThemeMode = "light" | "dark" | "system" | "solarized" | "contrast";
 
 export interface Tab {
   id: string;

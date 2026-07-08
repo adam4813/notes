@@ -5,12 +5,16 @@ const NEXT_THEME: Record<ThemeMode, ThemeMode> = {
   light: "dark",
   dark: "system",
   system: "light",
+  solarized: "light",
+  contrast: "light",
 };
 
 const THEME_ICON: Record<ThemeMode, string> = {
   light: "☀️",
   dark: "🌙",
   system: "🖥️",
+  solarized: "🌗",
+  contrast: "◐",
 };
 
 interface RibbonProps {
