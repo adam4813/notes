@@ -13,7 +13,7 @@ interface GridViewProps {
   onChange: (markdown: string) => void;
 }
 
-type Tool = "paint" | "erase" | "token";
+type Tool = "paint" | "erase" | "fill" | "token";
 
 const PALETTE = ["#ef4444", "#f59e0b", "#22c55e", "#3b82f6", "#a855f7", "#111827", "#ffffff"];
 
@@ -39,6 +39,7 @@ export function GridView({ value, onChange }: GridViewProps) {
   const modelRef = useRef(model);
   modelRef.current = model;
   const lastSerialized = useRef(value);
+  const history = useRef<{ past: GridModel[]; future: GridModel[] }>({ past: [], future: [] });
 
   useEffect(() => {
     if (value !== lastSerialized.current) {
@@ -46,6 +47,7 @@ export function GridView({ value, onChange }: GridViewProps) {
       setModel(parsed);
       modelRef.current = parsed;
       lastSerialized.current = value;
+      history.current = { past: [], future: [] };
     }
   }, [value]);
 
@@ -63,6 +65,70 @@ export function GridView({ value, onChange }: GridViewProps) {
     const markdown = serializeGrid(next);
     lastSerialized.current = markdown;
     onChange(markdown);
+  };
+
+  /** Snapshots the current model so the next mutation can be undone. */
+  const snapshot = () => {
+    history.current.past.push(modelRef.current);
+    if (history.current.past.length > 100) {
+      history.current.past.shift();
+    }
+    history.current.future = [];
+  };
+
+  const undo = () => {
+    const previous = history.current.past.pop();
+    if (!previous) {
+      return;
+    }
+    history.current.future.push(modelRef.current);
+    update(previous);
+  };
+
+  const redo = () => {
+    const next = history.current.future.pop();
+    if (!next) {
+      return;
+    }
+    history.current.past.push(modelRef.current);
+    update(next);
+  };
+
+  const floodFill = (x: number, y: number) => {
+    const current = modelRef.current;
+    const layer = current.layers.find((entry) => entry.id === current.activeLayer);
+    if (!layer) {
+      return;
+    }
+    const target = layer.cells[cellKey(x, y)] ?? "";
+    if (target === color) {
+      return;
+    }
+    const cells = { ...layer.cells };
+    const stack: [number, number][] = [[x, y]];
+    const seen = new Set<string>();
+    while (stack.length > 0) {
+      const [cx, cy] = stack.pop() as [number, number];
+      if (cx < 0 || cy < 0 || cx >= current.width || cy >= current.height) {
+        continue;
+      }
+      const key = cellKey(cx, cy);
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      if ((cells[key] ?? "") !== target) {
+        continue;
+      }
+      cells[key] = color;
+      stack.push([cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1]);
+    }
+    update({
+      ...current,
+      layers: current.layers.map((entry) =>
+        entry.id === current.activeLayer ? { ...entry, cells } : entry,
+      ),
+    });
   };
 
   const paintCell = (x: number, y: number) => {
@@ -97,8 +163,13 @@ export function GridView({ value, onChange }: GridViewProps) {
   };
 
   const onCellDown = (x: number, y: number) => {
+    snapshot();
     if (tool === "token") {
       toggleToken(x, y);
+      return;
+    }
+    if (tool === "fill") {
+      floodFill(x, y);
       return;
     }
     painting.current = true;
@@ -106,13 +177,15 @@ export function GridView({ value, onChange }: GridViewProps) {
   };
 
   const onCellEnter = (x: number, y: number) => {
-    if (painting.current && tool !== "token") {
+    if (painting.current && (tool === "paint" || tool === "erase")) {
       paintCell(x, y);
     }
   };
 
-  const setLayers = (layers: GridLayer[], activeLayer = model.activeLayer) =>
+  const setLayers = (layers: GridLayer[], activeLayer = model.activeLayer) => {
+    snapshot();
     update({ ...model, layers, activeLayer });
+  };
 
   const addLayer = () => {
     const layer: GridLayer = {
@@ -154,14 +227,28 @@ export function GridView({ value, onChange }: GridViewProps) {
   const resize = (patch: { width?: number; height?: number }) => {
     const width = Math.min(64, Math.max(1, patch.width ?? model.width));
     const height = Math.min(64, Math.max(1, patch.height ?? model.height));
+    snapshot();
     update({ ...model, width, height });
   };
 
   return (
-    <div className="grid-note">
+    <div
+      className="grid-note"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        const mod = event.ctrlKey || event.metaKey;
+        if (mod && event.key.toLowerCase() === "z" && !event.shiftKey) {
+          event.preventDefault();
+          undo();
+        } else if (mod && (event.key.toLowerCase() === "y" || (event.shiftKey && event.key.toLowerCase() === "z"))) {
+          event.preventDefault();
+          redo();
+        }
+      }}
+    >
       <div className="grid-toolbar">
         <div className="grid-tools" role="radiogroup" aria-label="Tool">
-          {(["paint", "erase", "token"] as Tool[]).map((option) => (
+          {(["paint", "erase", "fill", "token"] as Tool[]).map((option) => (
             <button
               key={option}
               role="radio"
@@ -169,9 +256,33 @@ export function GridView({ value, onChange }: GridViewProps) {
               className={`mode-btn ${tool === option ? "mode-btn--active" : ""}`}
               onClick={() => setTool(option)}
             >
-              {option === "paint" ? "Paint" : option === "erase" ? "Erase" : "Token"}
+              {option === "paint"
+                ? "Paint"
+                : option === "erase"
+                  ? "Erase"
+                  : option === "fill"
+                    ? "Fill"
+                    : "Token"}
             </button>
           ))}
+        </div>
+        <div className="grid-history">
+          <button
+            className="btn-ghost"
+            aria-label="Undo"
+            disabled={history.current.past.length === 0}
+            onClick={undo}
+          >
+            ↶
+          </button>
+          <button
+            className="btn-ghost"
+            aria-label="Redo"
+            disabled={history.current.future.length === 0}
+            onClick={redo}
+          >
+            ↷
+          </button>
         </div>
         <div className="grid-palette">
           {PALETTE.map((swatch) => (

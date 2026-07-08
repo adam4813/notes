@@ -1780,6 +1780,11 @@ button {
   gap: 2px;
 }
 
+.grid-history {
+  display: inline-flex;
+  gap: 2px;
+}
+
 .grid-palette {
   display: inline-flex;
   align-items: center;
