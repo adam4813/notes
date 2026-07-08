@@ -2684,6 +2684,20 @@ tr:hover .grid-row-delete {
   cursor: pointer;
 }
 
+.canvas-edge-label {
+  fill: var(--fg);
+  font-size: 12px;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 4px;
+  cursor: pointer;
+}
+
+.canvas-edge-label--add {
+  fill: var(--fg-muted);
+  font-size: 11px;
+}
+
 .canvas-node {
   position: absolute;
   background: var(--bg-elevated);

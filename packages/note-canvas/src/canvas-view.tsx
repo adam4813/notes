@@ -343,6 +343,22 @@ export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProp
     setSelection(null);
   };
 
+  const setEdgeLabel = (edgeId: string, label: string) =>
+    commit({
+      ...data,
+      edges: data.edges.map((edge) =>
+        edge.id === edgeId ? { ...edge, ...(label ? { label } : { label: undefined }) } : edge,
+      ),
+    });
+
+  const editEdgeLabel = (edgeId: string) => {
+    const edge = data.edges.find((e) => e.id === edgeId);
+    const label = window.prompt("Edge label", edge?.label ?? "");
+    if (label !== null) {
+      setEdgeLabel(edgeId, label.trim());
+    }
+  };
+
   const setNodeText = (id: string, text: string) => {
     setData((d) => ({
       ...d,
@@ -406,6 +422,7 @@ export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProp
               const a = center(from);
               const b = center(to);
               const isSelected = selection?.kind === "edge" && selection.id === edge.id;
+              const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
               return (
                 <g key={edge.id}>
                   <line
@@ -427,7 +444,42 @@ export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProp
                       event.stopPropagation();
                       setSelection({ kind: "edge", id: edge.id });
                     }}
+                    onDoubleClick={(event) => {
+                      event.stopPropagation();
+                      editEdgeLabel(edge.id);
+                    }}
                   />
+                  {edge.label ? (
+                    <text
+                      x={mid.x}
+                      y={mid.y}
+                      className="canvas-edge-label"
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      onDoubleClick={(event) => {
+                        event.stopPropagation();
+                        editEdgeLabel(edge.id);
+                      }}
+                    >
+                      {edge.label}
+                    </text>
+                  ) : (
+                    isSelected && (
+                      <text
+                        x={mid.x}
+                        y={mid.y}
+                        className="canvas-edge-label canvas-edge-label--add"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        onPointerDown={(event) => {
+                          event.stopPropagation();
+                          editEdgeLabel(edge.id);
+                        }}
+                      >
+                        ＋ label
+                      </text>
+                    )
+                  )}
                 </g>
               );
             })}
