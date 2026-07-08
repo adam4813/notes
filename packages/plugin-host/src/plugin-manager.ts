@@ -31,11 +31,15 @@ export class PluginManager {
   private readonly entries = new Map<string, Entry>();
   private readonly errors = new Map<string, string>();
 
-  constructor(private readonly host: PluginHost) {}
+  constructor(
+    private readonly host: PluginHost,
+    /** localStorage key for the persisted enabled set (per-Tome scoping). */
+    private readonly enabledKey: string = ENABLED_KEY,
+  ) {}
 
   private readEnabledSet(): Set<string> {
     try {
-      const raw = this.host.storage.getItem(ENABLED_KEY);
+      const raw = this.host.storage.getItem(this.enabledKey);
       return new Set(raw ? (JSON.parse(raw) as string[]) : []);
     } catch {
       return new Set();
@@ -43,7 +47,7 @@ export class PluginManager {
   }
 
   private writeEnabledSet(ids: Set<string>): void {
-    this.host.storage.setItem(ENABLED_KEY, JSON.stringify([...ids]));
+    this.host.storage.setItem(this.enabledKey, JSON.stringify([...ids]));
   }
 
   /** Registers a plugin in the catalog (does not activate it). */

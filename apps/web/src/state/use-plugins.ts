@@ -8,6 +8,7 @@ import {
   type StatusBarItem,
 } from "@notes/plugin-host";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api } from "../api/client";
 import { localPlugins } from "../plugins";
 
 export interface PluginsApi {
@@ -27,6 +28,8 @@ export function usePlugins(): PluginsApi {
   const managerRef = useRef<PluginManager>();
 
   useEffect(() => {
+    let manager: PluginManager | undefined;
+    let disposed = false;
     const host: PluginHost = {
       registerCommand: (command) => {
         // Dedupe by id so a double-registration (e.g. React StrictMode) can't
@@ -46,17 +49,35 @@ export function usePlugins(): PluginsApi {
       storage: window.localStorage,
     };
 
-    const manager = new PluginManager(host);
-    managerRef.current = manager;
-    for (const plugin of localPlugins) {
-      manager.register(plugin);
-    }
-    void manager.activateEnabled().then(() => setList(manager.list()));
+    void (async () => {
+      // Scope the enabled set per Tome so each Tome remembers its own plugins.
+      let scope = "default";
+      try {
+        scope = (await api.tome()).id;
+      } catch {
+        scope = "default";
+      }
+      if (disposed) {
+        return;
+      }
+      manager = new PluginManager(host, `notes.plugins.enabled:${scope}`);
+      managerRef.current = manager;
+      for (const plugin of localPlugins) {
+        manager.register(plugin);
+      }
+      await manager.activateEnabled();
+      if (!disposed) {
+        setList(manager.list());
+      }
+    })();
 
     return () => {
-      for (const info of manager.list()) {
-        if (info.enabled) {
-          manager.disable(info.manifest.id, false);
+      disposed = true;
+      if (manager) {
+        for (const info of manager.list()) {
+          if (info.enabled) {
+            manager.disable(info.manifest.id, false);
+          }
         }
       }
       managerRef.current = undefined;

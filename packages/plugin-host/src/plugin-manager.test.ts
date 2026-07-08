@@ -115,6 +115,21 @@ describe("PluginManager", () => {
     expect(tokens.has("--accent")).toBe(false);
   });
 
+  it("persists the enabled set under a per-Tome key", async () => {
+    const shared = makeHost();
+    const manager = new PluginManager(shared.host, "notes.plugins.enabled:tomeA");
+    manager.register(samplePlugin());
+    await manager.enable("sample");
+    expect(shared.store.get("notes.plugins.enabled:tomeA")).toContain("sample");
+    expect(shared.store.get("notes.plugins.enabled")).toBeUndefined();
+
+    // A manager for a different Tome starts with nothing enabled.
+    const other = new PluginManager(shared.host, "notes.plugins.enabled:tomeB");
+    other.register(samplePlugin());
+    await other.activateEnabled();
+    expect(other.isEnabled("sample")).toBe(false);
+  });
+
   it("persists enabled state and re-activates it", async () => {
     const first = makeHost();
     const manager1 = new PluginManager(first.host);

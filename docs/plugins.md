@@ -9,8 +9,9 @@ future work. This guide documents the public `@notes/plugin-host` surface.
 - Plugins are **trusted** and run **in-process** (no sandbox yet).
 - The web app bundles a list of local plugins (see `apps/web/src/plugins/`). Each is a module
   exporting a `NotesPlugin`.
-- Enable/disable plugins from **Settings** (⚙ in the ribbon). The enabled set persists as data
-  (`localStorage`), and enabled plugins re-activate on load.
+- Enable/disable plugins from **Settings** (⚙ in the ribbon). **The enabled set is scoped per
+  Tome** (persisted under `notes.plugins.enabled:<tome>` in `localStorage`), so each Tome
+  remembers its own plugins; enabled plugins re-activate on load.
 - **Future:** discover and load plugin folders from a Tome-local `.notes/plugins/` directory,
   plus a server half loaded by the Fastify host. The manifest already declares `entry.server`
   for this.

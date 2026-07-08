@@ -86,4 +86,5 @@ export const api = {
     request<{ notes: { path: string; title: string; type: string }[] }>("/api/notes"),
   resolve: (text: string) => request<{ path: string | null }>(`/api/resolve?${query({ text })}`),
   reindex: () => request<{ rebuilt: boolean; notes: number }>("/api/reindex", { method: "POST" }),
+  tome: () => request<{ id: string }>("/api/tome"),
 };

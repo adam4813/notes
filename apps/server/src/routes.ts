@@ -78,6 +78,8 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
 
   app.post("/api/reindex", async () => bus.dispatch("index.rebuild", {}, ctx));
 
+  app.get("/api/tome", async () => ({ id: (ctx as { tomePath?: string }).tomePath ?? "default" }));
+
   app.get("/api/notetype", async (request) => {
     const { path = "" } = request.query as PathQuery;
     return bus.dispatch("note.detectType", { path }, ctx);
