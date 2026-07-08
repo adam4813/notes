@@ -3,8 +3,38 @@ import { markdown } from "@codemirror/lang-markdown";
 import { Annotation, EditorState } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import { useEffect, useRef } from "react";
+import { NOTES_PATH_MIME, noteNameFromPath } from "./types";
 
 const externalSync = Annotation.define<boolean>();
+
+/**
+ * CodeMirror extension that handles drops of notes from the explorer.
+ * Alt held → plain link; otherwise embed.
+ */
+function notesDropExtension() {
+  return EditorView.domEventHandlers({
+    dragover(event) {
+      if (event.dataTransfer?.types.includes(NOTES_PATH_MIME)) {
+        event.preventDefault();
+      }
+      return false;
+    },
+    drop(event, view) {
+      const path = event.dataTransfer?.getData(NOTES_PATH_MIME);
+      if (!path) {
+        return false;
+      }
+      event.preventDefault();
+      const name = noteNameFromPath(path);
+      const text = event.altKey ? `[[${name}]]` : `![[${name}]]`;
+      const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+      if (pos != null) {
+        view.dispatch({ changes: { from: pos, insert: text }, selection: { anchor: pos + text.length } });
+      }
+      return true;
+    },
+  });
+}
 
 interface SourceEditorProps {
   value: string;
@@ -31,6 +61,7 @@ export function SourceEditor({ value, onChange }: SourceEditorProps) {
           keymap.of([...defaultKeymap, ...historyKeymap]),
           markdown(),
           EditorView.lineWrapping,
+          notesDropExtension(),
           EditorView.updateListener.of((update) => {
             if (!update.docChanged) {
               return;

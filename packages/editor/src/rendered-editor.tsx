@@ -2,10 +2,11 @@ import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type DragEvent as ReactDragEvent, type MouseEvent } from "react";
 import { Markdown } from "tiptap-markdown";
 import { Embed } from "./embed-extension";
 import { SuggestionPopup } from "./suggestion-popup";
+import { NOTES_PATH_MIME, noteNameFromPath } from "./types";
 import { EditorToolbar } from "./toolbar";
 import type { EditorCallbacks, WikiSuggestion } from "./types";
 import { WikilinkDecorator } from "./wikilink-decorator";
@@ -268,6 +269,32 @@ export function RenderedEditor({ value, onChange, callbacks }: RenderedEditorPro
 
   actionsRef.current = { move: moveSuggest, apply: () => applySuggest(), close: closeSuggest };
 
+  const handleDrop = useCallback(
+    (event: ReactDragEvent<HTMLDivElement>) => {
+      if (!editor) {
+        return;
+      }
+      const path = event.dataTransfer.getData(NOTES_PATH_MIME);
+      if (!path) {
+        return;
+      }
+      event.preventDefault();
+
+      const name = noteNameFromPath(path);
+      // Alt/Option held → insert a plain link; otherwise embed.
+      const text = event.altKey ? `[[${name}]]` : `![[${name}]]`;
+
+      // Resolve the document position from the drop coordinates.
+      const coords = editor.view.posAtCoords({ left: event.clientX, top: event.clientY });
+      if (coords == null) {
+        editor.chain().focus().insertContent(text).run();
+      } else {
+        editor.chain().focus().insertContentAt(coords.pos, text).run();
+      }
+    },
+    [editor],
+  );
+
   const handleClick = useCallback((event: MouseEvent<HTMLDivElement>) => {
     const anchor = (event.target as HTMLElement).closest(".wikilink");
     if (!anchor) {
@@ -283,7 +310,16 @@ export function RenderedEditor({ value, onChange, callbacks }: RenderedEditorPro
   return (
     <div className="rendered-editor" ref={containerRef}>
       <EditorToolbar editor={editor} />
-      <div className="rendered-scroll" onClick={handleClick}>
+      <div
+        className="rendered-scroll"
+        onClick={handleClick}
+        onDragOver={(event) => {
+          if (event.dataTransfer.types.includes(NOTES_PATH_MIME)) {
+            event.preventDefault();
+          }
+        }}
+        onDrop={handleDrop}
+      >
         <EditorContent editor={editor} className="tiptap-host" />
       </div>
       {suggest && (
