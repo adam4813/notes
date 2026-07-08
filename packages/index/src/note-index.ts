@@ -197,8 +197,10 @@ export class NoteIndex {
       params.push(`${filters.pathPrefix}/%`);
     }
     if (filters.tag) {
-      conditions.push("EXISTS (SELECT 1 FROM tags t WHERE t.path = notes_fts.path AND t.tag = ?)");
-      params.push(filters.tag);
+      conditions.push(
+        "EXISTS (SELECT 1 FROM tags t WHERE t.path = notes_fts.path AND (t.tag = ? OR t.tag LIKE ?))",
+      );
+      params.push(filters.tag, `${filters.tag}/%`);
     }
     params.push(limit);
 
@@ -225,8 +227,10 @@ export class NoteIndex {
       params.push(`${filters.pathPrefix}/%`);
     }
     if (filters.tag) {
-      conditions.push("EXISTS (SELECT 1 FROM tags t WHERE t.path = n.path AND t.tag = ?)");
-      params.push(filters.tag);
+      conditions.push(
+        "EXISTS (SELECT 1 FROM tags t WHERE t.path = n.path AND (t.tag = ? OR t.tag LIKE ?))",
+      );
+      params.push(filters.tag, `${filters.tag}/%`);
     }
     params.push(limit);
     const rows = this.db
@@ -263,8 +267,8 @@ export class NoteIndex {
 
   notesByTag(tag: string): string[] {
     const rows = this.db
-      .prepare("SELECT DISTINCT path FROM tags WHERE tag = ? ORDER BY path")
-      .all(tag) as { path: string }[];
+      .prepare("SELECT DISTINCT path FROM tags WHERE tag = ? OR tag LIKE ? ORDER BY path")
+      .all(tag, `${tag}/%`) as { path: string }[];
     return rows.map((row) => row.path);
   }
 

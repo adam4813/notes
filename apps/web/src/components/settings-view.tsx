@@ -126,6 +126,14 @@ export function SettingsBody(props: SettingsBodyProps) {
                 onClick={() => onAccentChange(preset.value)}
               />
             ))}
+            <input
+              type="color"
+              className="accent-custom"
+              aria-label="Custom accent color"
+              data-testid="accent-custom"
+              value={/^#[0-9a-fA-F]{6}$/.test(accent) ? accent : "#7c3aed"}
+              onChange={(event) => onAccentChange(event.target.value)}
+            />
           </div>
         </div>
         <div className="settings-field">

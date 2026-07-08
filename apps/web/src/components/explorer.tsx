@@ -15,6 +15,20 @@ function baseNoExt(name: string): string {
   return name.replace(/\.[^.]+$/, "");
 }
 
+/** Depth-first lookup of a tree entry by path. */
+function findEntry(tree: FileEntry[], path: string): FileEntry | undefined {
+  for (const entry of tree) {
+    if (entry.path === path) {
+      return entry;
+    }
+    const found = entry.children && findEntry(entry.children, path);
+    if (found) {
+      return found;
+    }
+  }
+  return undefined;
+}
+
 interface NodeHandlers {
   onOpen: (node: FileEntry) => void;
   onContextMenu: (event: MouseEvent, node: FileEntry) => void;
@@ -52,6 +66,8 @@ function ExplorerNode({
         <button
           className={`tree-row tree-dir ${isDropTarget ? "tree-row--drop" : ""}`}
           style={indent}
+          draggable={depth > 0}
+          onDragStart={(event) => event.dataTransfer.setData(DRAG_TYPE, entry.path)}
           onClick={() => setOpen((value) => !value)}
           onContextMenu={(event) => handlers.onContextMenu(event, entry)}
           onDragOver={(event) => {
@@ -177,9 +193,18 @@ export function Explorer() {
     if (to === fromPath) {
       return;
     }
+    // Don't move a folder into itself or one of its descendants.
+    if (toDir === fromPath || toDir.startsWith(`${fromPath}/`)) {
+      return;
+    }
+    const isDir = findEntry(state.tree, fromPath)?.type === "directory";
     services.markModified(fromPath);
     await api.rename(fromPath, to);
-    dispatch({ type: "renamePath", from: fromPath, to, title: baseNoExt(base) });
+    dispatch(
+      isDir
+        ? { type: "renamePrefix", from: fromPath, to }
+        : { type: "renamePath", from: fromPath, to, title: baseNoExt(base) },
+    );
     await refresh();
   };
 

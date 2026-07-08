@@ -83,6 +83,24 @@ describe("NoteIndex", () => {
     index.close();
   });
 
+  it("filters tags hierarchically (parent includes children)", () => {
+    const index = new NoteIndex();
+    index.rebuild([
+      file("a.md", "# A\n\nalpha #project"),
+      file("b.md", "# B\n\nalpha #project/web"),
+      file("c.md", "# C\n\nalpha #other"),
+    ]);
+
+    expect(index.notesByTag("project")).toEqual(["a.md", "b.md"]);
+    expect(index.notesByTag("project/web")).toEqual(["b.md"]);
+    expect(index.search("alpha", { tag: "project" }).map((r) => r.path).sort()).toEqual([
+      "a.md",
+      "b.md",
+    ]);
+
+    index.close();
+  });
+
   it("resolves wikilinks by basename to a note path", () => {
     const index = new NoteIndex();
     index.rebuild(fixture);
