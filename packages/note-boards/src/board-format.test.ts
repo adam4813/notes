@@ -15,6 +15,12 @@ describe("board-format", () => {
     expect(strip(reparsed)).toEqual(strip(parsed));
   });
 
+  it("parses and serializes card due dates", () => {
+    const parsed = parseBoard("---\ntype: board\n---\n\n## A\n\n- [ ] ship it @2026-02-01\n");
+    expect(parsed.columns[0].cards[0]).toMatchObject({ text: "ship it", due: "2026-02-01" });
+    expect(serializeBoard(parsed)).toContain("- [ ] ship it @2026-02-01");
+  });
+
   it("parses checkbox state and column structure", () => {
     const parsed = parseBoard("---\ntype: board\n---\n\n## A\n\n- [x] done\n- [ ] todo\n\n## B\n");
     expect(parsed.columns.map((c) => c.name)).toEqual(["A", "B"]);

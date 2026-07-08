@@ -73,8 +73,16 @@ export function BoardView({ value, onChange }: BoardViewProps) {
     }));
   };
 
-  const moveCard = (drag: CardDrag, toColumn: number) => {
-    if (drag.fromColumn === toColumn) {
+  const setCardDue = (col: number, cardId: string, due: string) =>
+    mapColumn(col, (column) => ({
+      ...column,
+      cards: column.cards.map((card) =>
+        card.id === cardId ? { ...card, ...(due ? { due } : { due: undefined }) } : card,
+      ),
+    }));
+
+  const moveCardTo = (drag: CardDrag, toColumn: number, beforeCardId: string | null) => {
+    if (beforeCardId === drag.cardId) {
       return;
     }
     const card = model.columns[drag.fromColumn]?.cards.find((c) => c.id === drag.cardId);
@@ -83,13 +91,14 @@ export function BoardView({ value, onChange }: BoardViewProps) {
     }
     commit(
       model.columns.map((column, i) => {
-        if (i === drag.fromColumn) {
-          return { ...column, cards: column.cards.filter((c) => c.id !== drag.cardId) };
-        }
+        let cards =
+          i === drag.fromColumn ? column.cards.filter((c) => c.id !== drag.cardId) : column.cards;
         if (i === toColumn) {
-          return { ...column, cards: [...column.cards, card] };
+          const index = beforeCardId ? cards.findIndex((c) => c.id === beforeCardId) : -1;
+          const at = index === -1 ? cards.length : index;
+          cards = [...cards.slice(0, at), card, ...cards.slice(at)];
         }
-        return column;
+        return { ...column, cards };
       }),
     );
   };
@@ -114,11 +123,12 @@ export function BoardView({ value, onChange }: BoardViewProps) {
     }
   };
 
-  const onDropCard = (event: DragEvent, toColumn: number) => {
+  const onDropCard = (event: DragEvent, toColumn: number, beforeCardId: string | null) => {
     event.preventDefault();
+    event.stopPropagation();
     try {
       const drag = JSON.parse(event.dataTransfer.getData("application/x-board-card")) as CardDrag;
-      moveCard(drag, toColumn);
+      moveCardTo(drag, toColumn, beforeCardId);
     } catch {
       // ignore malformed drag payloads
     }
@@ -132,7 +142,7 @@ export function BoardView({ value, onChange }: BoardViewProps) {
             key={colIndex}
             className="board-column"
             onDragOver={(event) => event.preventDefault()}
-            onDrop={(event) => onDropCard(event, colIndex)}
+            onDrop={(event) => onDropCard(event, colIndex, null)}
           >
             <header className="board-column-head">
               <span className="board-column-name" onDoubleClick={() => renameColumn(colIndex)}>
@@ -160,6 +170,8 @@ export function BoardView({ value, onChange }: BoardViewProps) {
                       JSON.stringify({ cardId: card.id, fromColumn: colIndex }),
                     )
                   }
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => onDropCard(event, colIndex, card.id)}
                 >
                   <input
                     type="checkbox"
@@ -195,6 +207,14 @@ export function BoardView({ value, onChange }: BoardViewProps) {
                       {card.text}
                     </span>
                   )}
+                  <input
+                    type="date"
+                    className="board-card-due"
+                    aria-label="Due date"
+                    title="Due date"
+                    value={card.due ?? ""}
+                    onChange={(event) => setCardDue(colIndex, card.id, event.target.value)}
+                  />
                   <button
                     className="board-card-del"
                     aria-label="Delete card"

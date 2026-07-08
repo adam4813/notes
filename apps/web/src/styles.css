@@ -2554,6 +2554,23 @@ tr:hover .grid-row-delete {
   border-radius: 4px;
 }
 
+.board-card-due {
+  opacity: 0;
+  font-size: 10px;
+  width: 30px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg-muted);
+  padding: 0 2px;
+}
+
+.board-card-due:focus,
+.board-card:hover .board-card-due {
+  opacity: 1;
+  width: auto;
+}
+
 .board-card:hover .board-card-del {
   opacity: 1;
 }

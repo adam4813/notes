@@ -2,6 +2,8 @@ export interface BoardCard {
   id: string;
   text: string;
   done: boolean;
+  /** Optional due date, YYYY-MM-DD. */
+  due?: string;
 }
 
 export interface BoardColumn {
@@ -45,11 +47,22 @@ export function parseBoard(markdown: string): BoardModel {
     }
     const card = CARD_RE.exec(line);
     if (card && current) {
-      const text = card[2].trim();
+      let text = card[2].trim();
       if (!text) {
         continue;
       }
-      current.cards.push({ id: newCardId(), text, done: card[1]?.toLowerCase() === "x" });
+      let due: string | undefined;
+      const dueMatch = /\s@(\d{4}-\d{2}-\d{2})$/.exec(text);
+      if (dueMatch) {
+        due = dueMatch[1];
+        text = text.slice(0, dueMatch.index).trim();
+      }
+      current.cards.push({
+        id: newCardId(),
+        text,
+        done: card[1]?.toLowerCase() === "x",
+        ...(due ? { due } : {}),
+      });
     }
   }
 
@@ -60,7 +73,7 @@ export function serializeBoard(model: BoardModel): string {
   const body = model.columns
     .map((column) => {
       const cards = column.cards
-        .map((card) => `- [${card.done ? "x" : " "}] ${card.text}`)
+        .map((card) => `- [${card.done ? "x" : " "}] ${card.text}${card.due ? ` @${card.due}` : ""}`)
         .join("\n");
       return `## ${column.name}\n\n${cards}${cards ? "\n" : ""}`;
     })
