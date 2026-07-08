@@ -616,7 +616,21 @@ button {
 
 /* File tree */
 .explorer {
-  min-height: 100%;
+  height: 100%;
+  overflow: auto;
+  position: relative;
+}
+
+.tree-viewport {
+  position: relative;
+  width: 100%;
+}
+
+.tree-window {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
 }
 
 .tree-root,
@@ -631,6 +645,7 @@ button {
   align-items: center;
   gap: 4px;
   width: 100%;
+  box-sizing: border-box;
   border: none;
   background: transparent;
   text-align: left;

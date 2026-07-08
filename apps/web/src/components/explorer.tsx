@@ -1,7 +1,10 @@
-import { useEffect, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { api, type FileEntry } from "../api/client";
 import { useAppServices } from "../state/app-services";
 import { useWorkspace } from "../state/app-context";
+import { useVirtual } from "../lib/use-virtual";
+
+const ROW_HEIGHT = 28;
 
 function iconFor(name: string): string {
   return name.toLowerCase().endsWith(".canvas") ? "🗺️" : "📄";
@@ -31,11 +34,13 @@ function findEntry(tree: FileEntry[], path: string): FileEntry | undefined {
 
 interface NodeHandlers {
   onOpen: (node: FileEntry) => void;
+  onToggleDir: (path: string) => void;
   onContextMenu: (event: MouseEvent, node: FileEntry) => void;
   onMove: (fromPath: string, toDir: string) => void;
   dragOverPath: string | null;
   setDragOverPath: (path: string | null) => void;
   typeOf: (path: string) => string | undefined;
+  isOpen: (path: string) => boolean;
 }
 
 const DRAG_TYPE = "application/x-notes-path";
@@ -49,54 +54,51 @@ const TYPE_LABEL: Record<string, string> = {
   grid: "Grid",
 };
 
-function ExplorerNode({
-  entry,
-  depth,
-  handlers,
-}: {
+interface FlatRow {
   entry: FileEntry;
   depth: number;
-  handlers: NodeHandlers;
-}) {
-  const [open, setOpen] = useState(depth === 0);
-  const indent = { paddingLeft: `${depth * 12 + 8}px` };
+}
+
+/** Flattens the visible tree (respecting expanded dirs) for windowing. */
+function flattenVisible(entries: FileEntry[], depth: number, isOpen: (p: string) => boolean, out: FlatRow[]): void {
+  for (const entry of entries) {
+    out.push({ entry, depth });
+    if (entry.type === "directory" && isOpen(entry.path)) {
+      flattenVisible(entry.children ?? [], depth + 1, isOpen, out);
+    }
+  }
+}
+
+function TreeRow({ entry, depth, handlers }: { entry: FileEntry; depth: number; handlers: NodeHandlers }) {
+  const indent = { paddingLeft: `${depth * 12 + 8}px`, height: `${ROW_HEIGHT}px` };
 
   if (entry.type === "directory") {
     const isDropTarget = handlers.dragOverPath === entry.path;
     return (
-      <li>
-        <button
-          className={`tree-row tree-dir ${isDropTarget ? "tree-row--drop" : ""}`}
-          style={indent}
-          draggable={depth > 0}
-          onDragStart={(event) => event.dataTransfer.setData(DRAG_TYPE, entry.path)}
-          onClick={() => setOpen((value) => !value)}
-          onContextMenu={(event) => handlers.onContextMenu(event, entry)}
-          onDragOver={(event) => {
-            event.preventDefault();
-            handlers.setDragOverPath(entry.path);
-          }}
-          onDragLeave={() => handlers.setDragOverPath(null)}
-          onDrop={(event) => {
-            event.preventDefault();
-            const from = event.dataTransfer.getData(DRAG_TYPE);
-            handlers.setDragOverPath(null);
-            if (from) {
-              handlers.onMove(from, entry.path);
-            }
-          }}
-        >
-          <span className="tree-caret">{open ? "▾" : "▸"}</span>
-          <span className="tree-name">{entry.name}</span>
-        </button>
-        {open && (
-          <ul className="tree-children">
-            {(entry.children ?? []).map((child) => (
-              <ExplorerNode key={child.path} entry={child} depth={depth + 1} handlers={handlers} />
-            ))}
-          </ul>
-        )}
-      </li>
+      <button
+        className={`tree-row tree-dir ${isDropTarget ? "tree-row--drop" : ""}`}
+        style={indent}
+        draggable={depth > 0}
+        onDragStart={(event) => event.dataTransfer.setData(DRAG_TYPE, entry.path)}
+        onClick={() => handlers.onToggleDir(entry.path)}
+        onContextMenu={(event) => handlers.onContextMenu(event, entry)}
+        onDragOver={(event) => {
+          event.preventDefault();
+          handlers.setDragOverPath(entry.path);
+        }}
+        onDragLeave={() => handlers.setDragOverPath(null)}
+        onDrop={(event) => {
+          event.preventDefault();
+          const from = event.dataTransfer.getData(DRAG_TYPE);
+          handlers.setDragOverPath(null);
+          if (from) {
+            handlers.onMove(from, entry.path);
+          }
+        }}
+      >
+        <span className="tree-caret">{handlers.isOpen(entry.path) ? "▾" : "▸"}</span>
+        <span className="tree-name">{entry.name}</span>
+      </button>
     );
   }
 
@@ -106,21 +108,19 @@ function ExplorerNode({
   const typeLabel = noteType ? TYPE_LABEL[noteType] : undefined;
 
   return (
-    <li>
-      <button
-        className="tree-row tree-file"
-        style={indent}
-        title={entry.path}
-        draggable
-        onDragStart={(event) => event.dataTransfer.setData(DRAG_TYPE, entry.path)}
-        onClick={() => handlers.onOpen(entry)}
-        onContextMenu={(event) => handlers.onContextMenu(event, entry)}
-      >
-        <span className="tree-icon">{iconFor(entry.name)}</span>
-        <span className="tree-name">{entry.name}</span>
-        {typeLabel && <span className="tree-type">[{typeLabel}]</span>}
-      </button>
-    </li>
+    <button
+      className="tree-row tree-file"
+      style={indent}
+      title={entry.path}
+      draggable
+      onDragStart={(event) => event.dataTransfer.setData(DRAG_TYPE, entry.path)}
+      onClick={() => handlers.onOpen(entry)}
+      onContextMenu={(event) => handlers.onContextMenu(event, entry)}
+    >
+      <span className="tree-icon">{iconFor(entry.name)}</span>
+      <span className="tree-name">{entry.name}</span>
+      {typeLabel && <span className="tree-type">[{typeLabel}]</span>}
+    </button>
   );
 }
 
@@ -135,6 +135,39 @@ export function Explorer() {
   const services = useAppServices();
   const [menu, setMenu] = useState<ContextMenu | null>(null);
   const [dragOverPath, setDragOverPath] = useState<string | null>(null);
+  const [openDirs, setOpenDirs] = useState<Set<string>>(new Set());
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Open all top-level directories the first time the tree loads.
+  const seededOpen = useRef(false);
+  useEffect(() => {
+    if (!seededOpen.current && state.tree.length > 0) {
+      seededOpen.current = true;
+      setOpenDirs(
+        new Set(state.tree.filter((entry) => entry.type === "directory").map((entry) => entry.path)),
+      );
+    }
+  }, [state.tree]);
+
+  const isOpen = (path: string) => openDirs.has(path);
+  const toggleDir = (path: string) =>
+    setOpenDirs((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+
+  const rows = useMemo(() => {
+    const out: FlatRow[] = [];
+    flattenVisible(state.tree, 0, (path) => openDirs.has(path), out);
+    return out;
+  }, [state.tree, openDirs]);
+
+  const virtual = useVirtual(rows.length, ROW_HEIGHT, scrollRef);
 
   useEffect(() => {
     if (!menu) {
@@ -227,11 +260,13 @@ export function Explorer() {
 
   const handlers: NodeHandlers = {
     onOpen: openNode,
+    onToggleDir: toggleDir,
     onContextMenu: (event, node) => openMenu(event, node),
     onMove: move,
     dragOverPath,
     setDragOverPath,
     typeOf: (path) => services.noteTypes[path],
+    isOpen,
   };
 
   const menuItems = (): { label: string; run: () => void; danger?: boolean }[] => {
@@ -265,6 +300,8 @@ export function Explorer() {
   return (
     <div
       className="explorer"
+      ref={scrollRef}
+      onScroll={virtual.onScroll}
       onContextMenu={(event) => openMenu(event)}
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => {
@@ -284,11 +321,18 @@ export function Explorer() {
           <p className="explorer-empty-hint">…or use “＋ New note”.</p>
         </div>
       ) : (
-        <ul className="tree-root">
-          {state.tree.map((entry) => (
-            <ExplorerNode key={entry.path} entry={entry} depth={0} handlers={handlers} />
-          ))}
-        </ul>
+        <div className="tree-viewport" style={{ height: virtual.totalHeight }}>
+          <div className="tree-window" style={{ transform: `translateY(${virtual.offsetY}px)` }}>
+            {rows.slice(virtual.start, virtual.end).map((row) => (
+              <TreeRow
+                key={row.entry.path}
+                entry={row.entry}
+                depth={row.depth}
+                handlers={handlers}
+              />
+            ))}
+          </div>
+        </div>
       )}
 
       {menu && (
