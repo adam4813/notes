@@ -32,10 +32,22 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
   app.post("/api/folder", async (request) => bus.dispatch("file.mkdir", request.body, ctx));
 
   app.get("/api/search", async (request) => {
-    const query = request.query as { q?: string; limit?: string };
+    const query = request.query as {
+      q?: string;
+      limit?: string;
+      tag?: string;
+      type?: string;
+      path?: string;
+    };
     return bus.dispatch(
       "index.search",
-      { query: query.q ?? "", limit: query.limit ? Number(query.limit) : undefined },
+      {
+        query: query.q ?? "",
+        limit: query.limit ? Number(query.limit) : undefined,
+        ...(query.tag ? { tag: query.tag } : {}),
+        ...(query.type ? { type: query.type } : {}),
+        ...(query.path ? { pathPrefix: query.path } : {}),
+      },
       ctx,
     );
   });

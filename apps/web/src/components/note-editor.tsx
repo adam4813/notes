@@ -7,6 +7,7 @@ import { api } from "../api/client";
 import { connectTomeChanges } from "../api/ws";
 import { useAppServices } from "../state/app-services";
 import { useWorkspace } from "../state/app-context";
+import { FindBar } from "./find-bar";
 
 function basename(path: string): string {
   return (path.split("/").pop() ?? path).replace(/\.[^.]+$/, "");
@@ -43,6 +44,8 @@ export function NoteEditor({ path }: { path: string }) {
   const [content, setContent] = useState("");
   const [mode, setMode] = useState<EditorMode>("rendered");
   const [saveState, setSaveState] = useState<SaveState>("loading");
+  const [findOpen, setFindOpen] = useState(false);
+  const regionRef = useRef<HTMLDivElement>(null);
   const dirtyRef = useRef(false);
   const contentRef = useRef("");
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -158,9 +161,23 @@ export function NoteEditor({ path }: { path: string }) {
   const frontType = isCanvas ? undefined : getFrontmatterType(content);
   const isBoard = frontType === "board";
   const isTable = frontType === "table";
+  const canFind = !isCanvas && !isBoard && !isTable;
+
+  const applyReplace = (next: string) => {
+    setContent(next);
+    handleChange(next);
+  };
 
   return (
-    <div className="note-editor">
+    <div
+      className="note-editor"
+      onKeyDown={(event) => {
+        if (canFind && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f") {
+          event.preventDefault();
+          setFindOpen(true);
+        }
+      }}
+    >
       <div className="editor-toolbar-row">
         {isCanvas ? (
           <span className="note-type-badge">Canvas</span>
@@ -184,22 +201,44 @@ export function NoteEditor({ path }: { path: string }) {
           </div>
         )}
         <span className={`save-status save-status--${saveState}`}>{SAVE_LABEL[saveState]}</span>
+        {canFind && (
+          <button
+            className="editor-find-btn"
+            title="Find in note (Ctrl/Cmd+F)"
+            aria-label="Find in note"
+            onClick={() => setFindOpen(true)}
+          >
+            🔍
+          </button>
+        )}
       </div>
-      {isCanvas ? (
-        <CanvasView
-          key={path}
-          path={path}
-          value={content}
-          onChange={handleChange}
-          onOpenFile={(target) => dispatch({ type: "openFile", path: target, title: basename(target) })}
+      {canFind && findOpen && (
+        <FindBar
+          regionRef={regionRef}
+          content={content}
+          onReplace={applyReplace}
+          onClose={() => setFindOpen(false)}
         />
-      ) : isBoard ? (
-        <BoardView value={content} onChange={handleChange} />
-      ) : isTable ? (
-        <TableGrid value={content} onChange={handleChange} />
-      ) : (
-        <MarkdownEditor value={content} mode={mode} onChange={handleChange} callbacks={callbacks} />
       )}
+      <div className="note-editor-region" ref={regionRef}>
+        {isCanvas ? (
+          <CanvasView
+            key={path}
+            path={path}
+            value={content}
+            onChange={handleChange}
+            onOpenFile={(target) =>
+              dispatch({ type: "openFile", path: target, title: basename(target) })
+            }
+          />
+        ) : isBoard ? (
+          <BoardView value={content} onChange={handleChange} />
+        ) : isTable ? (
+          <TableGrid value={content} onChange={handleChange} />
+        ) : (
+          <MarkdownEditor value={content} mode={mode} onChange={handleChange} callbacks={callbacks} />
+        )}
+      </div>
     </div>
   );
 }

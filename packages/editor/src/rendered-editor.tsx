@@ -106,6 +106,11 @@ export function RenderedEditor({ value, onChange, callbacks }: RenderedEditorPro
     if (!editor) {
       return;
     }
+    // Don't clobber the document (and reset the selection) while the user is
+    // actively editing; only sync external/programmatic value changes.
+    if (editor.isFocused) {
+      return;
+    }
     if (value !== readMarkdown(editor)) {
       editor.commands.setContent(value, { emitUpdate: false });
     }

@@ -21,6 +21,12 @@ export interface TagCount {
   count: number;
 }
 
+export interface SearchFilters {
+  tag?: string;
+  type?: string;
+  path?: string;
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const hasBody = init?.body !== undefined && init.body !== null;
   const response = await fetch(url, {
@@ -61,7 +67,16 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ from, to }),
     }),
-  search: (q: string) => request<{ results: SearchResult[] }>(`/api/search?${query({ q })}`),
+  search: (q: string, filters: SearchFilters = {}) =>
+    request<{ results: SearchResult[] }>(
+      `/api/search?${query({
+        q,
+        ...(filters.tag ? { tag: filters.tag } : {}),
+        ...(filters.type ? { type: filters.type } : {}),
+        ...(filters.path ? { path: filters.path } : {}),
+      })}`,
+    ),
+  tag: (tag: string) => request<{ paths: string[] }>(`/api/tag?${query({ tag })}`),
   backlinks: (path: string) =>
     request<{ backlinks: Backlink[] }>(`/api/backlinks?${query({ path })}`),
   tags: () => request<{ tags: TagCount[] }>("/api/tags"),

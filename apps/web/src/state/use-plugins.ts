@@ -29,11 +29,13 @@ export function usePlugins(): PluginsApi {
   useEffect(() => {
     const host: PluginHost = {
       registerCommand: (command) => {
-        setPluginCommands((prev) => [...prev, command]);
+        // Dedupe by id so a double-registration (e.g. React StrictMode) can't
+        // surface the same command twice in the palette.
+        setPluginCommands((prev) => [...prev.filter((c) => c.id !== command.id), command]);
         return () => setPluginCommands((prev) => prev.filter((c) => c.id !== command.id));
       },
       addStatusBarItem: (item) => {
-        setStatusItems((prev) => [...prev, item]);
+        setStatusItems((prev) => [...prev.filter((i) => i.id !== item.id), item]);
         return () => setStatusItems((prev) => prev.filter((i) => i.id !== item.id));
       },
       setThemeToken: (name, value) => {
@@ -50,6 +52,17 @@ export function usePlugins(): PluginsApi {
       manager.register(plugin);
     }
     void manager.activateEnabled().then(() => setList(manager.list()));
+
+    return () => {
+      for (const info of manager.list()) {
+        if (info.enabled) {
+          manager.disable(info.manifest.id, false);
+        }
+      }
+      managerRef.current = undefined;
+      setPluginCommands([]);
+      setStatusItems([]);
+    };
   }, [documentSignal]);
 
   const toggle = useCallback((id: string, enabled: boolean) => {

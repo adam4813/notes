@@ -198,7 +198,7 @@ Status legend: ⬜ Not Started · 🔄 In Progress · ✅ Complete
 | 8. Kanban Board Note Type | [plan/phase-08-board-note.md](plan/phase-08-board-note.md) | ✅ Complete | 3, 1 |
 | 9. Plugin System Hardening & Loading | [plan/phase-09-plugin-system.md](plan/phase-09-plugin-system.md) | ✅ Complete | 6, 7, 8 |
 | 10. Command Palette, Hotkeys & Theming | [plan/phase-10-commands-theming.md](plan/phase-10-commands-theming.md) | ✅ Complete | 3, 5 |
-| 11. Search, Tags & Info Panels UI | [plan/phase-11-search-tags-ui.md](plan/phase-11-search-tags-ui.md) | ⬜ Not Started | 2, 3, 5 |
+| 11. Search, Tags & Info Panels UI | [plan/phase-11-search-tags-ui.md](plan/phase-11-search-tags-ui.md) | ✅ Complete | 2, 3, 5 |
 | 12. MVP Polish, Performance & Hardening | [plan/phase-12-polish.md](plan/phase-12-polish.md) | ⬜ Not Started | 4–11 |
 
 ---
@@ -221,22 +221,22 @@ Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase 
 
 ## 8. Cross-Session Handoff
 
-- **Last session:** 2026-07-07 — **Phase 10 (Command Palette, Hotkeys & Theming) complete.**
-  Also addressed feedback: **Settings can open as a tab** (checkbox, live-converts between
-  dialog/tab; committed separately). Phase 10: enriched `AppCommand` registry; fuzzy palette with
-  recents + keyboard nav + hotkey hints; quick switcher with create-on-miss; pure hotkey resolver
-  in `@notes/core` (+Vitest) driving a `useHotkeys` manager with click-to-capture rebind, reset,
-  and conflict detection (persisted); theming with no-flash inline script, theme segmented control,
-  accent presets; plugin API extended with command `defaultHotkey` + `ctx.setThemeToken`. GATE
-  resolved autonomously (user away): default hotkeys accepted; MVP theming = accent presets +
-  light/dark/system (custom picker / named themes deferred, TODO `deferred-theming-custom`).
-  76 unit tests + 14 Playwright specs + build all green.
-- **Current state:** Keyboard-first shell complete: command palette, quick switcher, rebindable
-  hotkeys, and a token-driven theming system that plugins can extend. Full note-type suite +
-  plugin system all on the same extension seam.
-- **Next action:** **Phase 11 — Search & Tags UI**, then 12 (MVP polish/perf/a11y). Post-MVP
-  backlog: calendar note, grid note, embeddable note types, per-Tome plugin loader, custom
-  theming, folder drag/move.
+- **Last session:** 2026-07-07 — **Phase 11 (Search, Tags & Info Panels) complete**, plus
+  three feedback fixes committed earlier this session (empty-pane split lock, settings-tab
+  toggle/focus, tab context menu). Phase 11: left-sidebar Explorer/Search/Tags switcher; FTS
+  search pane with type/tag/folder filters (incl. filter-only queries) + highlighted snippets;
+  tag pane (counts, nesting, click-to-filter); in-note find/replace (`Ctrl/Cmd+F` + toolbar 🔍,
+  CSS Highlight API, pure logic tested); collapsible right-panel Properties/Outline/Backlinks.
+  Also fixed a real editing bug: the rendered editor reset the cursor to doc-start on redundant
+  value-syncs (now never clobbers while focused). GATE fixes: tag-only search, discoverable find
+  button, de-duplicated plugin command registration (StrictMode guard), and changed the sample
+  plugin hotkey off `Mod+Shift+W` (closed the tab) to `Mod+Alt+W`. 86 unit tests + 18 Playwright
+  specs + build all green.
+- **Current state:** Knowledge base is fully navigable — search, tags, backlinks, outline,
+  properties, in-note find/replace — atop the rebuildable SQLite index.
+- **Next action:** **Phase 12 — MVP polish/perf/a11y** (final phase). Post-MVP backlog: calendar
+  note, grid note, embeddable note types, per-Tome plugin loader, custom theming, whole-Tome
+  find/replace, hierarchical tag filtering, folder drag/move.
 - **Conventions:** `.github/copilot-instructions.md` is finalized in Phase 0; treat it as the
   binding style/architecture reference for all later phases.
 

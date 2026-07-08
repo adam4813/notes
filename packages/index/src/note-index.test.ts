@@ -58,6 +58,31 @@ describe("NoteIndex", () => {
     index.close();
   });
 
+  it("filters full-text search by tag, type, and folder", () => {
+    const index = new NoteIndex();
+    index.rebuild([
+      file("welcome.md", "# Welcome\n\nproject overview here. #project"),
+      file("notes/ideas.md", "# Ideas\n\nproject brainstorm. #inbox"),
+      file("archive/old.md", "# Old\n\nproject archive notes."),
+    ]);
+
+    expect(index.search("project").length).toBe(3);
+    expect(index.search("project", { tag: "project" }).map((r) => r.path)).toEqual(["welcome.md"]);
+    expect(index.search("project", { pathPrefix: "notes" }).map((r) => r.path)).toEqual([
+      "notes/ideas.md",
+    ]);
+    expect(index.search("project", 50, { pathPrefix: "archive" }).map((r) => r.path)).toEqual([
+      "archive/old.md",
+    ]);
+
+    // Filter-only search (no text query) lists notes matching the filters.
+    expect(index.search("", { tag: "project" }).map((r) => r.path)).toEqual(["welcome.md"]);
+    expect(index.search("", { pathPrefix: "notes" }).map((r) => r.path)).toEqual(["notes/ideas.md"]);
+    expect(index.search("")).toEqual([]);
+
+    index.close();
+  });
+
   it("resolves wikilinks by basename to a note path", () => {
     const index = new NoteIndex();
     index.rebuild(fixture);

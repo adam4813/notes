@@ -39,7 +39,7 @@ export const wordCountPlugin: NotesPlugin = {
     ctx.registerCommand({
       id: "word-count.show",
       label: "Word Count: show for active note",
-      defaultHotkey: "Mod+Shift+W",
+      defaultHotkey: "Mod+Alt+W",
       run: () => {
         const doc = ctx.document.get();
         window.alert(doc ? `${countWords(doc.content)} words in ${doc.path}` : "No note open");

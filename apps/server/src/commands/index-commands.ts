@@ -4,6 +4,9 @@ import type { IndexService } from "../index-service";
 interface SearchPayload {
   query: string;
   limit?: number;
+  tag?: string;
+  type?: string;
+  pathPrefix?: string;
 }
 
 interface PathPayload {
@@ -22,7 +25,13 @@ interface ResolvePayload {
 export function registerIndexCommands(bus: CommandBus, service: IndexService): void {
   bus.register<SearchPayload, unknown>({
     name: "index.search",
-    handler: (payload) => ({ results: service.index.search(payload.query, payload.limit) }),
+    handler: (payload) => ({
+      results: service.index.search(payload.query, payload.limit ?? 50, {
+        ...(payload.tag ? { tag: payload.tag } : {}),
+        ...(payload.type ? { type: payload.type } : {}),
+        ...(payload.pathPrefix ? { pathPrefix: payload.pathPrefix } : {}),
+      }),
+    }),
   });
 
   bus.register<PathPayload, unknown>({

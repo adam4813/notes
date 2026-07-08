@@ -15,6 +15,15 @@ export interface SearchResult {
   snippet: string;
 }
 
+export interface SearchFilters {
+  /** Only notes carrying this exact tag. */
+  tag?: string;
+  /** Only notes of this type (e.g. "markdown", "table", "canvas", "board"). */
+  type?: string;
+  /** Only notes whose path starts with this folder prefix. */
+  pathPrefix?: string;
+}
+
 export interface BacklinkResult {
   path: string;
   title: string;
@@ -167,17 +176,65 @@ export class NoteIndex {
     }[];
   }
 
-  search(query: string, limit = 50): SearchResult[] {
+  search(query: string, limitOrFilters?: number | SearchFilters, maybeFilters?: SearchFilters): SearchResult[] {
+    const limit = typeof limitOrFilters === "number" ? limitOrFilters : 50;
+    const filters = (typeof limitOrFilters === "number" ? maybeFilters : limitOrFilters) ?? {};
     const match = toFtsMatch(query);
+    const hasFilters = Boolean(filters.tag || filters.type || filters.pathPrefix);
     if (!match) {
-      return [];
+      return hasFilters ? this.listByFilters(filters, limit) : [];
     }
+
+    const conditions: string[] = ["notes_fts MATCH ?"];
+    const params: unknown[] = [match];
+    if (filters.type) {
+      conditions.push("n.type = ?");
+      params.push(filters.type);
+    }
+    if (filters.pathPrefix) {
+      conditions.push("notes_fts.path LIKE ?");
+      params.push(`${filters.pathPrefix}/%`);
+    }
+    if (filters.tag) {
+      conditions.push("EXISTS (SELECT 1 FROM tags t WHERE t.path = notes_fts.path AND t.tag = ?)");
+      params.push(filters.tag);
+    }
+    params.push(limit);
+
     return this.db
       .prepare(
-        "SELECT path, title, snippet(notes_fts, 2, '<mark>', '</mark>', '…', 12) AS snippet " +
-          "FROM notes_fts WHERE notes_fts MATCH ? ORDER BY rank LIMIT ?",
+        "SELECT notes_fts.path AS path, notes_fts.title AS title, " +
+          "snippet(notes_fts, 2, '<mark>', '</mark>', '…', 12) AS snippet " +
+          "FROM notes_fts JOIN notes n ON n.path = notes_fts.path " +
+          `WHERE ${conditions.join(" AND ")} ORDER BY rank LIMIT ?`,
       )
-      .all(match, limit) as SearchResult[];
+      .all(...params) as SearchResult[];
+  }
+
+  /** Lists notes matching only the filters (no full-text query). */
+  private listByFilters(filters: SearchFilters, limit: number): SearchResult[] {
+    const conditions: string[] = ["1 = 1"];
+    const params: unknown[] = [];
+    if (filters.type) {
+      conditions.push("n.type = ?");
+      params.push(filters.type);
+    }
+    if (filters.pathPrefix) {
+      conditions.push("n.path LIKE ?");
+      params.push(`${filters.pathPrefix}/%`);
+    }
+    if (filters.tag) {
+      conditions.push("EXISTS (SELECT 1 FROM tags t WHERE t.path = n.path AND t.tag = ?)");
+      params.push(filters.tag);
+    }
+    params.push(limit);
+    const rows = this.db
+      .prepare(
+        `SELECT n.path AS path, n.title AS title FROM notes n WHERE ${conditions.join(" AND ")} ` +
+          "ORDER BY n.title LIMIT ?",
+      )
+      .all(...params) as { path: string; title: string }[];
+    return rows.map((row) => ({ path: row.path, title: row.title, snippet: "" }));
   }
 
   backlinksOf(path: string): BacklinkResult[] {

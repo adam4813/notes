@@ -1,6 +1,6 @@
 # Phase 11 — Search, Tags & Info Panels UI
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 **Depends on:** 2, 3, 5
 
 ## Goal
@@ -54,4 +54,18 @@ Commit message:
 `feat: search pane, in-note find, tag pane, and finalized info panels`
 
 ## Feedback
-_(none yet)_
+**2025 session (GATE — user reviewed):**
+- Search relevance/filters/snippets: good enough for daily use. ✅
+- Replace scope: **in-note only** for MVP (whole-Tome find/replace deferred — TODO created).
+- Nested tags: should filter **hierarchically** by default (selecting `a` includes `a/b`) —
+  deferred TODO created (current filter is exact-tag).
+- **Bugs reported & fixed this session:**
+  1. Tag/type/folder filters returned nothing unless a text query was also present — search
+     now supports filter-only queries (empty text + filters lists matching notes).
+  2. Find/replace was undiscoverable — added a right-aligned 🔍 find button to the editor toolbar.
+  3. The Word Count command appeared twice in the palette — plugin command/status registration
+     now dedupes by id (guards React StrictMode double-mount), plus effect cleanup.
+  4. The sample plugin's default hotkey `Mod+Shift+W` closes the browser tab — changed to
+     `Mod+Alt+W`.
+- No blocking issues; 86 unit tests, 18 Playwright specs, typecheck/lint/build all green.
+
