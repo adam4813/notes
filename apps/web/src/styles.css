@@ -1873,12 +1873,12 @@ button {
   user-select: none;
 }
 
-.grid-row {
+.grid-canvas .grid-row {
   display: flex;
   flex: none;
 }
 
-.grid-cell {
+.grid-canvas .grid-cell {
   box-sizing: border-box;
   flex: none;
   border: 1px solid var(--border);
@@ -1887,7 +1887,7 @@ button {
   justify-content: center;
 }
 
-.grid-token {
+.grid-canvas .grid-token {
   font-size: 14px;
   font-weight: 700;
   pointer-events: none;

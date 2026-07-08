@@ -78,7 +78,7 @@ function TreeRow({ entry, depth, handlers }: { entry: FileEntry; depth: number; 
       <button
         className={`tree-row tree-dir ${isDropTarget ? "tree-row--drop" : ""}`}
         style={indent}
-        draggable={depth > 0}
+        draggable
         onDragStart={(event) => event.dataTransfer.setData(DRAG_TYPE, entry.path)}
         onClick={() => handlers.onToggleDir(entry.path)}
         onContextMenu={(event) => handlers.onContextMenu(event, entry)}
