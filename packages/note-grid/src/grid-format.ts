@@ -6,6 +6,8 @@ export interface GridToken {
   y: number;
   label: string;
   color: string;
+  /** Id of the layer this token belongs to (hidden when the layer is hidden). */
+  layer: string;
 }
 
 export interface GridLayer {
@@ -75,7 +77,9 @@ export function parseGrid(markdown: string): GridModel {
     cellSize: data.cellSize ?? 28,
     layers,
     activeLayer,
-    tokens: Array.isArray(data.tokens) ? data.tokens : [],
+    tokens: Array.isArray(data.tokens)
+      ? data.tokens.map((token) => ({ ...token, layer: token.layer ?? activeLayer }))
+      : [],
   };
 }
 

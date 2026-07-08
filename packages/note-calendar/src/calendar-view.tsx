@@ -42,6 +42,9 @@ export function CalendarView({ value, onChange }: CalendarViewProps) {
   const [model, setModel] = useState<CalendarModel>(() => parseCalendar(value));
   const [mode, setMode] = useState<CalendarMode>("month");
   const [cursor, setCursor] = useState(() => new Date());
+  const [composing, setComposing] = useState<{ date: string; title: string; time: string } | null>(
+    null,
+  );
   const lastSerialized = useRef(value);
 
   useEffect(() => {
@@ -69,12 +72,23 @@ export function CalendarView({ value, onChange }: CalendarViewProps) {
     return map;
   }, [model.events]);
 
-  const addEvent = (date: string) => {
-    const title = window.prompt(`New event on ${date}`);
-    if (!title?.trim()) {
+  const startAdd = (date: string) => setComposing({ date, title: "", time: "" });
+
+  const saveComposing = () => {
+    if (!composing || !composing.title.trim()) {
+      setComposing(null);
       return;
     }
-    commit([...model.events, { id: newEventId(), date, title: title.trim() }]);
+    commit([
+      ...model.events,
+      {
+        id: newEventId(),
+        date: composing.date,
+        ...(composing.time ? { time: composing.time } : {}),
+        title: composing.title.trim(),
+      },
+    ]);
+    setComposing(null);
   };
 
   const removeEvent = (id: string) => commit(model.events.filter((event) => event.id !== id));
@@ -116,7 +130,51 @@ export function CalendarView({ value, onChange }: CalendarViewProps) {
             </button>
           </div>
         )}
+        {mode === "agenda" && (
+          <button className="btn-ghost" onClick={() => startAdd(todayIso)}>
+            ＋ Add event
+          </button>
+        )}
       </div>
+
+      {composing && (
+        <div className="calendar-compose" data-testid="calendar-compose">
+          <span className="calendar-compose-date">{composing.date}</span>
+          <input
+            className="calendar-compose-title"
+            data-testid="calendar-compose-title"
+            autoFocus
+            placeholder="Event title"
+            value={composing.title}
+            onChange={(event) =>
+              setComposing((prev) => (prev ? { ...prev, title: event.target.value } : prev))
+            }
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                saveComposing();
+              } else if (event.key === "Escape") {
+                setComposing(null);
+              }
+            }}
+          />
+          <input
+            className="calendar-compose-time"
+            data-testid="calendar-compose-time"
+            type="time"
+            aria-label="Event time"
+            value={composing.time}
+            onChange={(event) =>
+              setComposing((prev) => (prev ? { ...prev, time: event.target.value } : prev))
+            }
+          />
+          <button className="calendar-compose-add" data-testid="calendar-compose-add" onClick={saveComposing}>
+            Add
+          </button>
+          <button className="btn-ghost" onClick={() => setComposing(null)}>
+            Cancel
+          </button>
+        </div>
+      )}
 
       {mode === "month" ? (
         <div className="calendar-grid" data-testid="calendar-grid">
@@ -135,7 +193,7 @@ export function CalendarView({ value, onChange }: CalendarViewProps) {
                 className={`calendar-cell ${inMonth ? "" : "calendar-cell--muted"} ${
                   iso === todayIso ? "calendar-cell--today" : ""
                 }`}
-                onClick={() => addEvent(iso)}
+                onClick={() => startAdd(iso)}
               >
                 <span className="calendar-daynum">{date.getDate()}</span>
                 {events.map((event) => (

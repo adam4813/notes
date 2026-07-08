@@ -511,6 +511,17 @@ button {
   align-items: center;
 }
 
+.property-row--readonly {
+  align-items: center;
+  padding: 3px 0;
+  opacity: 0.85;
+}
+
+.property-lock {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
 .property-input {
   flex: 1;
   min-width: 0;
@@ -1548,6 +1559,46 @@ button {
   font-weight: 600;
 }
 
+.calendar-compose {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.calendar-compose-date {
+  font-size: 13px;
+  color: var(--fg-muted);
+  min-width: 96px;
+}
+
+.calendar-compose-title {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.calendar-compose-time {
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.calendar-compose-add {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+}
+
 .calendar-grid {
   flex: 1;
   min-height: 0;
@@ -1689,6 +1740,35 @@ button {
   color: var(--fg);
 }
 
+.grid-size {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.grid-size-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+
+.grid-size-field input[type="number"] {
+  width: 52px;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.grid-hint {
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--fg-muted);
+  border-bottom: 1px solid var(--border);
+}
+
 .grid-body {
   flex: 1;
   min-height: 0;
@@ -1697,16 +1777,22 @@ button {
 }
 
 .grid-canvas {
-  display: grid;
-  gap: 0;
+  display: flex;
+  flex-direction: column;
   align-content: start;
   overflow: auto;
   padding: 12px;
   user-select: none;
 }
 
+.grid-row {
+  display: flex;
+  flex: none;
+}
+
 .grid-cell {
   box-sizing: border-box;
+  flex: none;
   border: 1px solid var(--border);
   display: flex;
   align-items: center;

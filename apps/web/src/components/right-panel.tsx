@@ -64,6 +64,8 @@ export function RightPanel() {
   const [headings, setHeadings] = useState<Heading[]>([]);
   const [content, setContent] = useState("");
   const [props, setProps] = useState<FrontmatterProp[]>([]);
+  // The structural `type` key is preserved but not user-editable.
+  const [typeValue, setTypeValue] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!path || !isNote) {
@@ -84,7 +86,9 @@ export function RightPanel() {
         if (!cancelled) {
           setContent(result.content);
           setHeadings(extractHeadings(result.content));
-          setProps(parseFrontmatter(result.content).props);
+          const parsed = parseFrontmatter(result.content).props;
+          setTypeValue(parsed.find((prop) => prop.key === "type")?.value);
+          setProps(parsed.filter((prop) => prop.key !== "type"));
         }
       })
       .catch(() => {
@@ -92,6 +96,7 @@ export function RightPanel() {
           setContent("");
           setHeadings([]);
           setProps([]);
+          setTypeValue(undefined);
         }
       });
     return () => {
@@ -103,7 +108,9 @@ export function RightPanel() {
     if (!path) {
       return;
     }
-    const newContent = applyProperties(content, next);
+    // Re-inject the protected `type` key so it survives edits.
+    const full = typeValue ? [{ key: "type", value: typeValue }, ...next] : next;
+    const newContent = applyProperties(content, full);
     setContent(newContent);
     try {
       await api.write(path, newContent);
@@ -133,6 +140,15 @@ export function RightPanel() {
             <div className="panel-empty">Properties aren’t available for canvas notes.</div>
           ) : (
             <>
+              {typeValue && (
+                <div className="property-row property-row--readonly">
+                  <span className="property-key">type</span>
+                  <span className="property-value">{typeValue}</span>
+                  <span className="property-lock" title="Managed by the note type">
+                    🔒
+                  </span>
+                </div>
+              )}
               <ul className="property-list">
                 {props.map((prop, index) => (
                   <li key={index} className="property-row property-row--edit">

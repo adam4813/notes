@@ -10,14 +10,11 @@ test("grid note: create, paint a cell, and add a layer", async ({ page }) => {
   const canvas = page.getByTestId("grid-canvas");
   await expect(canvas).toBeVisible();
 
-  // Paint a cell (Paint tool + color are selected by default).
-  await canvas.locator(".grid-cell").first().click({ force: true });
+  // Paint the first cell (Paint tool + color are selected by default).
+  const firstCell = canvas.locator(".grid-cell").first();
+  await firstCell.click();
   await expect
-    .poll(() =>
-      canvas
-        .locator(".grid-cell")
-        .evaluateAll((cells) => cells.some((cell) => (cell as HTMLElement).style.background !== "")),
-    )
+    .poll(() => firstCell.evaluate((el) => (el as HTMLElement).style.background !== ""))
     .toBe(true);
 
   // Add a second layer.

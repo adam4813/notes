@@ -84,10 +84,15 @@ export function GridView({ value, onChange }: GridViewProps) {
 
   const toggleToken = (x: number, y: number) => {
     const current = modelRef.current;
-    const existing = current.tokens.find((token) => token.x === x && token.y === y);
+    const existing = current.tokens.find(
+      (token) => token.x === x && token.y === y && token.layer === current.activeLayer,
+    );
     const tokens = existing
       ? current.tokens.filter((token) => token !== existing)
-      : [...current.tokens, { id: newId("tok"), x, y, label: tokenLabel || "●", color }];
+      : [
+          ...current.tokens,
+          { id: newId("tok"), x, y, label: tokenLabel || "●", color, layer: current.activeLayer },
+        ];
     update({ ...current, tokens });
   };
 
@@ -146,6 +151,12 @@ export function GridView({ value, onChange }: GridViewProps) {
   const rows = Array.from({ length: model.height }, (_, y) => y);
   const cols = Array.from({ length: model.width }, (_, x) => x);
 
+  const resize = (patch: { width?: number; height?: number }) => {
+    const width = Math.min(64, Math.max(1, patch.width ?? model.width));
+    const height = Math.min(64, Math.max(1, patch.height ?? model.height));
+    update({ ...model, width, height });
+  };
+
   return (
     <div className="grid-note">
       <div className="grid-toolbar">
@@ -180,50 +191,88 @@ export function GridView({ value, onChange }: GridViewProps) {
             onChange={(event) => setColor(event.target.value)}
           />
         </div>
-        {tool === "token" && (
-          <input
-            className="grid-token-label"
-            aria-label="Token label"
-            maxLength={2}
-            value={tokenLabel}
-            onChange={(event) => setTokenLabel(event.target.value)}
-          />
+        {tool === "token" ? (
+          <label className="grid-size-field">
+            Token
+            <input
+              className="grid-token-label"
+              aria-label="Token label"
+              maxLength={2}
+              value={tokenLabel}
+              onChange={(event) => setTokenLabel(event.target.value)}
+            />
+          </label>
+        ) : (
+          <div className="grid-size">
+            <label className="grid-size-field">
+              W
+              <input
+                type="number"
+                min={1}
+                max={64}
+                aria-label="Grid width"
+                value={model.width}
+                onChange={(event) => resize({ width: Number(event.target.value) })}
+              />
+            </label>
+            <label className="grid-size-field">
+              H
+              <input
+                type="number"
+                min={1}
+                max={64}
+                aria-label="Grid height"
+                value={model.height}
+                onChange={(event) => resize({ height: Number(event.target.value) })}
+              />
+            </label>
+          </div>
         )}
       </div>
+
+      {tool === "token" && (
+        <div className="grid-hint">
+          Click a cell to place or remove a token on the active layer.
+        </div>
+      )}
 
       <div className="grid-body">
         <div
           className="grid-canvas"
           data-testid="grid-canvas"
-          style={{
-            gridTemplateColumns: `repeat(${model.width}, ${model.cellSize}px)`,
-          }}
           onMouseLeave={() => {
             painting.current = false;
           }}
         >
-          {rows.map((y) =>
-            cols.map((x) => {
-              const fill = topColor(model, x, y);
-              const token = model.tokens.find((entry) => entry.x === x && entry.y === y);
-              return (
-                <div
-                  key={cellKey(x, y)}
-                  className="grid-cell"
-                  data-cell={cellKey(x, y)}
-                  style={{ width: model.cellSize, height: model.cellSize, background: fill }}
-                  onMouseDown={() => onCellDown(x, y)}
-                  onMouseEnter={() => onCellEnter(x, y)}
-                >
-                  {token && (
-                    <span className="grid-token" style={{ color: token.color }}>
-                      {token.label}
-                    </span>
-                  )}
-                </div>
-              );
-            }),
-          )}
+          {rows.map((y) => (
+            <div key={y} className="grid-row">
+              {cols.map((x) => {
+                const fill = topColor(model, x, y);
+                const visibleLayers = new Set(
+                  model.layers.filter((layer) => layer.visible).map((layer) => layer.id),
+                );
+                const token = model.tokens.find(
+                  (entry) => entry.x === x && entry.y === y && visibleLayers.has(entry.layer),
+                );
+                return (
+                  <div
+                    key={cellKey(x, y)}
+                    className="grid-cell"
+                    data-cell={cellKey(x, y)}
+                    style={{ width: model.cellSize, height: model.cellSize, background: fill }}
+                    onMouseDown={() => onCellDown(x, y)}
+                    onMouseEnter={() => onCellEnter(x, y)}
+                  >
+                    {token && (
+                      <span className="grid-token" style={{ color: token.color }}>
+                        {token.label}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
         </div>
 
         <aside className="grid-layers">

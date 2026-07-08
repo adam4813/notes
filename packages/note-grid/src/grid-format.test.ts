@@ -10,12 +10,13 @@ describe("grid-format", () => {
       cellSize: 20,
       layers: [{ id: "layer-1", name: "Base", visible: true, cells: { [cellKey(1, 1)]: "#f00" } }],
       activeLayer: "layer-1",
-      tokens: [{ id: "t1", x: 0, y: 0, label: "A", color: "#000" }],
+      tokens: [{ id: "t1", x: 0, y: 0, label: "A", color: "#000", layer: "layer-1" }],
     });
     const model = parseGrid(md);
     expect(model.width).toBe(4);
     expect(model.layers[0].cells["1,1"]).toBe("#f00");
     expect(model.tokens[0].label).toBe("A");
+    expect(model.tokens[0].layer).toBe("layer-1");
   });
 
   it("falls back to defaults on malformed body", () => {
