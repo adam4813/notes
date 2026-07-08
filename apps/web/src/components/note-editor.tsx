@@ -1,6 +1,7 @@
 import { MarkdownEditor, EDITOR_MODES, type EditorCallbacks, type EditorMode } from "@notes/editor";
 import { CanvasView } from "@notes/note-canvas";
 import { BoardView } from "@notes/note-boards";
+import { CalendarView } from "@notes/note-calendar";
 import { MermaidView } from "@notes/note-mermaid";
 import { TableGrid } from "@notes/note-tables";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -175,7 +176,8 @@ export function NoteEditor({ path }: { path: string }) {
   const isBoard = frontType === "board";
   const isTable = frontType === "table";
   const isMermaid = frontType === "mermaid";
-  const canFind = !isCanvas && !isBoard && !isTable && !isMermaid;
+  const isCalendar = frontType === "calendar";
+  const canFind = !isCanvas && !isBoard && !isTable && !isMermaid && !isCalendar;
 
   const applyReplace = (next: string) => {
     setContent(next);
@@ -201,6 +203,8 @@ export function NoteEditor({ path }: { path: string }) {
           <span className="note-type-badge">Table</span>
         ) : isMermaid ? (
           <span className="note-type-badge">Mermaid</span>
+        ) : isCalendar ? (
+          <span className="note-type-badge">Calendar</span>
         ) : (
           <div className="mode-switch" role="tablist">
             {EDITOR_MODES.map((candidate) => (
@@ -253,6 +257,8 @@ export function NoteEditor({ path }: { path: string }) {
           <TableGrid value={content} onChange={handleChange} />
         ) : isMermaid ? (
           <MermaidView value={content} onChange={handleChange} />
+        ) : isCalendar ? (
+          <CalendarView value={content} onChange={handleChange} />
         ) : (
           <MarkdownEditor value={content} mode={mode} onChange={handleChange} callbacks={callbacks} />
         )}

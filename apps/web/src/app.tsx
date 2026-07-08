@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatCombo } from "@notes/core";
 import { emptyCanvas } from "@notes/note-canvas";
 import { emptyBoard } from "@notes/note-boards";
+import { emptyCalendar } from "@notes/note-calendar";
 import { emptyMermaid } from "@notes/note-mermaid";
 import { emptyTableMarkdown } from "@notes/note-tables";
 import { api, type FileEntry } from "./api/client";
@@ -104,6 +105,10 @@ export function App() {
   );
   const createMermaid = useCallback(
     (dir?: string) => createOfType("New Diagram", ".md", () => emptyMermaid(), dir),
+    [createOfType],
+  );
+  const createCalendar = useCallback(
+    (dir?: string) => createOfType("New Calendar", ".md", () => emptyCalendar(), dir),
     [createOfType],
   );
 
@@ -360,6 +365,7 @@ export function App() {
       { id: "new-canvas", title: "New canvas", category: "Create", run: () => createCanvas() },
       { id: "new-board", title: "New board", category: "Create", run: () => createBoard() },
       { id: "new-mermaid", title: "New diagram", category: "Create", run: () => createMermaid() },
+      { id: "new-calendar", title: "New calendar", category: "Create", run: () => createCalendar() },
       {
         id: "split-pane",
         title: "Split editor pane",
@@ -400,6 +406,7 @@ export function App() {
       createCanvas,
       createBoard,
       createMermaid,
+      createCalendar,
       plugins.pluginCommands,
       state.activePaneId,
       openSettings,
@@ -430,8 +437,9 @@ export function App() {
       { id: "canvas", label: "Canvas", run: () => createCanvas() },
       { id: "board", label: "Board", run: () => createBoard() },
       { id: "mermaid", label: "Diagram (Mermaid)", run: () => createMermaid() },
+      { id: "calendar", label: "Calendar", run: () => createCalendar() },
     ],
-    [createNote, createTable, createCanvas, createBoard, createMermaid],
+    [createNote, createTable, createCanvas, createBoard, createMermaid, createCalendar],
   );
 
   const settingsProps = useMemo<SettingsBodyProps>(
@@ -490,6 +498,7 @@ export function App() {
       createCanvas,
       createBoard,
       createMermaid,
+      createCalendar,
       seedSampleNotes,
       noteTypes,
       setActiveDocument: (doc: { path: string; content: string; type: string } | null) =>
@@ -505,6 +514,7 @@ export function App() {
       createCanvas,
       createBoard,
       createMermaid,
+      createCalendar,
       seedSampleNotes,
       noteTypes,
       plugins.documentSignal,

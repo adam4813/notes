@@ -14,6 +14,7 @@
     "@notes/core": "*",
     "@notes/index": "*",
     "@notes/note-boards": "*",
+    "@notes/note-calendar": "*",
     "@notes/note-canvas": "*",
     "@notes/note-mermaid": "*",
     "@notes/note-tables": "*",

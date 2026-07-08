@@ -1,0 +1,22 @@
+{
+  "name": "@notes/note-calendar",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Calendar note type, markdown-backed (first-party plugin).",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@notes/core": "*"
+  },
+  "peerDependencies": {
+    "react": "^18",
+    "react-dom": "^18"
+  }
+}

@@ -1484,6 +1484,131 @@ button {
   padding: 10px;
 }
 
+/* Calendar note type */
+.calendar-note {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.calendar-mode-switch {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.calendar-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.calendar-title {
+  min-width: 140px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.calendar-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 1fr;
+  overflow: auto;
+}
+
+.calendar-weekday {
+  padding: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-muted);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+.calendar-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  min-height: 84px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  text-align: left;
+  overflow: hidden;
+}
+
+.calendar-cell--muted {
+  background: var(--bg-sunken);
+  color: var(--fg-muted);
+}
+
+.calendar-cell--today {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.calendar-daynum {
+  font-size: 12px;
+  font-weight: 600;
+  align-self: flex-end;
+}
+
+.calendar-event {
+  font-size: 11px;
+  background: var(--active);
+  border-radius: 4px;
+  padding: 1px 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-agenda {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  overflow: auto;
+}
+
+.calendar-agenda-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.calendar-agenda-date {
+  min-width: 130px;
+  color: var(--fg-muted);
+  font-size: 13px;
+}
+
+.calendar-agenda-title {
+  flex: 1;
+}
+
+.calendar-agenda-remove {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  font-size: 15px;
+}
+
 .editor-toolbar-row {
   display: flex;
   align-items: center;
