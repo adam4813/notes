@@ -108,6 +108,50 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       return { ...updated, panes, activePaneId };
     }
 
+    case "closeOtherTabs":
+    case "closeTabsToRight":
+    case "closeTabsToLeft":
+    case "closeAllTabs": {
+      const keep = (pane: Pane): Tab[] => {
+        if (action.type === "closeAllTabs") {
+          return [];
+        }
+        const anchorIndex = pane.tabs.findIndex((tab) => tab.id === action.tabId);
+        if (anchorIndex === -1) {
+          return pane.tabs;
+        }
+        if (action.type === "closeOtherTabs") {
+          return pane.tabs.filter((tab) => tab.id === action.tabId);
+        }
+        if (action.type === "closeTabsToRight") {
+          return pane.tabs.filter((_, index) => index <= anchorIndex);
+        }
+        return pane.tabs.filter((_, index) => index >= anchorIndex);
+      };
+
+      const updated = updatePane(state, action.paneId, (pane) => {
+        const tabs = keep(pane);
+        const activeStillOpen = tabs.some((tab) => tab.id === pane.activeTabId);
+        const anchorKept = tabs.some((tab) => tab.id === (action as { tabId?: string }).tabId);
+        return {
+          ...pane,
+          tabs,
+          activeTabId: activeStillOpen
+            ? pane.activeTabId
+            : anchorKept
+              ? (action as { tabId?: string }).tabId
+              : tabs[tabs.length - 1]?.id,
+        };
+      });
+
+      const remaining = updated.panes.filter((pane) => pane.tabs.length > 0);
+      const panes = remaining.length > 0 ? remaining : [{ id: generateId("pane"), tabs: [] }];
+      const activePaneId = panes.some((pane) => pane.id === updated.activePaneId)
+        ? updated.activePaneId
+        : panes[0].id;
+      return { ...updated, panes, activePaneId };
+    }
+
     case "splitPane": {
       if (state.panes.length >= 2) {
         return state;

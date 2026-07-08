@@ -137,62 +137,60 @@ export function FindBar({ regionRef, content, onReplace, onClose }: FindBarProps
 
   return (
     <div className="find-bar" role="search">
-      <button
-        className="find-toggle"
-        aria-label={showReplace ? "Hide replace" : "Show replace"}
-        onClick={() => setShowReplace((value) => !value)}
-      >
-        {showReplace ? "▾" : "▸"}
-      </button>
-      <div className="find-rows">
-        <div className="find-row">
+      <div className="find-main">
+        <button
+          className="find-toggle"
+          aria-label={showReplace ? "Hide replace" : "Show replace"}
+          onClick={() => setShowReplace((value) => !value)}
+        >
+          {showReplace ? "▾" : "▸"}
+        </button>
+        <input
+          ref={inputRef}
+          className="find-input"
+          data-testid="find-input"
+          placeholder="Find"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              step(event.shiftKey ? -1 : 1);
+            } else if (event.key === "Escape") {
+              onClose();
+            }
+          }}
+        />
+        <span className="find-count" data-testid="find-count">
+          {count === 0 ? "0/0" : `${current + 1}/${count}`}
+        </span>
+        <button className="find-nav" aria-label="Previous match" onClick={() => step(-1)}>
+          ↑
+        </button>
+        <button className="find-nav" aria-label="Next match" onClick={() => step(1)}>
+          ↓
+        </button>
+        <button className="find-nav" aria-label="Close find" onClick={onClose}>
+          ×
+        </button>
+      </div>
+      {showReplace && (
+        <div className="find-replace">
           <input
-            ref={inputRef}
             className="find-input"
-            data-testid="find-input"
-            placeholder="Find"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                step(event.shiftKey ? -1 : 1);
-              } else if (event.key === "Escape") {
-                onClose();
-              }
-            }}
+            data-testid="replace-input"
+            placeholder="Replace"
+            value={replacement}
+            onChange={(event) => setReplacement(event.target.value)}
           />
-          <span className="find-count" data-testid="find-count">
-            {count === 0 ? "0/0" : `${current + 1}/${count}`}
-          </span>
-          <button className="find-nav" aria-label="Previous match" onClick={() => step(-1)}>
-            ↑
+          <button className="find-action" onClick={doReplace}>
+            Replace
           </button>
-          <button className="find-nav" aria-label="Next match" onClick={() => step(1)}>
-            ↓
-          </button>
-          <button className="find-nav" aria-label="Close find" onClick={onClose}>
-            ×
+          <button className="find-action" data-testid="replace-all" onClick={doReplaceAll}>
+            All
           </button>
         </div>
-        {showReplace && (
-          <div className="find-row">
-            <input
-              className="find-input"
-              data-testid="replace-input"
-              placeholder="Replace"
-              value={replacement}
-              onChange={(event) => setReplacement(event.target.value)}
-            />
-            <button className="find-action" onClick={doReplace}>
-              Replace
-            </button>
-            <button className="find-action" data-testid="replace-all" onClick={doReplaceAll}>
-              All
-            </button>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

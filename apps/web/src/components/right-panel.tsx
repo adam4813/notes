@@ -1,16 +1,13 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { api, type Backlink } from "../api/client";
 import { useWorkspace } from "../state/app-context";
+import { useToasts } from "../state/toast";
+import { applyProperties, parseFrontmatter, type FrontmatterProp } from "../lib/frontmatter";
 
 interface Heading {
   level: number;
   text: string;
   key: string;
-}
-
-interface Property {
-  key: string;
-  value: string;
 }
 
 function extractHeadings(markdown: string): Heading[] {
@@ -23,22 +20,6 @@ function extractHeadings(markdown: string): Heading[] {
     headings.push({ level: match[1].length, text: match[2], key: `${counter++}-${match[2]}` });
   }
   return headings;
-}
-
-/** Parses simple `key: value` frontmatter into displayable properties. */
-function extractProperties(markdown: string): Property[] {
-  const block = /^---\n([\s\S]*?)\n---/.exec(markdown);
-  if (!block) {
-    return [];
-  }
-  const properties: Property[] = [];
-  for (const line of block[1].split("\n")) {
-    const pair = /^([A-Za-z0-9_-]+):\s*(.*)$/.exec(line.trim());
-    if (pair) {
-      properties.push({ key: pair[1], value: pair[2] });
-    }
-  }
-  return properties;
 }
 
 function scrollToHeading(text: string): void {
@@ -73,19 +54,23 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 export function RightPanel() {
   const { state, dispatch } = useWorkspace();
+  const { notify } = useToasts();
   const activePane = state.panes.find((pane) => pane.id === state.activePaneId) ?? state.panes[0];
   const activeTab = activePane?.tabs.find((tab) => tab.id === activePane.activeTabId);
   const path = activeTab?.path;
   const isNote = Boolean(path && !path.startsWith("notes://"));
+  const isCanvas = Boolean(path?.toLowerCase().endsWith(".canvas"));
   const [backlinks, setBacklinks] = useState<Backlink[]>([]);
   const [headings, setHeadings] = useState<Heading[]>([]);
-  const [properties, setProperties] = useState<Property[]>([]);
+  const [content, setContent] = useState("");
+  const [props, setProps] = useState<FrontmatterProp[]>([]);
 
   useEffect(() => {
     if (!path || !isNote) {
       setBacklinks([]);
       setHeadings([]);
-      setProperties([]);
+      setContent("");
+      setProps([]);
       return;
     }
     let cancelled = false;
@@ -97,14 +82,16 @@ export function RightPanel() {
       .read(path)
       .then((result) => {
         if (!cancelled) {
+          setContent(result.content);
           setHeadings(extractHeadings(result.content));
-          setProperties(extractProperties(result.content));
+          setProps(parseFrontmatter(result.content).props);
         }
       })
       .catch(() => {
         if (!cancelled) {
+          setContent("");
           setHeadings([]);
-          setProperties([]);
+          setProps([]);
         }
       });
     return () => {
@@ -112,20 +99,75 @@ export function RightPanel() {
     };
   }, [path, isNote]);
 
+  const commitProps = async (next: FrontmatterProp[]) => {
+    if (!path) {
+      return;
+    }
+    const newContent = applyProperties(content, next);
+    setContent(newContent);
+    try {
+      await api.write(path, newContent);
+    } catch {
+      notify("Couldn't save properties", { kind: "error" });
+    }
+  };
+
+  const updateProp = (index: number, patch: Partial<FrontmatterProp>) =>
+    setProps((prev) => prev.map((prop, i) => (i === index ? { ...prop, ...patch } : prop)));
+
+  const removeProp = (index: number) => {
+    const next = props.filter((_, i) => i !== index);
+    setProps(next);
+    void commitProps(next);
+  };
+
+  const addProp = () => setProps((prev) => [...prev, { key: "", value: "" }]);
+
   return (
     <aside className="right-panel">
       {!isNote && <div className="panel-empty">Open a note.</div>}
 
-      {isNote && properties.length > 0 && (
+      {isNote && (
         <Section title="Properties">
-          <ul className="property-list">
-            {properties.map((property) => (
-              <li key={property.key} className="property-row">
-                <span className="property-key">{property.key}</span>
-                <span className="property-value">{property.value || "—"}</span>
-              </li>
-            ))}
-          </ul>
+          {isCanvas ? (
+            <div className="panel-empty">Properties aren’t available for canvas notes.</div>
+          ) : (
+            <>
+              <ul className="property-list">
+                {props.map((prop, index) => (
+                  <li key={index} className="property-row property-row--edit">
+                    <input
+                      className="property-input property-input--key"
+                      aria-label="Property name"
+                      placeholder="key"
+                      value={prop.key}
+                      onChange={(event) => updateProp(index, { key: event.target.value })}
+                      onBlur={() => void commitProps(props)}
+                    />
+                    <input
+                      className="property-input"
+                      aria-label={`Value for ${prop.key || "property"}`}
+                      placeholder="value"
+                      value={prop.value}
+                      onChange={(event) => updateProp(index, { value: event.target.value })}
+                      onBlur={() => void commitProps(props)}
+                    />
+                    <button
+                      className="property-remove"
+                      aria-label={`Remove ${prop.key || "property"}`}
+                      onClick={() => removeProp(index)}
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {props.length === 0 && <div className="panel-empty">No properties.</div>}
+              <button className="property-add" onClick={addProp}>
+                ＋ Add property
+              </button>
+            </>
+          )}
         </Section>
       )}
 

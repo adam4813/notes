@@ -26,6 +26,10 @@ export type WorkspaceAction =
   | { type: "setTree"; tree: FileEntry[] }
   | { type: "openFile"; path: string; title: string }
   | { type: "closeTab"; paneId: string; tabId: string }
+  | { type: "closeOtherTabs"; paneId: string; tabId: string }
+  | { type: "closeTabsToRight"; paneId: string; tabId: string }
+  | { type: "closeTabsToLeft"; paneId: string; tabId: string }
+  | { type: "closeAllTabs"; paneId: string }
   | { type: "activateTab"; paneId: string; tabId: string }
   | { type: "focusPane"; paneId: string }
   | { type: "splitPane"; paneId: string; mode: "duplicate" | "move" }

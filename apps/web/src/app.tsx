@@ -22,7 +22,7 @@ import { usePlugins } from "./state/use-plugins";
 import { useHotkeys } from "./state/use-hotkeys";
 import { loadRecentCommands, pushRecentCommand, type AppCommand } from "./state/commands";
 import { flattenFiles } from "./state/selectors";
-import { applyAccent, applyTheme, loadAccent, ACCENT_PRESETS } from "./theme/theme";
+import { applyAccent, applyTheme, loadAccent, ACCENT_PRESETS, applyFontSizes, loadFontSizes } from "./theme/theme";
 import type { SettingsBodyProps } from "./components/settings-view";
 
 type PaletteMode = "files" | "commands" | null;
@@ -55,7 +55,9 @@ export function App() {
     () => globalThis.localStorage?.getItem("notes.settings.openInTab") === "true",
   );
   const [accent, setAccentState] = useState(() => loadAccent());
+  const [fontSizes, setFontSizes] = useState(() => loadFontSizes());
   const [recentCommandIds, setRecentCommandIds] = useState<string[]>(() => loadRecentCommands());
+  const [noteTypes, setNoteTypes] = useState<Record<string, string>>({});
   const plugins = usePlugins();
   const treeRef = useRef(state.tree);
   treeRef.current = state.tree;
@@ -63,8 +65,9 @@ export function App() {
   const provisionalRef = useRef<Set<string>>(new Set());
 
   const refreshTree = useCallback(async () => {
-    const { entries } = await api.files();
+    const [{ entries }, { notes }] = await Promise.all([api.files(), api.notes()]);
     dispatch({ type: "setTree", tree: entries });
+    setNoteTypes(Object.fromEntries(notes.map((note) => [note.path, note.type])));
   }, [dispatch]);
 
   const createOfType = useCallback(
@@ -237,9 +240,25 @@ export function App() {
     [dispatch],
   );
 
+  const seededRef = useRef(false);
   useEffect(() => {
     void refreshTree();
-  }, [refreshTree]);
+    // First-run onboarding: auto-seed a sample Tome exactly once.
+    if (seededRef.current) {
+      return;
+    }
+    seededRef.current = true;
+    void (async () => {
+      if (globalThis.localStorage?.getItem("notes.seeded")) {
+        return;
+      }
+      const { entries } = await api.files();
+      if (entries.length === 0) {
+        globalThis.localStorage?.setItem("notes.seeded", "1");
+        seedSampleNotes();
+      }
+    })();
+  }, [refreshTree, seedSampleNotes]);
 
   useEffect(() => {
     applyTheme(state.theme);
@@ -249,7 +268,19 @@ export function App() {
     applyAccent(accent);
   }, [accent]);
 
+  useEffect(() => {
+    applyFontSizes(fontSizes.app, fontSizes.editor);
+  }, [fontSizes]);
+
   const setAccent = useCallback((color: string) => setAccentState(color), []);
+  const setAppFontSize = useCallback(
+    (size: number) => setFontSizes((prev) => ({ ...prev, app: size })),
+    [],
+  );
+  const setEditorFontSize = useCallback(
+    (size: number) => setFontSizes((prev) => ({ ...prev, editor: size })),
+    [],
+  );
 
   useEffect(() => {
     return connectTomeChanges((change) => {
@@ -377,6 +408,10 @@ export function App() {
       accent,
       accentPresets: ACCENT_PRESETS,
       onAccentChange: setAccent,
+      appFontSize: fontSizes.app,
+      editorFontSize: fontSizes.editor,
+      onAppFontSizeChange: setAppFontSize,
+      onEditorFontSizeChange: setEditorFontSize,
       openInTab: openSettingsInTab,
       onOpenInTabChange: setOpenSettingsInTab,
       hotkeys: {
@@ -400,6 +435,9 @@ export function App() {
       dispatch,
       accent,
       setAccent,
+      fontSizes,
+      setAppFontSize,
+      setEditorFontSize,
       openSettingsInTab,
       setOpenSettingsInTab,
       commands,
@@ -417,6 +455,7 @@ export function App() {
       createCanvas,
       createBoard,
       seedSampleNotes,
+      noteTypes,
       setActiveDocument: (doc: { path: string; content: string; type: string } | null) =>
         plugins.documentSignal.set(doc),
       settings: settingsProps,
@@ -430,6 +469,7 @@ export function App() {
       createCanvas,
       createBoard,
       seedSampleNotes,
+      noteTypes,
       plugins.documentSignal,
       settingsProps,
     ],

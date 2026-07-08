@@ -203,7 +203,7 @@ Status legend: ⬜ Not Started · 🔄 In Progress · ✅ Complete
 | 9. Plugin System Hardening & Loading | [plan/phase-09-plugin-system.md](plan/phase-09-plugin-system.md) | ✅ Complete | 6, 7, 8 |
 | 10. Command Palette, Hotkeys & Theming | [plan/phase-10-commands-theming.md](plan/phase-10-commands-theming.md) | ✅ Complete | 3, 5 |
 | 11. Search, Tags & Info Panels UI | [plan/phase-11-search-tags-ui.md](plan/phase-11-search-tags-ui.md) | ✅ Complete | 2, 3, 5 |
-| 12. MVP Polish, Performance & Hardening | [plan/phase-12-polish.md](plan/phase-12-polish.md) | 🔄 In Progress | 4–11 |
+| 12. MVP Polish, Performance & Hardening | [plan/phase-12-polish.md](plan/phase-12-polish.md) | ✅ Complete | 4–11 |
 
 ---
 
@@ -225,22 +225,21 @@ Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase 
 
 ## 8. Cross-Session Handoff
 
-- **Last session:** 2026-07-07 — **Phase 11 (Search, Tags & Info Panels) complete**, plus
-  three feedback fixes committed earlier this session (empty-pane split lock, settings-tab
-  toggle/focus, tab context menu). Phase 11: left-sidebar Explorer/Search/Tags switcher; FTS
-  search pane with type/tag/folder filters (incl. filter-only queries) + highlighted snippets;
-  tag pane (counts, nesting, click-to-filter); in-note find/replace (`Ctrl/Cmd+F` + toolbar 🔍,
-  CSS Highlight API, pure logic tested); collapsible right-panel Properties/Outline/Backlinks.
-  Also fixed a real editing bug: the rendered editor reset the cursor to doc-start on redundant
-  value-syncs (now never clobbers while focused). GATE fixes: tag-only search, discoverable find
-  button, de-duplicated plugin command registration (StrictMode guard), and changed the sample
-  plugin hotkey off `Mod+Shift+W` (closed the tab) to `Mod+Alt+W`. 86 unit tests + 18 Playwright
-  specs + build all green.
-- **Current state:** Knowledge base is fully navigable — search, tags, backlinks, outline,
-  properties, in-note find/replace — atop the rebuildable SQLite index.
-- **Next action:** **Phase 12 — MVP polish/perf/a11y** (final phase). Post-MVP backlog: calendar
-  note, grid note, embeddable note types, per-Tome plugin loader, custom theming, whole-Tome
-  find/replace, hierarchical tag filtering, folder drag/move.
+- **Last session:** 2026-07-07 — **Phase 12 (MVP Polish) complete → 🎉 MVP DONE.** All 13 phases
+  (0–12) are ✅. Phase 12 added an error boundary + toasts (undoable delete), a11y (focus-visible,
+  reduced-motion, ARIA), onboarding (auto-seeded sample Tome on first run + shortcuts overlay),
+  perf tidy-ups, README/known-limitations, and a core-flow e2e journey. Fixed real editor
+  cursor-jump bugs (focus guard + ignore self-write watcher echoes). **User accepted the MVP GATE.**
+  Post-GATE feedback also shipped: editable always-on Properties panel, explorer `[Type]` tags,
+  subdued tab filenames, app/editor font-size settings, inline find (replace as popover), and tab
+  close others/left/right/all. 92 unit tests + 20 Playwright specs (e2e now has `retries: 2` to
+  absorb FS-watcher timing) + build all green.
+- **Current state:** Feature-complete, polished MVP. Files are the source of truth; SQLite index
+  is rebuildable; note types + plugins share one extension seam.
+- **Next action:** **Prototype complete.** Optional post-MVP backlog (tracked as `deferred-*` /
+  `postmvp-*` todos and in plan.md): graph view, collaboration, desktop wrapper, offline
+  service worker, virtualization, calendar/grid note types, embeddable widgets, per-Tome plugin
+  loader, custom theming, whole-Tome find/replace, hierarchical tags, folder drag/move.
 - **Conventions:** `.github/copilot-instructions.md` is finalized in Phase 0; treat it as the
   binding style/architecture reference for all later phases.
 

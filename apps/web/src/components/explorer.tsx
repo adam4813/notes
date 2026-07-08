@@ -21,9 +21,16 @@ interface NodeHandlers {
   onMove: (fromPath: string, toDir: string) => void;
   dragOverPath: string | null;
   setDragOverPath: (path: string | null) => void;
+  typeOf: (path: string) => string | undefined;
 }
 
 const DRAG_TYPE = "application/x-notes-path";
+
+const TYPE_LABEL: Record<string, string> = {
+  table: "Table",
+  board: "Board",
+  canvas: "Canvas",
+};
 
 function ExplorerNode({
   entry,
@@ -74,6 +81,11 @@ function ExplorerNode({
     );
   }
 
+  const noteType = entry.name.toLowerCase().endsWith(".canvas")
+    ? "canvas"
+    : handlers.typeOf(entry.path);
+  const typeLabel = noteType ? TYPE_LABEL[noteType] : undefined;
+
   return (
     <li>
       <button
@@ -87,6 +99,7 @@ function ExplorerNode({
       >
         <span className="tree-icon">{iconFor(entry.name)}</span>
         <span className="tree-name">{entry.name}</span>
+        {typeLabel && <span className="tree-type">[{typeLabel}]</span>}
       </button>
     </li>
   );
@@ -190,6 +203,7 @@ export function Explorer() {
     onMove: move,
     dragOverPath,
     setDragOverPath,
+    typeOf: (path) => services.noteTypes[path],
   };
 
   const menuItems = (): { label: string; run: () => void; danger?: boolean }[] => {

@@ -20,6 +20,14 @@
           if (accent) {
             document.documentElement.style.setProperty("--accent", accent);
           }
+          var appFont = localStorage.getItem("notes.font.app");
+          if (appFont) {
+            document.documentElement.style.setProperty("--app-font-size", appFont + "px");
+          }
+          var editorFont = localStorage.getItem("notes.font.editor");
+          if (editorFont) {
+            document.documentElement.style.setProperty("--editor-font-size", editorFont + "px");
+          }
         } catch (error) {
           /* ignore storage access errors */
         }

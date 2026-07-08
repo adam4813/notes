@@ -38,6 +38,10 @@ export interface SettingsBodyProps {
   accent: string;
   accentPresets: AccentPreset[];
   onAccentChange: (accent: string) => void;
+  appFontSize: number;
+  editorFontSize: number;
+  onAppFontSizeChange: (size: number) => void;
+  onEditorFontSizeChange: (size: number) => void;
   openInTab: boolean;
   onOpenInTabChange: (openInTab: boolean) => void;
   hotkeys: HotkeySettings;
@@ -59,6 +63,10 @@ export function SettingsBody(props: SettingsBodyProps) {
     accent,
     accentPresets,
     onAccentChange,
+    appFontSize,
+    editorFontSize,
+    onAppFontSizeChange,
+    onEditorFontSizeChange,
     openInTab,
     onOpenInTabChange,
     hotkeys,
@@ -119,6 +127,34 @@ export function SettingsBody(props: SettingsBodyProps) {
               />
             ))}
           </div>
+        </div>
+        <div className="settings-field">
+          <span className="settings-label">App font</span>
+          <input
+            type="range"
+            min={12}
+            max={22}
+            step={1}
+            aria-label="App font size"
+            data-testid="app-font-size"
+            value={appFontSize}
+            onChange={(event) => onAppFontSizeChange(Number(event.target.value))}
+          />
+          <span className="settings-value">{appFontSize}px</span>
+        </div>
+        <div className="settings-field">
+          <span className="settings-label">Editor font</span>
+          <input
+            type="range"
+            min={12}
+            max={22}
+            step={1}
+            aria-label="Editor font size"
+            data-testid="editor-font-size"
+            value={editorFontSize}
+            onChange={(event) => onEditorFontSizeChange(Number(event.target.value))}
+          />
+          <span className="settings-value">{editorFontSize}px</span>
         </div>
       </section>
 

@@ -169,10 +169,11 @@ export class NoteIndex {
     return row.count;
   }
 
-  allNotes(): { path: string; title: string }[] {
-    return this.db.prepare("SELECT path, title FROM notes ORDER BY title").all() as {
+  allNotes(): { path: string; title: string; type: string }[] {
+    return this.db.prepare("SELECT path, title, type FROM notes ORDER BY title").all() as {
       path: string;
       title: string;
+      type: string;
     }[];
   }
 

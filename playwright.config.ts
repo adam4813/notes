@@ -8,6 +8,9 @@ export default defineConfig({
   timeout: 30_000,
   fullyParallel: false,
   workers: 1,
+  // The suite shares one Tome and exercises debounced autosave + a file watcher;
+  // allow a couple of retries to absorb inherent filesystem-event timing.
+  retries: 2,
   use: {
     baseURL: WEB_URL,
     trace: "on-first-retry",

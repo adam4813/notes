@@ -93,9 +93,32 @@ export function TabBar({ pane }: { pane: Pane }) {
   };
 
   const tabMenuItems = (tab: Tab): { label: string; run: () => void; danger?: boolean }[] => {
+    const index = pane.tabs.findIndex((candidate) => candidate.id === tab.id);
     const items: { label: string; run: () => void; danger?: boolean }[] = [
       { label: "Close", run: () => dispatch({ type: "closeTab", paneId: pane.id, tabId: tab.id }) },
     ];
+    if (pane.tabs.length > 1) {
+      items.push({
+        label: "Close others",
+        run: () => dispatch({ type: "closeOtherTabs", paneId: pane.id, tabId: tab.id }),
+      });
+    }
+    if (index < pane.tabs.length - 1) {
+      items.push({
+        label: "Close to the right",
+        run: () => dispatch({ type: "closeTabsToRight", paneId: pane.id, tabId: tab.id }),
+      });
+    }
+    if (index > 0) {
+      items.push({
+        label: "Close to the left",
+        run: () => dispatch({ type: "closeTabsToLeft", paneId: pane.id, tabId: tab.id }),
+      });
+    }
+    items.push({
+      label: "Close all",
+      run: () => dispatch({ type: "closeAllTabs", paneId: pane.id }),
+    });
     if (!tab.path.startsWith("notes://")) {
       items.push(
         { label: "Rename…", run: () => void services.renamePath(tab.path) },
@@ -110,19 +133,27 @@ export function TabBar({ pane }: { pane: Pane }) {
   return (
     <div className="tab-bar">
       <div className="tab-list">
-        {pane.tabs.map((tab) => (
-          <div
-            key={tab.id}
-            className={`tab ${tab.id === pane.activeTabId ? "tab--active" : ""}`}
-            onClick={() => dispatch({ type: "activateTab", paneId: pane.id, tabId: tab.id })}
-            onContextMenu={(event) => openTabMenu(event, tab)}
-          >
-            <span className="tab-title">{tab.title}</span>
-            <button className="tab-close" title="Close" onClick={(event) => close(event, tab.id)}>
-              ×
-            </button>
-          </div>
-        ))}
+        {pane.tabs.map((tab) => {
+          const fileName = tab.path.startsWith("notes://")
+            ? undefined
+            : (tab.path.split("/").pop() ?? tab.path);
+          return (
+            <div
+              key={tab.id}
+              className={`tab ${tab.id === pane.activeTabId ? "tab--active" : ""}`}
+              onClick={() => dispatch({ type: "activateTab", paneId: pane.id, tabId: tab.id })}
+              onContextMenu={(event) => openTabMenu(event, tab)}
+            >
+              <span className="tab-title">{tab.title}</span>
+              {fileName && fileName !== tab.title && (
+                <span className="tab-file">{fileName}</span>
+              )}
+              <button className="tab-close" title="Close" onClick={(event) => close(event, tab.id)}>
+                ×
+              </button>
+            </div>
+          );
+        })}
       </div>
 
       <div className="split-wrap" ref={menuRef}>

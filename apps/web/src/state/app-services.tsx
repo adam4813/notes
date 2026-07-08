@@ -14,6 +14,8 @@ export interface AppServices {
   createBoard: (dir?: string) => void;
   /** Seeds a small sample Tome on first run. */
   seedSampleNotes: () => void;
+  /** Map of note path → indexed note type (markdown/table/board/canvas). */
+  noteTypes: Record<string, string>;
   /** Publishes the active document to plugins (status bar, etc.). */
   setActiveDocument: (doc: { path: string; content: string; type: string } | null) => void;
   /** Everything the settings surface needs, so a settings tab can render. */
@@ -30,6 +32,10 @@ const defaultSettings: SettingsBodyProps = {
   accent: "",
   accentPresets: [],
   onAccentChange: noop,
+  appFontSize: 14,
+  editorFontSize: 16,
+  onAppFontSizeChange: noop,
+  onEditorFontSizeChange: noop,
   openInTab: false,
   onOpenInTabChange: noop,
   hotkeys: {
@@ -52,6 +58,7 @@ const AppServicesContext = createContext<AppServices>({
   createCanvas: noop,
   createBoard: noop,
   seedSampleNotes: noop,
+  noteTypes: {},
   setActiveDocument: noop,
   settings: defaultSettings,
 });

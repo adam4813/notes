@@ -213,7 +213,7 @@ export function NoteEditor({ path }: { path: string }) {
           </div>
         )}
         <span className={`save-status save-status--${saveState}`}>{SAVE_LABEL[saveState]}</span>
-        {canFind && (
+        {canFind && !findOpen && (
           <button
             className="editor-find-btn"
             title="Find in note (Ctrl/Cmd+F)"
@@ -223,15 +223,15 @@ export function NoteEditor({ path }: { path: string }) {
             🔍
           </button>
         )}
+        {canFind && findOpen && (
+          <FindBar
+            regionRef={regionRef}
+            content={content}
+            onReplace={applyReplace}
+            onClose={() => setFindOpen(false)}
+          />
+        )}
       </div>
-      {canFind && findOpen && (
-        <FindBar
-          regionRef={regionRef}
-          content={content}
-          onReplace={applyReplace}
-          onClose={() => setFindOpen(false)}
-        />
-      )}
       <div className="note-editor-region" ref={regionRef}>
         {isCanvas ? (
           <CanvasView

@@ -14,6 +14,8 @@
   --shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
   --ribbon-h: 40px;
   --status-h: 26px;
+  --app-font-size: 14px;
+  --editor-font-size: 16px;
   color-scheme: light;
 }
 
@@ -45,9 +47,15 @@ body,
 
 body {
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  font-size: 14px;
+  font-size: var(--app-font-size);
   background: var(--bg);
   color: var(--fg);
+}
+
+/* Editor content honors its own configurable font size. */
+.cm-content,
+.tiptap-host .ProseMirror {
+  font-size: var(--editor-font-size);
 }
 
 button {
@@ -364,27 +372,40 @@ button {
   padding: 0 6px;
 }
 
-/* Find bar */
+/* Find bar (inline in the editor toolbar) */
 .find-bar {
-  display: flex;
-  align-items: flex-start;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.find-main {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-elevated);
 }
 
-.find-rows {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.find-main .find-input {
+  width: 160px;
 }
 
-.find-row {
+.find-replace {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
   display: flex;
   align-items: center;
   gap: 6px;
+  padding: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.find-replace .find-input {
+  width: 160px;
 }
 
 .find-count {
@@ -453,6 +474,45 @@ button {
 .property-row {
   display: flex;
   gap: 8px;
+  font-size: 12px;
+}
+
+.property-row--edit {
+  align-items: center;
+}
+
+.property-input {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 12px;
+}
+
+.property-input--key {
+  flex: 0 0 40%;
+  color: var(--fg-muted);
+}
+
+.property-remove {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.property-add {
+  margin-top: 6px;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--fg-muted);
   font-size: 12px;
 }
 
@@ -611,6 +671,19 @@ button {
 .tab--active {
   background: var(--bg);
   color: var(--fg);
+}
+
+.tab-file {
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+.tree-type {
+  font-size: 10px;
+  opacity: 0.5;
+  margin-left: auto;
+  padding-left: 6px;
+  white-space: nowrap;
 }
 
 .tab-close {
@@ -881,6 +954,12 @@ button {
   width: 72px;
   color: var(--fg-muted);
   font-size: 13px;
+}
+
+.settings-value {
+  font-size: 12px;
+  color: var(--fg-muted);
+  min-width: 34px;
 }
 
 .segmented {
