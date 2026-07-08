@@ -1452,7 +1452,75 @@ button {
   min-height: 0;
 }
 
-/* Mermaid note type */
+/* Note embeds (transclusion) */
+.note-embed {
+  margin: 10px 0;
+}
+
+.embed-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+
+.embed-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.embed-type {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-fg);
+  background: var(--accent);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.embed-title {
+  flex: 1;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.embed-open {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  color: var(--fg-muted);
+  font-size: 11px;
+}
+
+.embed-body {
+  max-height: 420px;
+  overflow: auto;
+}
+
+.embed-markdown {
+  padding: 12px;
+  white-space: pre-wrap;
+  color: var(--fg);
+}
+
+.embed-note-only,
+.embed-loading,
+.embed-missing {
+  padding: 12px;
+  color: var(--fg-muted);
+  font-size: 13px;
+}
+
+.embed-missing {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
 .mermaid-note {
   display: flex;
   flex-direction: column;

@@ -12,6 +12,7 @@ import { connectTomeChanges } from "../api/ws";
 import { useAppServices } from "../state/app-services";
 import { useWorkspace } from "../state/app-context";
 import { useToasts } from "../state/toast";
+import { EmbedWidget } from "./embed-widget";
 import { FindBar } from "./find-bar";
 
 function basename(path: string): string {
@@ -157,6 +158,7 @@ export function NoteEditor({ path }: { path: string }) {
       },
       listNotes: async () => (await api.notes()).notes,
       listTags: async () => (await api.tags()).tags.map((tag) => tag.tag),
+      renderEmbed: (embedTarget) => <EmbedWidget target={embedTarget} />,
     }),
     [dispatch],
   );

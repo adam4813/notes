@@ -5,3 +5,4 @@ export * from "./source-editor";
 export * from "./toolbar";
 export * from "./suggestion-popup";
 export * from "./wikilink-decorator";
+export * from "./embed-extension";

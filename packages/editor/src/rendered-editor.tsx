@@ -4,6 +4,7 @@ import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import { Markdown } from "tiptap-markdown";
+import { Embed } from "./embed-extension";
 import { SuggestionPopup } from "./suggestion-popup";
 import { EditorToolbar } from "./toolbar";
 import type { EditorCallbacks, WikiSuggestion } from "./types";
@@ -27,6 +28,8 @@ type SuggestKind = "wikilink" | "tag";
 
 interface SuggestState {
   kind: SuggestKind;
+  /** True when the wikilink is an embed (`![[...]]`). */
+  embed?: boolean;
   from: number;
   to: number;
   items: string[];
@@ -71,6 +74,14 @@ export function RenderedEditor({ value, onChange, callbacks }: RenderedEditorPro
       TaskItem.configure({ nested: true }),
       Markdown.configure({ html: false, tightLists: true }),
       WikilinkDecorator,
+      ...(callbacksRef.current?.renderEmbed
+        ? [
+            Embed.configure({
+              renderEmbed: (target: string) =>
+                callbacksRef.current?.renderEmbed?.(target) ?? null,
+            }),
+          ]
+        : []),
     ],
     editorProps: {
       handleKeyDown(_view, event) {
@@ -141,15 +152,17 @@ export function RenderedEditor({ value, onChange, callbacks }: RenderedEditorPro
     const blockStart = selection.$from.start();
     const textBefore = editor.state.doc.textBetween(blockStart, cursor, "\n", "\ufffc");
 
-    const wikilink = /\[\[([^\]\n]*)$/.exec(textBefore);
+    const wikilink = /(!?)\[\[([^\]\n]*)$/.exec(textBefore);
     const tag = /(?:^|\s)#([\p{L}\p{N}/_-]*)$/u.exec(textBefore);
 
     let kind: SuggestKind;
+    let embed = false;
     let query: string;
     let from: number;
     if (wikilink) {
       kind = "wikilink";
-      query = wikilink[1];
+      embed = wikilink[1] === "!";
+      query = wikilink[2];
       from = cursor - wikilink[0].length;
     } else if (tag) {
       kind = "tag";
@@ -194,6 +207,7 @@ export function RenderedEditor({ value, onChange, callbacks }: RenderedEditorPro
     const rect = containerRef.current.getBoundingClientRect();
     setSuggest({
       kind,
+      embed,
       from,
       to: cursor,
       items,
@@ -228,7 +242,12 @@ export function RenderedEditor({ value, onChange, callbacks }: RenderedEditorPro
       if (item === undefined) {
         return;
       }
-      const insert = current.kind === "wikilink" ? `[[${item}]]` : `#${item} `;
+      const insert =
+        current.kind === "wikilink"
+          ? current.embed
+            ? `![[${item}]]`
+            : `[[${item}]]`
+          : `#${item} `;
       editor.chain().focus().insertContentAt({ from: current.from, to: current.to }, insert).run();
       setSuggest(null);
       fetchKeyRef.current = "";
