@@ -1,6 +1,7 @@
 import { MarkdownEditor, EDITOR_MODES, type EditorCallbacks, type EditorMode } from "@notes/editor";
 import { CanvasView } from "@notes/note-canvas";
 import { BoardView } from "@notes/note-boards";
+import { MermaidView } from "@notes/note-mermaid";
 import { TableGrid } from "@notes/note-tables";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/client";
@@ -173,7 +174,8 @@ export function NoteEditor({ path }: { path: string }) {
   const frontType = isCanvas ? undefined : getFrontmatterType(content);
   const isBoard = frontType === "board";
   const isTable = frontType === "table";
-  const canFind = !isCanvas && !isBoard && !isTable;
+  const isMermaid = frontType === "mermaid";
+  const canFind = !isCanvas && !isBoard && !isTable && !isMermaid;
 
   const applyReplace = (next: string) => {
     setContent(next);
@@ -197,6 +199,8 @@ export function NoteEditor({ path }: { path: string }) {
           <span className="note-type-badge">Board</span>
         ) : isTable ? (
           <span className="note-type-badge">Table</span>
+        ) : isMermaid ? (
+          <span className="note-type-badge">Mermaid</span>
         ) : (
           <div className="mode-switch" role="tablist">
             {EDITOR_MODES.map((candidate) => (
@@ -247,6 +251,8 @@ export function NoteEditor({ path }: { path: string }) {
           <BoardView value={content} onChange={handleChange} />
         ) : isTable ? (
           <TableGrid value={content} onChange={handleChange} />
+        ) : isMermaid ? (
+          <MermaidView value={content} onChange={handleChange} />
         ) : (
           <MarkdownEditor value={content} mode={mode} onChange={handleChange} callbacks={callbacks} />
         )}

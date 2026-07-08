@@ -1354,6 +1354,79 @@ button {
   min-height: 0;
 }
 
+/* Mermaid note type */
+.mermaid-note {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.mermaid-mode-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mermaid-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+}
+
+.mermaid-body--split {
+  grid-template-columns: 1fr 1fr;
+}
+
+.mermaid-body--source,
+.mermaid-body--preview {
+  grid-template-columns: 1fr;
+}
+
+.mermaid-source {
+  border: none;
+  border-right: 1px solid var(--border);
+  resize: none;
+  padding: 12px;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: var(--editor-font-size);
+  background: var(--bg);
+  color: var(--fg);
+  outline: none;
+}
+
+.mermaid-body--source .mermaid-source {
+  border-right: none;
+}
+
+.mermaid-preview {
+  overflow: auto;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.mermaid-diagram {
+  width: 100%;
+}
+
+.mermaid-svg svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-error {
+  color: var(--status-offline);
+  font-size: 12px;
+  white-space: pre-wrap;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+}
+
 .editor-toolbar-row {
   display: flex;
   align-items: center;

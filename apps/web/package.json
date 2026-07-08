@@ -13,6 +13,7 @@
     "@notes/editor": "*",
     "@notes/note-boards": "*",
     "@notes/note-canvas": "*",
+    "@notes/note-mermaid": "*",
     "@notes/note-tables": "*",
     "@notes/plugin-host": "*",
     "@notes/shared": "*",

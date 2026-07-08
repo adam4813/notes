@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatCombo } from "@notes/core";
 import { emptyCanvas } from "@notes/note-canvas";
 import { emptyBoard } from "@notes/note-boards";
+import { emptyMermaid } from "@notes/note-mermaid";
 import { emptyTableMarkdown } from "@notes/note-tables";
 import { api, type FileEntry } from "./api/client";
 import { connectTomeChanges } from "./api/ws";
@@ -99,6 +100,10 @@ export function App() {
     (dir?: string) => createOfType("New Board", ".md", () => emptyBoard(), dir),
     [createOfType],
   );
+  const createMermaid = useCallback(
+    (dir?: string) => createOfType("New Diagram", ".md", () => emptyMermaid(), dir),
+    [createOfType],
+  );
 
   // Explicitly-named note (quick switcher "create on miss"); not provisional.
   const createNamedNote = useCallback(
@@ -137,6 +142,7 @@ export function App() {
         await api.create("Sample Table.md", emptyTableMarkdown());
         await api.create("Sample Board.md", emptyBoard());
         await api.create("Sample Canvas.canvas", emptyCanvas());
+        await api.create("Sample Diagram.md", emptyMermaid());
         await refreshTree();
         dispatch({ type: "openFile", path: "Welcome.md", title: "Welcome" });
         notify("Added sample notes", { kind: "success" });
@@ -333,6 +339,7 @@ export function App() {
       { id: "new-table", title: "New table", category: "Create", run: () => createTable() },
       { id: "new-canvas", title: "New canvas", category: "Create", run: () => createCanvas() },
       { id: "new-board", title: "New board", category: "Create", run: () => createBoard() },
+      { id: "new-mermaid", title: "New diagram", category: "Create", run: () => createMermaid() },
       {
         id: "split-pane",
         title: "Split editor pane",
@@ -366,6 +373,7 @@ export function App() {
       createTable,
       createCanvas,
       createBoard,
+      createMermaid,
       plugins.pluginCommands,
       state.activePaneId,
       openSettings,
@@ -395,8 +403,9 @@ export function App() {
       { id: "table", label: "Table", run: () => createTable() },
       { id: "canvas", label: "Canvas", run: () => createCanvas() },
       { id: "board", label: "Board", run: () => createBoard() },
+      { id: "mermaid", label: "Diagram (Mermaid)", run: () => createMermaid() },
     ],
-    [createNote, createTable, createCanvas, createBoard],
+    [createNote, createTable, createCanvas, createBoard, createMermaid],
   );
 
   const settingsProps = useMemo<SettingsBodyProps>(
@@ -454,6 +463,7 @@ export function App() {
       createTable,
       createCanvas,
       createBoard,
+      createMermaid,
       seedSampleNotes,
       noteTypes,
       setActiveDocument: (doc: { path: string; content: string; type: string } | null) =>
@@ -468,6 +478,7 @@ export function App() {
       createTable,
       createCanvas,
       createBoard,
+      createMermaid,
       seedSampleNotes,
       noteTypes,
       plugins.documentSignal,

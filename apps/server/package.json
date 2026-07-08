@@ -15,6 +15,7 @@
     "@notes/index": "*",
     "@notes/note-boards": "*",
     "@notes/note-canvas": "*",
+    "@notes/note-mermaid": "*",
     "@notes/note-tables": "*",
     "@notes/shared": "*",
     "@notes/tome": "*",
