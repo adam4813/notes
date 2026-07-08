@@ -1,6 +1,6 @@
 # Phase 12 — MVP Polish, Performance & Hardening
 
-**Status:** ⬜ Not Started
+**Status:** 🔄 In Progress
 **Depends on:** 4, 5, 6, 7, 8, 9, 10, 11
 
 ## Goal
@@ -72,4 +72,19 @@ Commit message:
 `feat: MVP polish, performance, accessibility, onboarding, and e2e coverage`
 
 ## Feedback
-_(none yet)_
+**2025 session (final GATE + MVP GATE — user reviewed):**
+- **MVP accepted as complete**: cohesive, polished, extensible; no blocking issues. 🎉
+- Performance choices accepted (results capped/memoized; heavy virtualization deferred).
+- **Sample Tome → seed automatically on first run** (was opt-in).
+- Follow-up polish requested (implemented this session):
+  1. Auto-seed sample notes on first run (tracked by a one-time flag).
+  2. **Properties panel** always visible and **editable** for note types that support frontmatter
+     (markdown/table/board).
+  3. **Explorer** shows a subdued `[Table]/[Board]/[Canvas]` type tag after the filename
+     (extension ≠ type).
+  4. **Tabs** show the filename subdued after the title.
+  5. **Settings**: adjustable **app font size** and **editor font size**.
+  6. Editor toolbar **find** expands inline (find input in the toolbar); only replace adds a row.
+  7. **Tab context menu**: added Close others / Close to the right / Close to the left / Close all.
+- No blocking issues; full green (86 unit, 19 e2e, build).
+

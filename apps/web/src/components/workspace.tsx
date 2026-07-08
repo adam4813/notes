@@ -4,10 +4,10 @@ import { Pane } from "./pane";
 export function Workspace() {
   const { state } = useWorkspace();
   return (
-    <div className="workspace">
+    <main className="workspace" aria-label="Editor">
       {state.panes.map((pane) => (
         <Pane key={pane.id} pane={pane} />
       ))}
-    </div>
+    </main>
   );
 }

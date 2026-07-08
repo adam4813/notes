@@ -27,6 +27,27 @@ npm run dev          # start the server (:8787) and web app (:5173) together
 
 Open http://localhost:5173 — the app shows the live server status from `/health`.
 
+On first run the explorer offers **✨ Add sample notes** to seed a small showcase Tome
+(a welcome note, a table, a board, and a canvas).
+
+## Features (MVP)
+
+- **Friendly editor** — hybrid Markdown editor (WYSIWYG + source + split), autosave,
+  `[[wikilink]]` and `#tag` autocomplete, clickable links.
+- **First-class note types** — Markdown, **tables**, **kanban boards**, and infinite
+  **canvas** (JSONCanvas). Each is registered through the same extension API a plugin uses.
+- **Navigate everything** — command palette, quick switcher (fuzzy, create-on-miss),
+  full-text **search** with type/tag/folder filters, a **tag** pane, **backlinks**,
+  **outline**, and **properties** panels.
+- **In-note find & replace** (`Ctrl/Cmd+F`).
+- **Keyboard-first** — rebindable hotkeys with conflict detection; press the palette command
+  **Keyboard shortcuts** (`Ctrl/Cmd+/`) for a cheat sheet.
+- **Theming** — light/dark/system with accent presets and no flash-of-wrong-theme.
+- **Plugins** — a local, trusted plugin API (commands, status-bar items, active-document,
+  settings, theme tokens). See [`docs/plugins.md`](docs/plugins.md).
+- **Safe by design** — files are the source of truth; deletes are undoable via a toast;
+  a global error boundary keeps one bad note or plugin from blanking the app.
+
 ## Scripts
 
 | Command | Description |
@@ -54,3 +75,21 @@ packages/*    shared, core, tome, index, editor, note-tables, note-canvas,
 
 See [`.github/copilot-instructions.md`](.github/copilot-instructions.md) for the binding stack,
 architecture, and code-style conventions.
+
+## Known limitations & deferred (post-MVP)
+
+The MVP is intentionally scoped. Structurally viable but **not** built yet:
+
+- **Graph view** — the link/tag data is indexed and ready, but there's no visual graph.
+- **Collaboration / multiplayer** — the server threads request context and the UI is decoupled
+  to keep this viable, but real-time collab and auth are out of scope.
+- **Desktop wrapper** — runs locally via Node today; a desktop shell (e.g. Tauri/Electron) is
+  future work. Files-on-disk already enable local + committed-to-git workflows.
+- **Offline editing (PWA/service worker)** — buffering edits while disconnected is planned.
+- **Performance at extreme scale** — results are capped and the file list memoized; full
+  virtualization of the explorer/search/large grids is deferred.
+- **More note types** — calendar and grid (tile-map/graph-paper) types, plus embedding any
+  note type as a widget inside Markdown notes.
+- **Whole-Tome find/replace** and **hierarchical tag filtering** (currently in-note and exact-tag).
+
+These are tracked in [`plan.md`](plan.md) and the per-phase specs under [`plan/`](plan/).

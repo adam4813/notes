@@ -144,11 +144,16 @@ export function Explorer() {
   };
 
   const removeNode = async (node: FileEntry) => {
-    if (!window.confirm(`Delete "${node.name}"? This cannot be undone.`)) {
+    if (node.type === "file") {
+      // Files use the app-level delete which offers an Undo toast.
+      await services.deletePath(node.path);
+      return;
+    }
+    if (!window.confirm(`Delete folder "${node.name}" and its contents? This cannot be undone.`)) {
       return;
     }
     await api.remove(node.path);
-    dispatch(node.type === "file" ? { type: "closePath", path: node.path } : { type: "closePrefix", path: node.path });
+    dispatch({ type: "closePrefix", path: node.path });
     await refresh();
   };
 
@@ -226,7 +231,13 @@ export function Explorer() {
       }}
     >
       {state.tree.length === 0 ? (
-        <div className="explorer-empty">No notes yet. Use “＋ New note”.</div>
+        <div className="explorer-empty">
+          <p>No notes yet.</p>
+          <button className="explorer-seed" onClick={() => services.seedSampleNotes()}>
+            ✨ Add sample notes
+          </button>
+          <p className="explorer-empty-hint">…or use “＋ New note”.</p>
+        </div>
       ) : (
         <ul className="tree-root">
           {state.tree.map((entry) => (

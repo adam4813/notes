@@ -178,6 +178,10 @@ These are explicitly **out of MVP** but recorded so the architecture stays compa
   calendar followed by a table in one note). Implies an embed block/editor extension plus a
   shared renderer registry keyed by note type. The Phase 9 plugin API and the note-type
   registry are the natural seams for this.
+- **Offline editing (service worker / PWA)** — a service worker that caches the app shell and
+  buffers edits to the current file while offline, persisting them locally (e.g. IndexedDB) and
+  flushing to the server on reconnect so in-progress edits are never lost (with conflict/merge
+  against on-disk content).
 
 ---
 
@@ -199,7 +203,7 @@ Status legend: ⬜ Not Started · 🔄 In Progress · ✅ Complete
 | 9. Plugin System Hardening & Loading | [plan/phase-09-plugin-system.md](plan/phase-09-plugin-system.md) | ✅ Complete | 6, 7, 8 |
 | 10. Command Palette, Hotkeys & Theming | [plan/phase-10-commands-theming.md](plan/phase-10-commands-theming.md) | ✅ Complete | 3, 5 |
 | 11. Search, Tags & Info Panels UI | [plan/phase-11-search-tags-ui.md](plan/phase-11-search-tags-ui.md) | ✅ Complete | 2, 3, 5 |
-| 12. MVP Polish, Performance & Hardening | [plan/phase-12-polish.md](plan/phase-12-polish.md) | ⬜ Not Started | 4–11 |
+| 12. MVP Polish, Performance & Hardening | [plan/phase-12-polish.md](plan/phase-12-polish.md) | 🔄 In Progress | 4–11 |
 
 ---
 

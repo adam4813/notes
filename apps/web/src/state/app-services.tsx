@@ -12,6 +12,8 @@ export interface AppServices {
   createTable: (dir?: string) => void;
   createCanvas: (dir?: string) => void;
   createBoard: (dir?: string) => void;
+  /** Seeds a small sample Tome on first run. */
+  seedSampleNotes: () => void;
   /** Publishes the active document to plugins (status bar, etc.). */
   setActiveDocument: (doc: { path: string; content: string; type: string } | null) => void;
   /** Everything the settings surface needs, so a settings tab can render. */
@@ -49,6 +51,7 @@ const AppServicesContext = createContext<AppServices>({
   createTable: noop,
   createCanvas: noop,
   createBoard: noop,
+  seedSampleNotes: noop,
   setActiveDocument: noop,
   settings: defaultSettings,
 });

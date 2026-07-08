@@ -7,6 +7,7 @@ import { api } from "../api/client";
 import { connectTomeChanges } from "../api/ws";
 import { useAppServices } from "../state/app-services";
 import { useWorkspace } from "../state/app-context";
+import { useToasts } from "../state/toast";
 import { FindBar } from "./find-bar";
 
 function basename(path: string): string {
@@ -41,6 +42,7 @@ const SAVE_LABEL: Record<SaveState, string> = {
 export function NoteEditor({ path }: { path: string }) {
   const { dispatch } = useWorkspace();
   const { markModified, setActiveDocument } = useAppServices();
+  const { notify } = useToasts();
   const [content, setContent] = useState("");
   const [mode, setMode] = useState<EditorMode>("rendered");
   const [saveState, setSaveState] = useState<SaveState>("loading");
@@ -49,6 +51,7 @@ export function NoteEditor({ path }: { path: string }) {
   const dirtyRef = useRef(false);
   const contentRef = useRef("");
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
+  const lastWriteAtRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,13 +81,17 @@ export function NoteEditor({ path }: { path: string }) {
       setSaveState("saving");
       try {
         await api.write(path, value);
+        lastWriteAtRef.current = Date.now();
         dirtyRef.current = false;
         setSaveState("saved");
       } catch {
         setSaveState("error");
+        notify("Couldn't save changes — they're kept in the editor. Retrying may help.", {
+          kind: "error",
+        });
       }
     },
-    [path],
+    [path, notify],
   );
 
   const handleChange = useCallback(
@@ -106,6 +113,11 @@ export function NoteEditor({ path }: { path: string }) {
   useEffect(() => {
     return connectTomeChanges((change) => {
       if (change.path !== path) {
+        return;
+      }
+      // Ignore the file-watcher echo of our own atomic write, which would
+      // otherwise reload and reset the cursor while the user keeps editing.
+      if (Date.now() - lastWriteAtRef.current < 1500) {
         return;
       }
       if (dirtyRef.current) {

@@ -26,13 +26,23 @@ export function Ribbon({ onNewNote, onCommand, onQuickOpen, onSettings }: Ribbon
     <header className="ribbon">
       <span className="ribbon-brand">📓 Notes</span>
       <div className="ribbon-actions">
-        <button className="btn-ghost" title="New note" onClick={onNewNote}>
+        <button className="btn-ghost" title="New note" aria-label="New note" onClick={onNewNote}>
           ＋
         </button>
-        <button className="btn-ghost" title="Quick switcher (Ctrl/Cmd+O)" onClick={onQuickOpen}>
+        <button
+          className="btn-ghost"
+          title="Quick switcher (Ctrl/Cmd+O)"
+          aria-label="Quick switcher"
+          onClick={onQuickOpen}
+        >
           🔍
         </button>
-        <button className="btn-ghost" title="Command palette (Ctrl/Cmd+P)" onClick={onCommand}>
+        <button
+          className="btn-ghost"
+          title="Command palette (Ctrl/Cmd+P)"
+          aria-label="Command palette"
+          onClick={onCommand}
+        >
           ⌘
         </button>
         <button className="btn-ghost" title="Settings" aria-label="Settings" onClick={onSettings}>
@@ -41,6 +51,7 @@ export function Ribbon({ onNewNote, onCommand, onQuickOpen, onSettings }: Ribbon
         <button
           className="btn-ghost"
           title={`Theme: ${state.theme}`}
+          aria-label={`Theme: ${state.theme}`}
           data-testid="theme-toggle"
           onClick={() => dispatch({ type: "setTheme", theme: NEXT_THEME[state.theme] })}
         >

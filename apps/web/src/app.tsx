@@ -10,11 +10,14 @@ import { RightPanel } from "./components/right-panel";
 import { Ribbon } from "./components/ribbon";
 import { SettingsModal } from "./components/settings-modal";
 import { SETTINGS_TAB_PATH } from "./components/settings-view";
+import { HelpOverlay } from "./components/help-overlay";
 import { Sidebar } from "./components/sidebar";
 import { StatusBar } from "./components/status-bar";
+import { Toaster } from "./components/toaster";
 import { Workspace } from "./components/workspace";
 import { AppServicesProvider } from "./state/app-services";
 import { useWorkspace } from "./state/app-context";
+import { useToasts } from "./state/toast";
 import { usePlugins } from "./state/use-plugins";
 import { useHotkeys } from "./state/use-hotkeys";
 import { loadRecentCommands, pushRecentCommand, type AppCommand } from "./state/commands";
@@ -44,8 +47,10 @@ function nextName(dir: string, base: string, ext: string, tree: FileEntry[]): st
 
 export function App() {
   const { state, dispatch } = useWorkspace();
+  const { notify } = useToasts();
   const [paletteMode, setPaletteMode] = useState<PaletteMode>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [openSettingsInTab, setOpenSettingsInTabState] = useState(
     () => globalThis.localStorage?.getItem("notes.settings.openInTab") === "true",
   );
@@ -113,6 +118,31 @@ export function App() {
     provisionalRef.current.delete(path);
   }, []);
 
+  // First-run onboarding: seed a small showcase Tome.
+  const seedSampleNotes = useCallback(() => {
+    void (async () => {
+      const welcome =
+        "# Welcome to Notes\n\n" +
+        "This is a plain Markdown file on disk — commit it, sync it, edit it anywhere.\n\n" +
+        "Try these:\n\n" +
+        "- Open the command palette with **Ctrl/Cmd+P**\n" +
+        "- Link to another note: [[Sample Table]]\n" +
+        "- Tag a note with #welcome\n" +
+        "- Search and tags live in the left sidebar\n";
+      try {
+        await api.create("Welcome.md", welcome);
+        await api.create("Sample Table.md", emptyTableMarkdown());
+        await api.create("Sample Board.md", emptyBoard());
+        await api.create("Sample Canvas.canvas", emptyCanvas());
+        await refreshTree();
+        dispatch({ type: "openFile", path: "Welcome.md", title: "Welcome" });
+        notify("Added sample notes", { kind: "success" });
+      } catch {
+        notify("Couldn't add sample notes", { kind: "error" });
+      }
+    })();
+  }, [refreshTree, dispatch, notify]);
+
   const renamePath = useCallback(
     async (path: string) => {
       const name = path.split("/").pop() ?? path;
@@ -133,15 +163,39 @@ export function App() {
   const deletePath = useCallback(
     async (path: string) => {
       const name = path.split("/").pop() ?? path;
-      if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) {
-        return;
+      // Read the content first so the delete can be undone from the toast.
+      let previous = "";
+      try {
+        previous = (await api.read(path)).content;
+      } catch {
+        previous = "";
       }
-      markModified(path);
-      await api.remove(path);
-      dispatch({ type: "closePath", path });
-      await refreshTree();
+      try {
+        markModified(path);
+        await api.remove(path);
+        dispatch({ type: "closePath", path });
+        await refreshTree();
+        notify(`Deleted "${name}"`, {
+          kind: "info",
+          action: {
+            label: "Undo",
+            run: () => {
+              void (async () => {
+                try {
+                  await api.create(path, previous);
+                  await refreshTree();
+                } catch {
+                  notify(`Couldn't restore "${name}"`, { kind: "error" });
+                }
+              })();
+            },
+          },
+        });
+      } catch {
+        notify(`Couldn't delete "${name}"`, { kind: "error" });
+      }
     },
-    [dispatch, refreshTree, markModified],
+    [dispatch, refreshTree, markModified, notify],
   );
 
   const openSettings = useCallback(() => {
@@ -259,6 +313,14 @@ export function App() {
       { id: "theme-dark", title: "Dark", category: "Theme", run: () => dispatch({ type: "setTheme", theme: "dark" }) },
       { id: "theme-system", title: "System", category: "Theme", run: () => dispatch({ type: "setTheme", theme: "system" }) },
       { id: "reindex", title: "Rebuild search index", category: "Index", run: () => void api.reindex() },
+      {
+        id: "help-shortcuts",
+        title: "Keyboard shortcuts",
+        category: "Help",
+        icon: "❔",
+        defaultHotkey: "Mod+/",
+        run: () => setHelpOpen(true),
+      },
       ...plugins.pluginCommands.map((command) => ({
         id: command.id,
         title: command.label,
@@ -280,6 +342,8 @@ export function App() {
   );
 
   const hotkeys = useHotkeys(commands);
+
+  const flatFiles = useMemo(() => flattenFiles(state.tree), [state.tree]);
 
   const hotkeyFor = useCallback(
     (commandId: string): string | undefined => {
@@ -352,6 +416,7 @@ export function App() {
       createTable,
       createCanvas,
       createBoard,
+      seedSampleNotes,
       setActiveDocument: (doc: { path: string; content: string; type: string } | null) =>
         plugins.documentSignal.set(doc),
       settings: settingsProps,
@@ -364,6 +429,7 @@ export function App() {
       createTable,
       createCanvas,
       createBoard,
+      seedSampleNotes,
       plugins.documentSignal,
       settingsProps,
     ],
@@ -387,7 +453,7 @@ export function App() {
         {paletteMode && (
           <Palette
             mode={paletteMode}
-            files={flattenFiles(state.tree)}
+            files={flatFiles}
             commands={commands}
             recentCommandIds={recentCommandIds}
             hotkeyFor={hotkeyFor}
@@ -400,6 +466,14 @@ export function App() {
         {settingsOpen && (
           <SettingsModal {...settingsProps} onClose={() => setSettingsOpen(false)} />
         )}
+        {helpOpen && (
+          <HelpOverlay
+            commands={settingsProps.hotkeys.commands}
+            hotkeyFor={hotkeyFor}
+            onClose={() => setHelpOpen(false)}
+          />
+        )}
+        <Toaster />
       </div>
     </AppServicesProvider>
   );
