@@ -270,6 +270,24 @@ export function App() {
     applyTheme(state.theme);
   }, [state.theme]);
 
+  // Prune restored/open tabs whose files no longer exist. Runs only when the
+  // tree changes (not on tab edits) to avoid racing with rename/refresh.
+  const panesRef = useRef(state.panes);
+  panesRef.current = state.panes;
+  useEffect(() => {
+    if (state.tree.length === 0) {
+      return;
+    }
+    const existing = new Set(flattenFiles(state.tree).map((file) => file.path));
+    for (const pane of panesRef.current) {
+      for (const tab of pane.tabs) {
+        if (!tab.path.startsWith("notes://") && !existing.has(tab.path)) {
+          dispatch({ type: "closePath", path: tab.path });
+        }
+      }
+    }
+  }, [state.tree, dispatch]);
+
   useEffect(() => {
     applyAccent(accent);
   }, [accent]);
