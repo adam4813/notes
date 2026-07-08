@@ -84,16 +84,17 @@ architecture, and code-style conventions.
 
 The MVP is intentionally scoped. Structurally viable but **not** built yet:
 
-- **Embeddable note-type widgets** — embedding a table/canvas/calendar/grid *inside* a Markdown
-  note (transclusion). The note-type registry is the seam; the editor/markdown round-trip work
-  is deferred.
 - **Graph view** — the link/tag data is indexed and ready, but there's no visual graph.
 - **Collaboration / multiplayer** — the server threads request context and the UI is decoupled
   to keep this viable, but real-time collab and auth are out of scope.
 - **Desktop wrapper** — runs locally via Node today; a desktop shell (e.g. Tauri/Electron) is
   future work. Files-on-disk already enable local + committed-to-git workflows.
-- **Performance at extreme scale** — results are capped and the file list memoized; full
-  virtualization of the explorer/search/large grids is deferred.
-- **Per-Tome plugin loading** — plugins are bundled and enabled globally today.
-- **Advanced note-type features** — e.g. board card metadata, canvas groups/edge labels, grid
-  range-select / fill / undo.
+- **Third-party plugin loading & sandbox** — plugins are bundled and trusted; enablement is
+  now **per-Tome**, but a Tome-local `.notes/plugins/` loader and a sandbox are future work.
+- **Canvas node groups** — the JSONCanvas group type is supported in data; group authoring UI
+  is future work.
+
+Already shipped beyond the original MVP: **Mermaid / calendar / grid** note types,
+**embeddable widgets** (`![[transclusion]]`), **offline editing**, **whole-Tome find & replace**,
+**hierarchical tags**, **layout persistence**, **named themes**, **explorer virtualization**, and
+advanced board/canvas/grid tools.
