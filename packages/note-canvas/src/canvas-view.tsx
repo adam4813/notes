@@ -1,12 +1,14 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type DragEvent as ReactDragEvent,
   type PointerEvent as ReactPointerEvent,
   type WheelEvent as ReactWheelEvent,
 } from "react";
+import { marked } from "marked";
 import { MarkdownEditor } from "@notes/editor";
 import {
   parseCanvas,
@@ -51,13 +53,28 @@ function detectNoteInfo(
 
 const BLOCKED_TYPES = new Set(["canvas", "board", "calendar"]);
 
+/** Renders markdown to sanitized HTML string for lightweight preview. */
+function markdownToHtml(md: string): string {
+  try {
+    return marked.parse(md, { async: false }) as string;
+  } catch {
+    return md;
+  }
+}
+
 function FileNodeCard({
   file,
+  isEditing,
+  isVisible,
   onOpen,
+  onExitEdit,
   subscribeToFileChange,
 }: {
   file: string;
+  isEditing: boolean;
+  isVisible: boolean;
   onOpen?: () => void;
+  onExitEdit?: () => void;
   subscribeToFileChange?: (filePath: string, cb: () => void) => () => void;
 }) {
   const [content, setContent] = useState<string | null>(null);
@@ -65,6 +82,7 @@ function FileNodeCard({
   const [blocked, setBlocked] = useState(false);
   const [error, setError] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
+  const contentRef = useRef("");
 
   const load = useCallback(async () => {
     try {
@@ -77,6 +95,7 @@ function FileNodeCard({
       const { title: t, type } = detectNoteInfo(data.content, file);
       setTitle(t);
       setBlocked(BLOCKED_TYPES.has(type));
+      contentRef.current = data.content;
       setContent(data.content);
       setError(false);
     } catch {
@@ -84,18 +103,42 @@ function FileNodeCard({
     }
   }, [file]);
 
+  // Only fetch when the node is visible (or editing).
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (isVisible || isEditing) {
+      void load();
+    }
+  }, [load, isVisible, isEditing]);
 
   useEffect(() => {
     if (!subscribeToFileChange) return;
-    return subscribeToFileChange(file, () => void load());
-  }, [file, load, subscribeToFileChange]);
+    return subscribeToFileChange(file, () => {
+      if (isVisible || isEditing) void load();
+    });
+  }, [file, load, subscribeToFileChange, isVisible, isEditing]);
+
+  // Ctrl+S forces immediate save while editing.
+  useEffect(() => {
+    if (!isEditing) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        clearTimeout(saveTimer.current);
+        void fetch("/api/file", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: file, content: contentRef.current }),
+        });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isEditing, file]);
 
   const handleChange = useCallback(
     (next: string) => {
       setContent(next);
+      contentRef.current = next;
       clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
         void fetch("/api/file", {
@@ -108,13 +151,27 @@ function FileNodeCard({
     [file],
   );
 
+  // Lightweight HTML preview (memoised, no TipTap instance).
+  const previewHtml = useMemo(() => {
+    if (!content || blocked) return "";
+    const fm = /^---\n[\s\S]*?\n---\n?/.exec(content);
+    const body = fm ? content.slice(fm[0].length) : content;
+    return markdownToHtml(body);
+  }, [content, blocked]);
+
+  // ---- Blocked card (board / calendar / canvas) ----
   if (blocked) {
     return (
       <div className="canvas-file-card canvas-file-card--blocked">
-        <div className="canvas-file-header" onPointerDown={(e) => e.stopPropagation()}>
+        <div className="canvas-file-header">
           <span className="canvas-file-icon">📄</span>
           <span className="canvas-file-title">{fileBasename(file)}</span>
-          <button className="canvas-file-open-btn" onClick={onOpen} aria-label="Open">
+          <button
+            className="canvas-file-open-btn"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={onOpen}
+            aria-label="Open"
+          >
             ⤢
           </button>
         </div>
@@ -123,6 +180,7 @@ function FileNodeCard({
     );
   }
 
+  // ---- Error card ----
   if (error) {
     return (
       <div className="canvas-file-card canvas-file-card--error">
@@ -134,33 +192,68 @@ function FileNodeCard({
     );
   }
 
+  // ---- Loading ----
+  if (!isVisible && content === null) {
+    return <div className="canvas-file-card canvas-file-card--offscreen" />;
+  }
   if (content === null) {
     return <div className="canvas-file-loading">Loading…</div>;
   }
 
+  // ---- Active editor ----
+  if (isEditing) {
+    return (
+      <div className="canvas-file-card canvas-file-card--editing">
+        <div className="canvas-file-header">
+          <span className="canvas-file-icon">📄</span>
+          <span className="canvas-file-title">{title}</span>
+          <button
+            className="canvas-file-open-btn"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={onOpen}
+            aria-label="Open in tab"
+          >
+            ⤢
+          </button>
+          <button
+            className="canvas-file-done-btn"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={onExitEdit}
+            aria-label="Done editing"
+          >
+            ✓ Done
+          </button>
+        </div>
+        <div
+          className="canvas-file-editor"
+          onPointerDown={(e) => e.stopPropagation()}
+          onWheel={(e) => e.stopPropagation()}
+        >
+          <MarkdownEditor value={content} mode="rendered" onChange={handleChange} />
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Lightweight HTML preview ----
   return (
     <div className="canvas-file-card">
-      {/* Title bar: draggable to move the node */}
       <div className="canvas-file-header">
         <span className="canvas-file-icon">📄</span>
         <span className="canvas-file-title">{title}</span>
         <button
           className="canvas-file-open-btn"
-          aria-label={`Open ${title}`}
           onPointerDown={(e) => e.stopPropagation()}
+          aria-label={`Open ${title}`}
           onClick={onOpen}
         >
           ⤢
         </button>
       </div>
-      {/* Editor area: stop propagation so editing doesn't trigger canvas drag */}
       <div
-        className="canvas-file-editor"
-        onPointerDown={(e) => e.stopPropagation()}
-        onWheel={(e) => e.stopPropagation()}
-      >
-        <MarkdownEditor value={content} mode="rendered" onChange={handleChange} />
-      </div>
+        className="canvas-file-preview"
+        dangerouslySetInnerHTML={{ __html: previewHtml || "<em>(empty note)</em>" }}
+      />
     </div>
   );
 }
@@ -227,7 +320,8 @@ export function CanvasView({ value, onChange, onOpenFile, path, subscribeToFileC
   const [data, setData] = useState<CanvasData>(() => parseCanvas(value));
   const [viewport, setViewport] = useState<Viewport>({ x: 40, y: 40, scale: 1 });
   const [selection, setSelection] = useState<Selection>(null);
-  const [editing, setEditing] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);       // text node inline editing
+  const [editingFileId, setEditingFileId] = useState<string | null>(null); // FileNode edit mode
   const [connectPos, setConnectPos] = useState<{ x: number; y: number } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -286,6 +380,17 @@ export function CanvasView({ value, onChange, onOpenFile, path, subscribeToFileC
     const rect = containerRef.current?.getBoundingClientRect();
     setViewport(computeFit(dataRef.current.nodes, rect?.width ?? 800, rect?.height ?? 600));
   };
+
+  // Escape exits FileNode edit mode.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && editingFileId !== null) {
+        setEditingFileId(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editingFileId]);
 
   const pushChange = (next: CanvasData) => {
     lastSerialized.current = serializeCanvas(next);
@@ -400,6 +505,11 @@ export function CanvasView({ value, onChange, onOpenFile, path, subscribeToFileC
   };
 
   const onBackgroundPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    // If a FileNode is being edited, click on background exits edit mode instead of panning.
+    if (editingFileId !== null) {
+      setEditingFileId(null);
+      return;
+    }
     // Nodes, handles, and edge hit-lines stopPropagation, so any event that
     // reaches here is on empty canvas → start a pan and clear selection.
     setSelection(null);
@@ -415,6 +525,14 @@ export function CanvasView({ value, onChange, onOpenFile, path, subscribeToFileC
 
   const startMove = (event: ReactPointerEvent, node: CanvasNode) => {
     event.stopPropagation();
+    // If another FileNode is being edited, exit edit mode without starting a move.
+    if (editingFileId !== null && editingFileId !== node.id) {
+      setEditingFileId(null);
+      setSelection({ kind: "node", id: node.id });
+      return;
+    }
+    // If THIS FileNode is being edited, don't start a move from its node div
+    // (the title bar doesn't stopPropagation here so it CAN start a move via this handler).
     setSelection({ kind: "node", id: node.id });
     dragRef.current = {
       type: "move",
@@ -681,13 +799,36 @@ export function CanvasView({ value, onChange, onOpenFile, path, subscribeToFileC
 
           {data.nodes.map((node) => {
             const isSelected = selection?.kind === "node" && selection.id === node.id;
+            const isFileEditing = node.type === "file" && editingFileId === node.id;
+            // Viewport culling: skip expensive render when node is off-screen.
+            const rect = containerRef.current?.getBoundingClientRect();
+            const cw = rect?.width ?? 800;
+            const ch = rect?.height ?? 600;
+            const nodeScreenLeft = node.x * viewport.scale + viewport.x;
+            const nodeScreenTop = node.y * viewport.scale + viewport.y;
+            const isVisible =
+              nodeScreenLeft + node.width * viewport.scale > -200 &&
+              nodeScreenTop + node.height * viewport.scale > -200 &&
+              nodeScreenLeft < cw + 200 &&
+              nodeScreenTop < ch + 200;
+
             return (
               <div
                 key={node.id}
-                className={`canvas-node canvas-node--${node.type} ${isSelected ? "canvas-node--selected" : ""}`}
-                style={{ left: node.x, top: node.y, width: node.width, height: node.height }}
+                className={`canvas-node canvas-node--${node.type} ${isSelected ? "canvas-node--selected" : ""} ${isFileEditing ? "canvas-node--file-editing" : ""}`}
+                style={{
+                  left: node.x,
+                  top: node.y,
+                  width: node.width,
+                  height: node.height,
+                  opacity:
+                    editingFileId !== null && !isFileEditing && node.type !== "text" ? 0.5 : 1,
+                }}
                 onPointerDown={(event) => startMove(event, node)}
-                onDoubleClick={() => node.type === "text" && setEditing(node.id)}
+                onDoubleClick={() => {
+                  if (node.type === "text") setEditing(node.id);
+                  if (node.type === "file") setEditingFileId(node.id);
+                }}
               >
                 {node.type === "text" &&
                   (editing === node.id ? (
@@ -709,7 +850,10 @@ export function CanvasView({ value, onChange, onOpenFile, path, subscribeToFileC
                 {node.type === "file" && (
                   <FileNodeCard
                     file={node.file}
+                    isEditing={isFileEditing}
+                    isVisible={isVisible}
                     onOpen={() => onOpenFile?.(node.file)}
+                    onExitEdit={() => setEditingFileId(null)}
                     subscribeToFileChange={subscribeToFileChange}
                   />
                 )}

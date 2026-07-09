@@ -3102,6 +3102,43 @@ tr:hover .grid-row-delete {
   font-size: 13px;
 }
 
+.canvas-file-preview {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  min-height: 0;
+}
+
+.canvas-file-preview h1,
+.canvas-file-preview h2,
+.canvas-file-preview h3 { font-size: 1.1em; font-weight: 600; margin: 6px 0 3px; }
+.canvas-file-preview p { margin: 4px 0; }
+.canvas-file-preview ul, .canvas-file-preview ol { padding-left: 16px; margin: 4px 0; }
+.canvas-file-preview code { background: var(--bg-elevated); padding: 1px 4px; border-radius: 3px; font-size: 11px; }
+.canvas-file-preview pre { background: var(--bg-elevated); padding: 6px 8px; border-radius: 4px; overflow-x: auto; font-size: 11px; }
+
+.canvas-file-done-btn {
+  background: var(--accent);
+  color: var(--accent-fg, #fff);
+  border: none;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.canvas-node--file-editing {
+  z-index: 10;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+}
+
+.canvas-file-card--offscreen {
+  background: var(--bg-elevated);
+}
+
 .canvas-file-hint {
   font-size: 11px;
   color: var(--fg-muted);

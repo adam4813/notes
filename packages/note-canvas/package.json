@@ -14,7 +14,8 @@
   },
   "dependencies": {
     "@notes/core": "*",
-    "@notes/editor": "*"
+    "@notes/editor": "*",
+    "marked": ">=4"
   },
   "peerDependencies": {
     "react": "^18",
