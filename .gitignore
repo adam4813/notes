@@ -3,6 +3,7 @@ dist/
 dist-electron/
 dist-desktop/
 build/
+apps/desktop/native-staging/
 coverage/
 .vite/
 *.tsbuildinfo

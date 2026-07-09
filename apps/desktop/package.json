@@ -12,12 +12,14 @@
     "dev": "npm run build:electron && cross-env ELECTRON_DEV=1 electron .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "generate-icons": "node scripts/generate-icons.mjs",
+    "prebuild-native": "node scripts/prebuild-native.mjs",
     "package": "electron-builder",
     "package:win": "electron-builder --win",
     "package:mac": "electron-builder --mac",
     "package:linux": "electron-builder --linux"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.2.0",
     "cross-env": "^7.0.3",
     "electron": "31.7.7",
     "electron-builder": "^26.15.3",
