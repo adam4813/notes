@@ -3085,6 +3085,23 @@ tr:hover .grid-row-delete {
   word-break: break-word;
 }
 
+.canvas-file-editor {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.canvas-file-editor .markdown-editor,
+.canvas-file-editor .editor-column,
+.canvas-file-editor .rendered-scroll {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  font-size: 13px;
+}
+
 .canvas-file-hint {
   font-size: 11px;
   color: var(--fg-muted);

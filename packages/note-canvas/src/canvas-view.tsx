@@ -7,6 +7,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type WheelEvent as ReactWheelEvent,
 } from "react";
+import { MarkdownEditor } from "@notes/editor";
 import {
   parseCanvas,
   serializeCanvas,
@@ -31,23 +32,24 @@ function fileBasename(p: string): string {
   return (p.split("/").pop() ?? p).replace(/\.[^.]+$/, "");
 }
 
-function extractPreview(
+function detectNoteInfo(
   content: string,
   filePath: string,
-): { title: string; body: string; type: string } {
+): { title: string; type: string } {
   const fmMatch = /^---\n([\s\S]*?)\n---\n?/.exec(content);
   const yaml = fmMatch ? fmMatch[1] : "";
-  const bodyText = fmMatch ? content.slice(fmMatch[0].length).trim() : content.trim();
+  const body = fmMatch ? content.slice(fmMatch[0].length) : content;
   const titleMatch = /^title:\s*["']?(.+?)["']?\s*$/m.exec(yaml);
   const typeMatch = /^type:\s*(.+)$/m.exec(yaml);
-  const h1Match = /^#\s+(.+)$/m.exec(bodyText);
+  const h1Match = /^#\s+(.+)$/m.exec(body);
   const title = (titleMatch?.[1] || h1Match?.[1] || fileBasename(filePath)).trim();
   const type =
     typeMatch?.[1].trim() ??
     (filePath.toLowerCase().endsWith(".canvas") ? "canvas" : "markdown");
-  const preview = bodyText.length > 500 ? `${bodyText.slice(0, 500)}…` : bodyText;
-  return { title, body: preview, type };
+  return { title, type };
 }
+
+const BLOCKED_TYPES = new Set(["canvas", "board", "calendar"]);
 
 function FileNodeCard({
   file,
@@ -58,10 +60,11 @@ function FileNodeCard({
   onOpen?: () => void;
   subscribeToFileChange?: (filePath: string, cb: () => void) => () => void;
 }) {
+  const [content, setContent] = useState<string | null>(null);
   const [title, setTitle] = useState(() => fileBasename(file));
-  const [body, setBody] = useState<string | null>(null);
   const [blocked, setBlocked] = useState(false);
   const [error, setError] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const load = useCallback(async () => {
     try {
@@ -71,10 +74,10 @@ function FileNodeCard({
         return;
       }
       const data = (await res.json()) as { content: string };
-      const { title: t, body: b, type } = extractPreview(data.content, file);
+      const { title: t, type } = detectNoteInfo(data.content, file);
       setTitle(t);
-      setBody(b);
-      setBlocked(["canvas", "board", "calendar"].includes(type));
+      setBlocked(BLOCKED_TYPES.has(type));
+      setContent(data.content);
       setError(false);
     } catch {
       setError(true);
@@ -90,20 +93,32 @@ function FileNodeCard({
     return subscribeToFileChange(file, () => void load());
   }, [file, load, subscribeToFileChange]);
 
+  const handleChange = useCallback(
+    (next: string) => {
+      setContent(next);
+      clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => {
+        void fetch("/api/file", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: file, content: next }),
+        });
+      }, 800);
+    },
+    [file],
+  );
+
   if (blocked) {
     return (
       <div className="canvas-file-card canvas-file-card--blocked">
-        <div className="canvas-file-header">
-          <span className="canvas-file-title">🚫 {fileBasename(file)}</span>
+        <div className="canvas-file-header" onPointerDown={(e) => e.stopPropagation()}>
+          <span className="canvas-file-icon">📄</span>
+          <span className="canvas-file-title">{fileBasename(file)}</span>
+          <button className="canvas-file-open-btn" onClick={onOpen} aria-label="Open">
+            ⤢
+          </button>
         </div>
-        <div className="canvas-file-hint">This note type cannot be previewed here.</div>
-        <button
-          className="canvas-file-open-btn"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={onOpen}
-        >
-          Open ↗
-        </button>
+        <div className="canvas-file-hint">Open to view or edit this note type.</div>
       </div>
     );
   }
@@ -119,24 +134,33 @@ function FileNodeCard({
     );
   }
 
-  if (body === null) {
+  if (content === null) {
     return <div className="canvas-file-loading">Loading…</div>;
   }
 
   return (
     <div className="canvas-file-card">
-      <div className="canvas-file-header" onPointerDown={(e) => e.stopPropagation()}>
+      {/* Title bar: draggable to move the node */}
+      <div className="canvas-file-header">
         <span className="canvas-file-icon">📄</span>
         <span className="canvas-file-title">{title}</span>
         <button
           className="canvas-file-open-btn"
           aria-label={`Open ${title}`}
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={onOpen}
         >
           ⤢
         </button>
       </div>
-      <div className="canvas-file-body">{body || "(empty note)"}</div>
+      {/* Editor area: stop propagation so editing doesn't trigger canvas drag */}
+      <div
+        className="canvas-file-editor"
+        onPointerDown={(e) => e.stopPropagation()}
+        onWheel={(e) => e.stopPropagation()}
+      >
+        <MarkdownEditor value={content} mode="rendered" onChange={handleChange} />
+      </div>
     </div>
   );
 }
