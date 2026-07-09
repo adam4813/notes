@@ -1,6 +1,6 @@
 # Phase 17 — Electron Core Scaffold & Dev Workflow
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 **Depends on:** 0–12
 
 ## Goal
@@ -171,4 +171,11 @@ Files to stage:
 - `package.json` (root — scripts + cross-env)
 
 ## Feedback
-_(recorded after GATE)_
+
+**Date:** 2026-07-08
+**Result:** ✅ GATE passed
+
+- dev:all starts cleanly: server, web, and Electron all run concurrently
+- Notes UI fully functional inside Electron
+- window.electronAPI available with all expected properties
+- Pre-existing warning in console: "flushSync was called from inside a lifecycle method" (from TipTap RenderedEditor) — present on both desktop and web, non-blocking, deferred

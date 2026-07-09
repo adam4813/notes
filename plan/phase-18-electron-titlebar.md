@@ -1,6 +1,6 @@
 # Phase 18 — Electron Chromeless Window & Titlebar
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 **Depends on:** 17
 
 ## Goal
@@ -167,4 +167,12 @@ Files to stage:
 - `apps/web/src/vite-env.d.ts`
 
 ## Feedback
-_(recorded after GATE)_
+
+**Date:** 2026-07-08
+**Result:** ✅ GATE passed
+
+- Visual polish: OK — functional, could be nicer
+- Drag region works correctly
+- Web version unaffected ✅
+- No blocking issues
+- Deferred: Add File/Edit/Help menu items in the titlebar (like VS Code's menu bar), and a search bar in the custom chrome

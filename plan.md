@@ -208,10 +208,10 @@ Status legend: ⬜ Not Started · 🔄 In Progress · ✅ Complete
 | 14. Calendar Rich Entries | [plan/phase-14-calendar-rich-entries.md](plan/phase-14-calendar-rich-entries.md) | ✅ Complete | 13 |
 | 15. Canvas Note Cards (Drop + Preview) | [plan/phase-15-canvas-note-preview.md](plan/phase-15-canvas-note-preview.md) | ✅ Complete | 7 |
 | 16. Canvas Inline Editing (Papers on Desk) | [plan/phase-16-canvas-inline-editing.md](plan/phase-16-canvas-inline-editing.md) | ✅ Complete | 15 |
-| 17. Electron Core Scaffold & Dev Workflow | [plan/phase-17-electron-core.md](plan/phase-17-electron-core.md) | ⬜ Not Started | 0–12 |
-| 18. Electron Chromeless Window & Titlebar | [plan/phase-18-electron-titlebar.md](plan/phase-18-electron-titlebar.md) | ⬜ Not Started | 17 |
-| 19. Electron Build Pipeline & Installers | [plan/phase-19-electron-build.md](plan/phase-19-electron-build.md) | ⬜ Not Started | 17, 18 |
-| 20. Electron Auto-Update & First-Launch Tome UX | [plan/phase-20-electron-autoupdate.md](plan/phase-20-electron-autoupdate.md) | ⬜ Not Started | 19 |
+| 17. Electron Core Scaffold & Dev Workflow | [plan/phase-17-electron-core.md](plan/phase-17-electron-core.md) | ✅ Complete | 0–12 |
+| 18. Electron Chromeless Window & Titlebar | [plan/phase-18-electron-titlebar.md](plan/phase-18-electron-titlebar.md) | ✅ Complete | 17 |
+| 19. Electron Build Pipeline & Installers | [plan/phase-19-electron-build.md](plan/phase-19-electron-build.md) | ✅ Complete | 17, 18 |
+| 20. Electron Auto-Update & First-Launch Tome UX | [plan/phase-20-electron-autoupdate.md](plan/phase-20-electron-autoupdate.md) | ✅ Complete | 19 |
 
 ---
 
@@ -236,7 +236,9 @@ Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase 
 
 ## 8. Cross-Session Handoff
 
-- **Last session:** 2026-07-08 — **Phases 13–16 all complete.** Rich board cards (13), calendar entries (14), canvas note preview (15), canvas inline editing (16). Canvas is now a full "papers on desk" editor: drop notes, double-click to edit inline, auto-save, Escape/click-out to exit, viewport culling for performance. All 116 tests pass.
+- **Last session:** 2026-07-09 — **ALL 20 PHASES COMPLETE 🎉** Phase 20: first-launch tome folder picker (JSON file store), auto-updater (electron-updater with 5s delay), UpdateBanner React component, File/Edit inline menus in titlebar. Key fix: electron-store v11 is ESM-only → replaced with simple JSON store. Windows installer `Notes-Setup-0.0.0.exe` fully functional.
+- **Current state:** Full desktop app with installer for Windows (Mac/Linux via platform-specific commands). All features from phases 0–20 working.
+- **Next action:** All planned phases complete. Deferred items and post-MVP todos remain in the SQL todo list.
 - **Current state:** Rich cards/entries + canvas papers on desk fully shipped. Next track: Electron desktop wrapper (phases 17–20) — Phase 17 is ready to start.
 - **Next action:** Implement Phase 17 (Electron Core Scaffold) via `/implement-phase`.
 - **Current state:** Rich board cards shipped. Phase 14 (Calendar Rich Entries) ready — depends on 13 ✅.

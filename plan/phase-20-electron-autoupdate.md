@@ -1,6 +1,6 @@
 # Phase 20 — Electron Auto-Update & First-Launch Tome UX
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 **Depends on:** 19
 
 ## Goal
@@ -204,4 +204,15 @@ Files to stage:
 - `apps/web/src/styles.css` (UpdateBanner styles)
 
 ## Feedback
-_(recorded after GATE)_
+
+**Date:** 2026-07-09
+**Result:** ✅ GATE passed (after 2 iterations)
+
+Issues resolved:
+1. `electron-store` v11 is ESM-only → replaced with a simple JSON file store backed by `%APPDATA%\Notes\notes-config.json`
+2. No app menu visible on Windows (`frame: false` hides native menu bar) → File/Edit menus added directly to the custom titlebar as inline dropdowns
+
+Verified:
+- First-launch folder picker appears ✅
+- File/Edit menus in titlebar work ✅
+- No blocking issues ✅
