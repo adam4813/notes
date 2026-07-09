@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api, type SearchResult } from "../api/client";
 import { useWorkspace } from "../state/app-context";
 
@@ -15,7 +15,13 @@ function baseNoExt(path: string): string {
   return base.replace(/\.[^.]+$/, "");
 }
 
-export function SearchPane({ initialTag }: { initialTag?: string }) {
+export function SearchPane({
+  initialTag,
+  initialQuery,
+}: {
+  initialTag?: string;
+  initialQuery?: string;
+}) {
   const { dispatch } = useWorkspace();
   const [query, setQuery] = useState("");
   const [tag, setTag] = useState(initialTag ?? "");
@@ -23,7 +29,6 @@ export function SearchPane({ initialTag }: { initialTag?: string }) {
   const [folder, setFolder] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [active, setActive] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (initialTag !== undefined) {
@@ -32,8 +37,10 @@ export function SearchPane({ initialTag }: { initialTag?: string }) {
   }, [initialTag]);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    if (initialQuery !== undefined) {
+      setQuery(initialQuery);
+    }
+  }, [initialQuery]);
 
   const filters = useMemo(
     () => ({
@@ -78,7 +85,6 @@ export function SearchPane({ initialTag }: { initialTag?: string }) {
   return (
     <div className="search-pane">
       <input
-        ref={inputRef}
         className="search-input"
         data-testid="search-input"
         placeholder="Search notes…"

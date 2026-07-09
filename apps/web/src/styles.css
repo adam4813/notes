@@ -352,20 +352,74 @@ button {
 
 /* Ribbon */
 .ribbon {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
+  height: 100%;
   padding: 0 12px;
   background: var(--bg-elevated);
   border-bottom: 1px solid var(--border);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ribbon--desktop {
+  -webkit-app-region: drag;
+}
+
+.ribbon--desktop .title-bar-menu-btn,
+.ribbon--desktop .title-bar-menu-popup,
+.ribbon--desktop .title-bar-menu-item,
+.ribbon--desktop .title-bar-controls,
+.ribbon--desktop .title-bar-btn,
+.ribbon--desktop .btn-ghost,
+.ribbon--desktop .ribbon-search-input {
+  -webkit-app-region: no-drag;
+}
+
+.ribbon-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .ribbon-brand {
   font-weight: 600;
 }
 
+.ribbon-search {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.ribbon-search-input {
+  width: min(420px, 100%);
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 12px;
+  padding: 0 10px;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.ribbon-search-input::placeholder {
+  color: var(--fg-muted);
+}
+
 .ribbon-actions {
   display: flex;
+  gap: 4px;
+  justify-self: end;
+}
+
+.ribbon-right {
+  display: flex;
+  align-items: center;
   gap: 4px;
 }
 
