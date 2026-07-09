@@ -204,6 +204,76 @@ button {
   --titlebar-height: 32px;
 }
 
+/* Titlebar inline menus (File, Edit) */
+.title-bar-menus {
+  display: flex;
+  height: 100%;
+  -webkit-app-region: no-drag;
+}
+
+.title-bar-menu {
+  position: relative;
+  height: 100%;
+}
+
+.title-bar-menu-btn {
+  height: 100%;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  color: var(--fg-muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.title-bar-menu-btn:hover,
+.title-bar-menu-btn--open {
+  background: var(--hover);
+  color: var(--fg);
+}
+
+.title-bar-menu-popup {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 180px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  padding: 3px 0;
+}
+
+.title-bar-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 5px 14px;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.title-bar-menu-item:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.title-bar-menu-item:disabled {
+  color: var(--fg-muted);
+  cursor: default;
+}
+
+.title-bar-menu-sep {
+  height: 1px;
+  background: var(--border);
+  margin: 3px 0;
+}
+
 .title-bar-drag {
   flex: 1;
   height: 100%;

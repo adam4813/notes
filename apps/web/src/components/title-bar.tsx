@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Custom window titlebar for Electron. Only renders when `window.electronAPI`
@@ -13,6 +13,72 @@ export function TitleBar() {
   return <TitleBarInner />;
 }
 
+/** A simple dropdown menu for the titlebar. */
+function TitleBarMenu({
+  label,
+  items,
+}: {
+  label: string;
+  items: Array<
+    | { type: "separator" }
+    | { type: "item"; label: string; onClick: () => void; disabled?: boolean }
+  >;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClose = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onClose);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClose);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="title-bar-menu" ref={ref}>
+      <button
+        className={`title-bar-menu-btn ${open ? "title-bar-menu-btn--open" : ""}`}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+      >
+        {label}
+      </button>
+      {open && (
+        <div className="title-bar-menu-popup" onMouseDown={(e) => e.stopPropagation()}>
+          {items.map((item, i) =>
+            item.type === "separator" ? (
+              <div key={i} className="title-bar-menu-sep" />
+            ) : (
+              <button
+                key={i}
+                className="title-bar-menu-item"
+                disabled={item.disabled}
+                onClick={() => {
+                  setOpen(false);
+                  item.onClick();
+                }}
+              >
+                {item.label}
+              </button>
+            ),
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Separate inner component so hooks only run inside Electron. */
 function TitleBarInner() {
   const api = window.electronAPI!;
@@ -24,8 +90,41 @@ function TitleBarInner() {
     return api.onMaximizeChange(setMaximized);
   }, [api]);
 
+  const handleChangeTome = useCallback(() => {
+    void api.chooseTomePath();
+  }, [api]);
+
   return (
     <div className="title-bar" data-platform={isMac ? "mac" : "win"}>
+      {/* On Windows/Linux: show inline menus */}
+      {!isMac && (
+        <div className="title-bar-menus" onMouseDown={(e) => e.stopPropagation()}>
+          <TitleBarMenu
+            label="File"
+            items={[
+              { type: "item", label: "Change Tome Folder…", onClick: handleChangeTome },
+              { type: "separator" },
+              {
+                type: "item",
+                label: "Quit",
+                onClick: () => api.close(),
+              },
+            ]}
+          />
+          <TitleBarMenu
+            label="Edit"
+            items={[
+              { type: "item", label: "Undo", onClick: () => document.execCommand("undo") },
+              { type: "item", label: "Redo", onClick: () => document.execCommand("redo") },
+              { type: "separator" },
+              { type: "item", label: "Cut", onClick: () => document.execCommand("cut") },
+              { type: "item", label: "Copy", onClick: () => document.execCommand("copy") },
+              { type: "item", label: "Paste", onClick: () => document.execCommand("paste") },
+            ]}
+          />
+        </div>
+      )}
+
       {/* Drag region — fills available space, draggable */}
       <div className="title-bar-drag" />
       <span className="title-bar-name">Notes</span>
@@ -37,7 +136,6 @@ function TitleBarInner() {
             aria-label="Minimize"
             onClick={() => api.minimize()}
           >
-            {/* Fluent-style minimize — horizontal line */}
             <svg width="10" height="1" viewBox="0 0 10 1">
               <line x1="0" y1="0.5" x2="10" y2="0.5" stroke="currentColor" strokeWidth="1" />
             </svg>
@@ -48,13 +146,11 @@ function TitleBarInner() {
             onClick={() => api.maximize()}
           >
             {maximized ? (
-              /* Restore — two overlapping squares */
               <svg width="10" height="10" viewBox="0 0 10 10">
                 <rect x="2" y="0" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="1" />
                 <rect x="0" y="2" width="8" height="8" fill="var(--bg)" stroke="currentColor" strokeWidth="1" />
               </svg>
             ) : (
-              /* Maximize — single square */
               <svg width="10" height="10" viewBox="0 0 10 10">
                 <rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="1" />
               </svg>
@@ -65,7 +161,6 @@ function TitleBarInner() {
             aria-label="Close"
             onClick={() => api.close()}
           >
-            {/* Close — X */}
             <svg width="10" height="10" viewBox="0 0 10 10">
               <line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" strokeWidth="1.2" />
               <line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" strokeWidth="1.2" />
