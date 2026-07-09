@@ -6,8 +6,9 @@
   "include": [
     "packages/*/src/**/*.ts",
     "packages/*/src/**/*.tsx",
-    "apps/*/src/**/*.ts",
-    "apps/*/src/**/*.tsx",
+    "apps/server/src/**/*.ts",
+    "apps/web/src/**/*.ts",
+    "apps/web/src/**/*.tsx",
     "e2e/**/*.ts"
   ]
 }

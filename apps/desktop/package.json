@@ -1,0 +1,16 @@
+{
+  "name": "@notes/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "build:electron": "tsc -p tsconfig.json",
+    "dev": "npm run build:electron && cross-env ELECTRON_DEV=1 electron .",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "electron": "^31.0.0",
+    "typescript": "^5.7.2"
+  }
+}
