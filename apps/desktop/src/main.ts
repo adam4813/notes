@@ -51,13 +51,17 @@ async function main(): Promise<void> {
     await win.loadURL(WEB_DEV_URL);
     win.webContents.openDevTools({ mode: "detach" });
   } else {
-    // Production: start the bundled server, then load the packaged web UI.
+    // Production: start the bundled server (serves web UI too), then load via http.
     process.env["NOTES_PACKAGED"] = "1";
+    process.env["NOTES_WEB_DIST"] = path.join(process.resourcesPath, "web", "dist");
     const serverPath = path.join(__dirname, "../dist-server/main.js");
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { startServer } = require(serverPath) as { startServer: () => Promise<void> };
-    await startServer();
-    await win.loadFile(path.join(process.resourcesPath, "web", "dist", "index.html"));
+    const { startServer } = require(serverPath) as {
+      startServer: () => Promise<{ port: number; address: string }>;
+    };
+    const { port } = await startServer();
+    // Load from the server URL so /api and /ws requests work on the same origin.
+    await win.loadURL(`http://127.0.0.1:${port}`);
   }
 
   setupWindowIpc(win);

@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fastify/static": "^9.3.0",
     "@fastify/websocket": "^11.0.1",
     "@notes/core": "*",
     "@notes/index": "*",
