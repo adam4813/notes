@@ -204,6 +204,14 @@ Status legend: ⬜ Not Started · 🔄 In Progress · ✅ Complete
 | 10. Command Palette, Hotkeys & Theming | [plan/phase-10-commands-theming.md](plan/phase-10-commands-theming.md) | ✅ Complete | 3, 5 |
 | 11. Search, Tags & Info Panels UI | [plan/phase-11-search-tags-ui.md](plan/phase-11-search-tags-ui.md) | ✅ Complete | 2, 3, 5 |
 | 12. MVP Polish, Performance & Hardening | [plan/phase-12-polish.md](plan/phase-12-polish.md) | ✅ Complete | 4–11 |
+| 13. Board Rich Cards | [plan/phase-13-board-rich-cards.md](plan/phase-13-board-rich-cards.md) | 🔄 In Progress | 0–12 |
+| 14. Calendar Rich Entries | [plan/phase-14-calendar-rich-entries.md](plan/phase-14-calendar-rich-entries.md) | ⬜ Not Started | 13 |
+| 15. Canvas Note Cards (Drop + Preview) | [plan/phase-15-canvas-note-preview.md](plan/phase-15-canvas-note-preview.md) | ⬜ Not Started | 7 |
+| 16. Canvas Inline Editing (Papers on Desk) | [plan/phase-16-canvas-inline-editing.md](plan/phase-16-canvas-inline-editing.md) | ⬜ Not Started | 15 |
+| 17. Electron Core Scaffold & Dev Workflow | [plan/phase-17-electron-core.md](plan/phase-17-electron-core.md) | ⬜ Not Started | 0–12 |
+| 18. Electron Chromeless Window & Titlebar | [plan/phase-18-electron-titlebar.md](plan/phase-18-electron-titlebar.md) | ⬜ Not Started | 17 |
+| 19. Electron Build Pipeline & Installers | [plan/phase-19-electron-build.md](plan/phase-19-electron-build.md) | ⬜ Not Started | 17, 18 |
+| 20. Electron Auto-Update & First-Launch Tome UX | [plan/phase-20-electron-autoupdate.md](plan/phase-20-electron-autoupdate.md) | ⬜ Not Started | 19 |
 
 ---
 
@@ -218,6 +226,9 @@ Independent phases can be implemented concurrently (one agent per phase):
 - **Wave E:** Phase 5 ‖ Phase 9
 - **Wave F:** Phase 10 ‖ Phase 11
 - **Wave G:** Phase 12
+- **Wave H:** Phase 13 ‖ Phase 15 ‖ Phase 17 (all independent post-MVP)
+- **Wave I:** Phase 14 (depends on 13) ‖ Phase 16 (depends on 15) ‖ Phase 18 (depends on 17)
+- **Wave J:** Phase 19 (depends on 17, 18) — Phase 20 depends on 19
 
 Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase parallelism.
 
@@ -225,21 +236,16 @@ Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase 
 
 ## 8. Cross-Session Handoff
 
-- **Last session:** 2026-07-07 — **Phase 12 (MVP Polish) complete → 🎉 MVP DONE.** All 13 phases
-  (0–12) are ✅. Phase 12 added an error boundary + toasts (undoable delete), a11y (focus-visible,
-  reduced-motion, ARIA), onboarding (auto-seeded sample Tome on first run + shortcuts overlay),
-  perf tidy-ups, README/known-limitations, and a core-flow e2e journey. Fixed real editor
-  cursor-jump bugs (focus guard + ignore self-write watcher echoes). **User accepted the MVP GATE.**
-  Post-GATE feedback also shipped: editable always-on Properties panel, explorer `[Type]` tags,
-  subdued tab filenames, app/editor font-size settings, inline find (replace as popover), and tab
-  close others/left/right/all. 92 unit tests + 20 Playwright specs (e2e now has `retries: 2` to
-  absorb FS-watcher timing) + build all green.
-- **Current state:** Feature-complete, polished MVP. Files are the source of truth; SQLite index
-  is rebuildable; note types + plugins share one extension seam.
-- **Next action:** **Prototype complete.** Optional post-MVP backlog (tracked as `deferred-*` /
-  `postmvp-*` todos and in plan.md): graph view, collaboration, desktop wrapper, offline
-  service worker, virtualization, calendar/grid note types, embeddable widgets, per-Tome plugin
-  loader, custom theming, whole-Tome find/replace, hierarchical tags, folder drag/move.
+- **Last session:** 2026-07-08 — Starting Phase 13 (Board Rich Cards). Implementing dotfolder card files, CardStore, server CRUD, BoardView expansion, FTS indexing. Two feature tracks added:
+  (1) **Rich Cards/Entries** (phases 13–16): board cards and calendar entries upgraded to full notes
+  stored in hidden dotfolders (`.Board.cards/`, `.Calendar.events/`), plus canvas FileNode
+  drop-and-preview (phase 15) and inline editing "papers on desk" (phase 16).
+  (2) **Desktop (Electron)** (phases 17–20): chromeless Electron wrapper, build pipeline for
+  Win/Mac/Linux, auto-update via GitHub Releases, first-launch tome folder UX.
+  Phase files written to `plan/phase-13-*.md` through `plan/phase-20-*.md`.
+  Drag-to-embed (explorer → editor) shipped as commit `0e05bb0`.
+- **Current state:** MVP complete (phases 0–12 ✅). Phases 13–20 planned and ready to implement.
+- **Next action:** Implement phase 13 (Board Rich Cards) via `/implement-phase`.
 - **Conventions:** `.github/copilot-instructions.md` is finalized in Phase 0; treat it as the
   binding style/architecture reference for all later phases.
 
@@ -253,3 +259,9 @@ Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase 
 | Planning | Hybrid ProseMirror + CodeMirror editor | Rendered-mode editing + clean markdown diffs |
 | Planning | Note types built as first-party plugins | Dogfoods the plugin API, prevents rework |
 | Planning | Table note = md frontmatter schema + embedded CSV | Single git-friendly file; easy migration |
+| 2026-07-08 | Board cards / calendar entries → hidden dotfolder files (`.<Name>.cards/`) | Full editor support requires real files; hashed names + dot-prefix discourage hand-editing while keeping FTS indexing |
+| 2026-07-08 | Cards/entries: FTS indexed, NOT wikilink-linkable, NOT embeddable | Prevents accidental note-ception; board/calendar UI is the intentional entry point |
+| 2026-07-08 | type:board, type:calendar, type:canvas excluded from `![[…]]` embed | Prevents infinite embed recursion and note-ception |
+| 2026-07-08 | Desktop wrapper → Electron (not Tauri) | Node.js built-in; server runs in-process; no sidecar needed |
+| 2026-07-08 | Electron window → chromeless, custom React titlebar | Consistent cross-platform look; macOS uses `hiddenInset` to keep native traffic lights |
+| 2026-07-08 | Auto-update provider → GitHub Releases | Zero-cost hosting; `electron-updater` has first-class support |
