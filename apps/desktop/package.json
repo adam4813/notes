@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "description": "Notes — local-first knowledge tool (Electron desktop wrapper)",
   "author": "Notes Contributors",
+  "desktopName": "Notes",
   "private": true,
   "main": "dist-electron/main.js",
   "scripts": {

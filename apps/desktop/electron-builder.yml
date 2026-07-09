@@ -55,6 +55,9 @@ linux:
   target: AppImage
   icon: resources/icon.png
   artifactName: "Notes-${version}.AppImage"
+  category: Office
+  executableName: notes
+  syncDesktopName: true
 
 # Uncomment and configure when setting up CI/CD releases:
 # publish:

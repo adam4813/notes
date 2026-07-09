@@ -2,6 +2,7 @@ node_modules/
 dist/
 dist-electron/
 dist-desktop/
+dist-server/
 build/
 apps/desktop/native-staging/
 coverage/

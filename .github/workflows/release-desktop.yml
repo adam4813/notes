@@ -25,7 +25,7 @@ jobs:
             os: windows-latest
             package_command: npm run package:desktop:win
           - platform: macos
-            os: macos-13
+            os: macos-latest
             package_command: npm run package:desktop:mac
           - platform: linux
             os: ubuntu-latest
