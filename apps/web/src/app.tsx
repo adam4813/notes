@@ -19,6 +19,7 @@ import { TomeReplace } from "./components/tome-replace";
 import { Sidebar } from "./components/sidebar";
 import { StatusBar } from "./components/status-bar";
 import { Toaster } from "./components/toaster";
+import { TitleBar } from "./components/title-bar";
 import { Workspace } from "./components/workspace";
 import { AppServicesProvider } from "./state/app-services";
 import { useWorkspace } from "./state/app-context";
@@ -553,7 +554,9 @@ export function App() {
 
   return (
     <AppServicesProvider value={services}>
-      <div className="shell">
+      <div className="app-root">
+        <TitleBar />
+        <div className="shell">
         <Ribbon
           onNewNote={() => createNote()}
           onCommand={() => setPaletteMode("commands")}
@@ -593,6 +596,7 @@ export function App() {
           <TomeReplace onClose={() => setReplaceOpen(false)} onChanged={() => void refreshTree()} />
         )}
         <Toaster />
+        </div>
       </div>
     </AppServicesProvider>
   );

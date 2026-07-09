@@ -129,10 +129,85 @@ button {
 }
 
 /* Shell layout */
+/* App root — wraps titlebar + shell as a flex column */
+.app-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Electron custom titlebar */
+.title-bar {
+  display: flex;
+  align-items: center;
+  height: var(--titlebar-height, 0px);
+  flex-shrink: 0;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.title-bar[data-platform="mac"] {
+  --titlebar-height: 28px;
+  padding-left: 72px; /* safe zone for macOS traffic lights */
+}
+
+.title-bar[data-platform="win"],
+.title-bar[data-platform="linux"] {
+  --titlebar-height: 32px;
+}
+
+.title-bar-drag {
+  flex: 1;
+  height: 100%;
+  -webkit-app-region: drag;
+}
+
+.title-bar-name {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-muted);
+  pointer-events: none;
+  padding: 0 8px;
+  letter-spacing: 0.03em;
+}
+
+.title-bar-controls {
+  display: flex;
+  height: 100%;
+  -webkit-app-region: no-drag;
+}
+
+.title-bar-btn {
+  width: 46px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--fg-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.1s, color 0.1s;
+}
+
+.title-bar-btn:hover {
+  background: var(--hover);
+  color: var(--fg);
+}
+
+.title-bar-btn--close:hover {
+  background: #c42b1c;
+  color: #ffffff;
+}
+
 .shell {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-rows: var(--ribbon-h) 1fr var(--status-h);
-  height: 100%;
 }
 
 .shell-body {

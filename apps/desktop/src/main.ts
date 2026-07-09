@@ -24,12 +24,19 @@ function setupWindowIpc(win: BrowserWindow): void {
 async function main(): Promise<void> {
   await app.whenReady();
 
+  const isMac = process.platform === "darwin";
   const preloadPath = path.join(__dirname, "preload.js");
 
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
     show: false,
+    // Chromeless: custom titlebar in React handles window controls.
+    // macOS: use hiddenInset to keep native traffic lights.
+    // Win/Linux: frame:false removes the OS titlebar entirely.
+    frame: isMac ? undefined : false,
+    titleBarStyle: isMac ? "hiddenInset" : undefined,
+    trafficLightPosition: isMac ? { x: 12, y: 14 } : undefined,
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
