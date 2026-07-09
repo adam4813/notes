@@ -103,7 +103,7 @@ export function EmbedWidget({ target }: { target: string }) {
       case "board":
         return <BoardView value={content} onChange={save} path={path} />;
       case "calendar":
-        return <CalendarView value={content} onChange={save} />;
+        return <CalendarView value={content} onChange={save} path={path} />;
       case "grid":
         return <GridView value={content} onChange={save} />;
       case "canvas":

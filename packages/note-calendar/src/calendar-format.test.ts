@@ -1,34 +1,62 @@
 import { describe, expect, it } from "vitest";
-import { emptyCalendar, parseCalendar, serializeCalendar } from "./calendar-format";
+import {
+  emptyCalendar,
+  newEventId,
+  parseCalendar,
+  serializeCalendar,
+  type RichEvent,
+} from "./calendar-format";
 
-describe("calendar-format", () => {
-  it("parses dated events with optional times", () => {
-    const model = parseCalendar(
-      "---\ntype: calendar\n---\n\n- 2026-02-01 Launch\n- 2026-02-03 14:00 Review\n",
-    );
-    expect(model.events.map((e) => ({ date: e.date, time: e.time, title: e.title }))).toEqual([
-      { date: "2026-02-01", time: undefined, title: "Launch" },
-      { date: "2026-02-03", time: "14:00", title: "Review" },
-    ]);
+describe("calendar-format — new format", () => {
+  it("round-trips an empty calendar", () => {
+    const { model } = parseCalendar(emptyCalendar());
+    const { model: reparsed } = parseCalendar(serializeCalendar(model));
+    expect(reparsed.events).toEqual([]);
   });
 
-  it("ignores non-event lines", () => {
-    expect(parseCalendar("# Notes\n\nnot an event\n").events).toEqual([]);
+  it("round-trips a calendar with event IDs", () => {
+    const model = { events: ["evt-aaa", "evt-bbb"] };
+    const { model: reparsed } = parseCalendar(serializeCalendar(model));
+    expect(reparsed.events).toEqual(["evt-aaa", "evt-bbb"]);
   });
 
-  it("serializes events sorted by date and time", () => {
-    const md = serializeCalendar({
-      frontmatter: "type: calendar",
-      events: [
-        { id: "b", date: "2026-02-03", time: "14:00", title: "Review" },
-        { id: "a", date: "2026-02-01", title: "Launch" },
-      ],
-    });
-    expect(md).toBe("---\ntype: calendar\n---\n\n- 2026-02-01 Launch\n- 2026-02-03 14:00 Review\n");
+  it("newEventId returns unique prefixed IDs", () => {
+    const ids = Array.from({ length: 5 }, () => newEventId());
+    expect(new Set(ids).size).toBe(5);
+    expect(ids.every((id) => id.startsWith("evt-"))).toBe(true);
+  });
+});
+
+describe("calendar-format — old format migration", () => {
+  const OLD_CAL =
+    "---\ntype: calendar\n---\n\n- 2026-02-01 Launch\n- 2026-02-03 14:00 Review\n";
+
+  it("detects old format and returns migratedEvents", () => {
+    const { model, migratedEvents } = parseCalendar(OLD_CAL);
+    expect(migratedEvents).toBeDefined();
+    expect(migratedEvents?.length).toBe(2);
+    expect(model.events.length).toBe(2);
   });
 
-  it("round-trips emptyCalendar", () => {
-    const md = emptyCalendar();
-    expect(serializeCalendar(parseCalendar(md))).toBe(md);
+  it("migrated events have correct fields", () => {
+    const { migratedEvents } = parseCalendar(OLD_CAL);
+    const first = migratedEvents?.[0] as RichEvent;
+    expect(first.title).toBe("Launch");
+    expect(first.date).toBe("2026-02-01");
+    expect(first.time).toBeUndefined();
+    const second = migratedEvents?.[1] as RichEvent;
+    expect(second.time).toBe("14:00");
+  });
+
+  it("migrated event IDs match model events list", () => {
+    const { model, migratedEvents } = parseCalendar(OLD_CAL);
+    expect(model.events).toEqual(migratedEvents!.map((e) => e.id));
+  });
+
+  it("new format from serializeCalendar is not detected as old format", () => {
+    const { model } = parseCalendar(OLD_CAL);
+    const serialized = serializeCalendar(model);
+    const reparsed = parseCalendar(serialized);
+    expect(reparsed.migratedEvents).toBeUndefined();
   });
 });

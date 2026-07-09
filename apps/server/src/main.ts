@@ -5,6 +5,7 @@ import { TomeWatcher, type TomeEventMap } from "@notes/tome";
 import Fastify from "fastify";
 import { registerFileCommands } from "./commands/file-commands";
 import { registerCardCommands } from "./commands/card-commands";
+import { registerEventCommands } from "./commands/event-commands";
 import { registerIndexCommands } from "./commands/index-commands";
 import { registerNoteTypeCommands } from "./commands/note-type-commands";
 import { loadConfig } from "./config";
@@ -28,6 +29,7 @@ bus.use(validationMiddleware);
 bus.use(createLoggingMiddleware((message) => app.log.debug(message)));
 registerFileCommands(bus, () => tower.active);
 registerCardCommands(bus, () => tower.active);
+registerEventCommands(bus, () => tower.active);
 registerNoteTypeCommands(bus, () => tower.active);
 
 const ctx = { tomePath: config.tomePath };

@@ -118,4 +118,34 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
   app.post("/api/card/move", async (request) =>
     bus.dispatch("card.move", request.body, ctx),
   );
+
+  // Event CRUD (calendar rich entries)
+  app.get("/api/events", async (request) => {
+    const { calendarPath = "" } = request.query as { calendarPath?: string };
+    return bus.dispatch("event.list", { calendarPath }, ctx);
+  });
+
+  app.get("/api/event", async (request) => {
+    const { calendarPath = "", eventId = "" } = request.query as {
+      calendarPath?: string;
+      eventId?: string;
+    };
+    return bus.dispatch("event.get", { calendarPath, eventId }, ctx);
+  });
+
+  app.post("/api/event/create", async (request) =>
+    bus.dispatch("event.create", request.body, ctx),
+  );
+
+  app.post("/api/event/update", async (request) =>
+    bus.dispatch("event.update", request.body, ctx),
+  );
+
+  app.delete("/api/event", async (request) => {
+    const { calendarPath = "", eventId = "" } = request.query as {
+      calendarPath?: string;
+      eventId?: string;
+    };
+    return bus.dispatch("event.delete", { calendarPath, eventId }, ctx);
+  });
 }

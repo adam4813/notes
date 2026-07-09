@@ -269,7 +269,7 @@ export function NoteEditor({ path }: { path: string }) {
         ) : isMermaid ? (
           <MermaidView value={content} onChange={handleChange} />
         ) : isCalendar ? (
-          <CalendarView value={content} onChange={handleChange} />
+          <CalendarView value={content} onChange={handleChange} path={path} />
         ) : isGrid ? (
           <GridView value={content} onChange={handleChange} />
         ) : (
