@@ -18,4 +18,31 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   getVersion: (): Promise<string> =>
     ipcRenderer.invoke("app:version") as Promise<string>,
+
+  // Tome path management
+  getTomePath: (): Promise<string | null> =>
+    ipcRenderer.invoke("tome:getPath") as Promise<string | null>,
+
+  chooseTomePath: (): Promise<string | null> =>
+    ipcRenderer.invoke("tome:choosePath") as Promise<string | null>,
+
+  // Auto-updater
+  onUpdateAvailable: (cb: (info: unknown) => void) => {
+    const handler = (_event: IpcRendererEvent, info: unknown) => cb(info);
+    ipcRenderer.on("updater:available", handler);
+    return () => ipcRenderer.removeListener("updater:available", handler);
+  },
+
+  onUpdateProgress: (cb: (progress: unknown) => void) => {
+    const handler = (_event: IpcRendererEvent, progress: unknown) => cb(progress);
+    ipcRenderer.on("updater:progress", handler);
+    return () => ipcRenderer.removeListener("updater:progress", handler);
+  },
+
+  onUpdateDownloaded: (cb: () => void) => {
+    ipcRenderer.on("updater:downloaded", cb);
+    return () => ipcRenderer.removeListener("updater:downloaded", cb);
+  },
+
+  installUpdate: () => ipcRenderer.send("updater:install"),
 });

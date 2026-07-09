@@ -19,6 +19,20 @@ interface ElectronAPI {
   onMaximizeChange(cb: (isMaximized: boolean) => void): () => void;
   /** Returns the application version string from package.json. */
   getVersion(): Promise<string>;
+
+  /** Returns the currently configured Tome path (null before first launch). */
+  getTomePath(): Promise<string | null>;
+  /** Opens the folder picker to choose a new Tome path; returns the chosen path or null. */
+  chooseTomePath(): Promise<string | null>;
+
+  /** Register a callback for when an update is available. Returns a disposer. */
+  onUpdateAvailable(cb: (info: unknown) => void): () => void;
+  /** Register a callback for download progress. Returns a disposer. */
+  onUpdateProgress(cb: (progress: unknown) => void): () => void;
+  /** Register a callback for when an update has been downloaded. Returns a disposer. */
+  onUpdateDownloaded(cb: () => void): () => void;
+  /** Quit and install the downloaded update. */
+  installUpdate(): void;
 }
 
 interface Window {

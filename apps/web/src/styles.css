@@ -136,6 +136,52 @@ button {
   height: 100%;
 }
 
+/* Electron auto-update banner */
+.update-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.update-banner-msg {
+  flex: 1;
+}
+
+.update-banner-btn {
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.4);
+  color: #fff;
+  border-radius: 5px;
+  padding: 3px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.update-banner-btn:hover {
+  background: rgba(255,255,255,0.35);
+}
+
+.update-banner-dismiss {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.75);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.update-banner-dismiss:hover {
+  color: #fff;
+}
+
 /* Electron custom titlebar */
 .title-bar {
   display: flex;
