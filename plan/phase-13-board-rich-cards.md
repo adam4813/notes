@@ -1,6 +1,6 @@
 # Phase 13 — Board Rich Cards
 
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** 0–12
 
 ## Goal
@@ -163,4 +163,13 @@ Files to stage:
 - `packages/index/src/` (indexer changes)
 
 ## Feedback
-_(recorded after GATE)_
+
+**Date:** 2026-07-08
+**Result:** ✅ GATE passed
+
+- Card editing UX: **Great** — expand/collapse is intuitive, editor works well
+- Migration: **Preserved existing cards** correctly
+- Blocking issues: **None**
+- Links/embeds in card bodies don't navigate/render (no callbacks wired) — user confirmed acceptable for now; card bodies should link rather than embed in a future improvement
+- Missing fields: can add later via plugins
+- No blocking issues reported

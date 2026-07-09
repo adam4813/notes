@@ -204,10 +204,10 @@ Status legend: ⬜ Not Started · 🔄 In Progress · ✅ Complete
 | 10. Command Palette, Hotkeys & Theming | [plan/phase-10-commands-theming.md](plan/phase-10-commands-theming.md) | ✅ Complete | 3, 5 |
 | 11. Search, Tags & Info Panels UI | [plan/phase-11-search-tags-ui.md](plan/phase-11-search-tags-ui.md) | ✅ Complete | 2, 3, 5 |
 | 12. MVP Polish, Performance & Hardening | [plan/phase-12-polish.md](plan/phase-12-polish.md) | ✅ Complete | 4–11 |
-| 13. Board Rich Cards | [plan/phase-13-board-rich-cards.md](plan/phase-13-board-rich-cards.md) | 🔄 In Progress | 0–12 |
-| 14. Calendar Rich Entries | [plan/phase-14-calendar-rich-entries.md](plan/phase-14-calendar-rich-entries.md) | ⬜ Not Started | 13 |
-| 15. Canvas Note Cards (Drop + Preview) | [plan/phase-15-canvas-note-preview.md](plan/phase-15-canvas-note-preview.md) | ⬜ Not Started | 7 |
-| 16. Canvas Inline Editing (Papers on Desk) | [plan/phase-16-canvas-inline-editing.md](plan/phase-16-canvas-inline-editing.md) | ⬜ Not Started | 15 |
+| 13. Board Rich Cards | [plan/phase-13-board-rich-cards.md](plan/phase-13-board-rich-cards.md) | ✅ Complete | 0–12 |
+| 14. Calendar Rich Entries | [plan/phase-14-calendar-rich-entries.md](plan/phase-14-calendar-rich-entries.md) | ✅ Complete | 13 |
+| 15. Canvas Note Cards (Drop + Preview) | [plan/phase-15-canvas-note-preview.md](plan/phase-15-canvas-note-preview.md) | ✅ Complete | 7 |
+| 16. Canvas Inline Editing (Papers on Desk) | [plan/phase-16-canvas-inline-editing.md](plan/phase-16-canvas-inline-editing.md) | ✅ Complete | 15 |
 | 17. Electron Core Scaffold & Dev Workflow | [plan/phase-17-electron-core.md](plan/phase-17-electron-core.md) | ⬜ Not Started | 0–12 |
 | 18. Electron Chromeless Window & Titlebar | [plan/phase-18-electron-titlebar.md](plan/phase-18-electron-titlebar.md) | ⬜ Not Started | 17 |
 | 19. Electron Build Pipeline & Installers | [plan/phase-19-electron-build.md](plan/phase-19-electron-build.md) | ⬜ Not Started | 17, 18 |
@@ -236,7 +236,11 @@ Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase 
 
 ## 8. Cross-Session Handoff
 
-- **Last session:** 2026-07-08 — Starting Phase 13 (Board Rich Cards). Implementing dotfolder card files, CardStore, server CRUD, BoardView expansion, FTS indexing. Two feature tracks added:
+- **Last session:** 2026-07-08 — **Phases 13–16 all complete.** Rich board cards (13), calendar entries (14), canvas note preview (15), canvas inline editing (16). Canvas is now a full "papers on desk" editor: drop notes, double-click to edit inline, auto-save, Escape/click-out to exit, viewport culling for performance. All 116 tests pass.
+- **Current state:** Rich cards/entries + canvas papers on desk fully shipped. Next track: Electron desktop wrapper (phases 17–20) — Phase 17 is ready to start.
+- **Next action:** Implement Phase 17 (Electron Core Scaffold) via `/implement-phase`.
+- **Current state:** Rich board cards shipped. Phase 14 (Calendar Rich Entries) ready — depends on 13 ✅.
+- **Next action:** Implement Phase 14 (Calendar Rich Entries) via `/implement-phase`. Two feature tracks added:
   (1) **Rich Cards/Entries** (phases 13–16): board cards and calendar entries upgraded to full notes
   stored in hidden dotfolders (`.Board.cards/`, `.Calendar.events/`), plus canvas FileNode
   drop-and-preview (phase 15) and inline editing "papers on desk" (phase 16).

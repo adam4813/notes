@@ -1,6 +1,6 @@
 # Phase 16 — Canvas Inline Editing (Papers on Desk)
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 **Depends on:** 15
 
 ## Goal
@@ -110,4 +110,12 @@ Files to stage:
 - `apps/web/src/styles.css` (editing-mode styles)
 
 ## Feedback
-_(recorded after GATE)_
+
+**Date:** 2026-07-08
+**Result:** ✅ GATE passed
+
+- Inline editing: **Yes — feels great, papers on a desk**
+- Interaction boundary: **Great — natural and bug-free**
+- No blocking issues
+- Scroll preference: "Both — auto-size on embed to fit content (with max size), user can resize after"
+  → Deferred: auto-size FileNode to content on first embed drop

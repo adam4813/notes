@@ -1,6 +1,6 @@
 # Phase 14 — Calendar Rich Entries
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 **Depends on:** 13
 
 ## Goal
@@ -138,4 +138,11 @@ Files to stage:
 - `packages/index/src/` (extend dot-folder walker)
 
 ## Feedback
-_(recorded after GATE)_
+
+**Date:** 2026-07-08
+**Result:** ✅ GATE passed
+
+- Event editor UX: **Great**
+- Migration: **Preserved existing events**
+- Blocking issues: **None**
+- No missing fields requested

@@ -1,6 +1,6 @@
 # Phase 15 — Canvas Note Cards (Drop + Preview)
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 **Depends on:** 7 (Canvas note type)
 
 ## Goal
@@ -112,4 +112,11 @@ Files to stage:
 - `apps/web/src/styles.css` (FileNode card styles)
 
 ## Feedback
-_(recorded after GATE)_
+
+**Date:** 2026-07-08
+**Result:** ✅ GATE passed
+
+- Initial plain-text preview was blocking (user expected rich editor) — resolved by embedding full MarkdownEditor
+- Embed guard working correctly
+- Editor feel: "OK" — functional, some friction (Phase 16 further refines interaction model)
+- No blocking issues
