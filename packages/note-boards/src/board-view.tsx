@@ -1,255 +1,397 @@
-import { useEffect, useRef, useState, type DragEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import { MarkdownEditor } from "@notes/editor";
 import {
-  newCardId,
   parseBoard,
   serializeBoard,
   type BoardColumn,
-  type BoardModel,
+  type RichCard,
 } from "./board-format";
 
 interface BoardViewProps {
   value: string;
   onChange: (markdown: string) => void;
+  path: string;
 }
 
 interface CardDrag {
   cardId: string;
-  fromColumn: number;
+  fromColumn: string;
 }
 
-export function BoardView({ value, onChange }: BoardViewProps) {
-  const [model, setModel] = useState<BoardModel>(() => parseBoard(value));
-  const [editing, setEditing] = useState<string | null>(null);
-  const [draft, setDraft] = useState("");
-  const [adding, setAdding] = useState<number | null>(null);
-  const [addDraft, setAddDraft] = useState("");
-  const lastSerialized = useRef(value);
+function debounce<T extends (...args: Parameters<T>) => void>(fn: T, ms: number): T {
+  let timer: ReturnType<typeof setTimeout>;
+  return ((...args: Parameters<T>) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), ms);
+  }) as T;
+}
 
+const LABEL_COLORS = ["#e2f0fb", "#fde8d8", "#d9f2e8", "#f5e6fb", "#fef9c3"];
+
+export function BoardView({ value, onChange, path }: BoardViewProps) {
+  const [columns, setColumns] = useState<BoardColumn[]>(() => parseBoard(value).model.columns);
+  const [cards, setCards] = useState<Map<string, RichCard>>(new Map());
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [addingCol, setAddingCol] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const lastValue = useRef(value);
+  const dragRef = useRef<CardDrag | null>(null);
+
+  // Sync columns when value changes from external edit (file watcher).
   useEffect(() => {
-    if (value !== lastSerialized.current) {
-      setModel(parseBoard(value));
-      lastSerialized.current = value;
+    if (value !== lastValue.current) {
+      lastValue.current = value;
+      setColumns(parseBoard(value).model.columns);
     }
   }, [value]);
 
-  const commit = (columns: BoardColumn[]) => {
-    const next = { ...model, columns };
-    setModel(next);
-    const markdown = serializeBoard(next);
-    lastSerialized.current = markdown;
-    onChange(markdown);
+  const fetchCards = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/cards?boardPath=${encodeURIComponent(path)}`);
+      if (!res.ok) throw new Error("fetch failed");
+      const data = (await res.json()) as { cards: RichCard[] };
+      setCards(new Map(data.cards.map((c) => [c.id, c])));
+      // Re-read board file to pick up any migration changes
+      const fileRes = await fetch(`/api/file?path=${encodeURIComponent(path)}`);
+      if (fileRes.ok) {
+        const fileData = (await fileRes.json()) as { content: string };
+        const { model } = parseBoard(fileData.content);
+        setColumns(model.columns);
+        lastValue.current = fileData.content;
+      }
+    } catch {
+      // Swallow — keep whatever state we have
+    } finally {
+      setLoading(false);
+    }
+  }, [path]);
+
+  useEffect(() => {
+    void fetchCards();
+  }, [fetchCards]);
+
+  // Persist column layout changes to the board file.
+  const commitColumns = useCallback(
+    (newColumns: BoardColumn[]) => {
+      setColumns(newColumns);
+      const md = serializeBoard({ columns: newColumns });
+      lastValue.current = md;
+      onChange(md);
+    },
+    [onChange],
+  );
+
+  // Debounced card save.
+  const apiSaveCard = useMemo(
+    () =>
+      debounce(async (card: RichCard) => {
+        await fetch("/api/card/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ boardPath: path, card }),
+        });
+      }, 800),
+    [path],
+  );
+
+  const updateCardState = (updated: RichCard) => {
+    setCards((prev) => {
+      const next = new Map(prev);
+      next.set(updated.id, updated);
+      return next;
+    });
+    void apiSaveCard(updated);
   };
 
-  const mapColumn = (index: number, fn: (column: BoardColumn) => BoardColumn) =>
-    commit(model.columns.map((column, i) => (i === index ? fn(column) : column)));
-
-  const toggleCard = (col: number, cardId: string) =>
-    mapColumn(col, (column) => ({
-      ...column,
-      cards: column.cards.map((card) =>
-        card.id === cardId ? { ...card, done: !card.done } : card,
+  const handleAddCard = async (colName: string) => {
+    const res = await fetch("/api/card/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ boardPath: path, column: colName }),
+    });
+    if (!res.ok) return;
+    const card = (await res.json()) as RichCard;
+    setCards((prev) => new Map(prev).set(card.id, card));
+    setColumns((prev) =>
+      prev.map((col) =>
+        col.name === colName ? { ...col, cards: [...col.cards, card.id] } : col,
       ),
-    }));
-
-  const setCardText = (col: number, cardId: string, text: string) =>
-    mapColumn(col, (column) => ({
-      ...column,
-      cards: column.cards.map((card) => (card.id === cardId ? { ...card, text } : card)),
-    }));
-
-  const deleteCard = (col: number, cardId: string) =>
-    mapColumn(col, (column) => ({
-      ...column,
-      cards: column.cards.filter((card) => card.id !== cardId),
-    }));
-
-  const addCard = (col: number, text: string) => {
-    if (!text.trim()) {
-      return;
-    }
-    mapColumn(col, (column) => ({
-      ...column,
-      cards: [...column.cards, { id: newCardId(), text: text.trim(), done: false }],
-    }));
-  };
-
-  const setCardDue = (col: number, cardId: string, due: string) =>
-    mapColumn(col, (column) => ({
-      ...column,
-      cards: column.cards.map((card) =>
-        card.id === cardId ? { ...card, ...(due ? { due } : { due: undefined }) } : card,
-      ),
-    }));
-
-  const moveCardTo = (drag: CardDrag, toColumn: number, beforeCardId: string | null) => {
-    if (beforeCardId === drag.cardId) {
-      return;
-    }
-    const card = model.columns[drag.fromColumn]?.cards.find((c) => c.id === drag.cardId);
-    if (!card) {
-      return;
-    }
-    commit(
-      model.columns.map((column, i) => {
-        let cards =
-          i === drag.fromColumn ? column.cards.filter((c) => c.id !== drag.cardId) : column.cards;
-        if (i === toColumn) {
-          const index = beforeCardId ? cards.findIndex((c) => c.id === beforeCardId) : -1;
-          const at = index === -1 ? cards.length : index;
-          cards = [...cards.slice(0, at), card, ...cards.slice(at)];
-        }
-        return { ...column, cards };
-      }),
     );
+    setAddingCol(null);
+    setExpandedId(card.id);
+  };
+
+  const handleDeleteCard = async (cardId: string) => {
+    await fetch(`/api/card?boardPath=${encodeURIComponent(path)}&cardId=${encodeURIComponent(cardId)}`, {
+      method: "DELETE",
+    });
+    setCards((prev) => {
+      const next = new Map(prev);
+      next.delete(cardId);
+      return next;
+    });
+    setColumns((prev) =>
+      prev.map((col) => ({ ...col, cards: col.cards.filter((id) => id !== cardId) })),
+    );
+    if (expandedId === cardId) setExpandedId(null);
+  };
+
+  const handleMoveCard = async (drag: CardDrag, toColumn: string, toIndex: number) => {
+    await fetch("/api/card/move", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ boardPath: path, cardId: drag.cardId, toColumn, toIndex }),
+    });
+    setColumns((prev) => {
+      const next = prev.map((col) => ({
+        ...col,
+        cards: col.cards.filter((id) => id !== drag.cardId),
+      }));
+      return next.map((col) => {
+        if (col.name !== toColumn) return col;
+        const clampedIdx = Math.max(0, Math.min(toIndex, col.cards.length));
+        const cards = [...col.cards];
+        cards.splice(clampedIdx, 0, drag.cardId);
+        return { ...col, cards };
+      });
+    });
+    // Update card column frontmatter in local state
+    const card = cards.get(drag.cardId);
+    if (card && card.column !== toColumn) {
+      setCards((prev) => new Map(prev).set(drag.cardId, { ...card, column: toColumn }));
+    }
+  };
+
+  const onDragStart = (event: DragEvent, cardId: string, fromColumn: string) => {
+    dragRef.current = { cardId, fromColumn };
+    event.dataTransfer.effectAllowed = "move";
+  };
+
+  const onDropCard = (event: DragEvent, toColumn: string, beforeCardId: string | null) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (!drag || drag.cardId === beforeCardId) return;
+    const targetCol = columns.find((c) => c.name === toColumn);
+    const toIndex =
+      beforeCardId && targetCol
+        ? targetCol.cards.indexOf(beforeCardId)
+        : (targetCol?.cards.length ?? 0);
+    void handleMoveCard(drag, toColumn, toIndex === -1 ? (targetCol?.cards.length ?? 0) : toIndex);
   };
 
   const addColumn = () => {
-    const name = window.prompt("Column name", "New column");
-    if (name) {
-      commit([...model.columns, { name, cards: [] }]);
+    const name = window.prompt("Column name", "New Column");
+    if (name?.trim()) {
+      commitColumns([...columns, { name: name.trim(), cards: [] }]);
     }
   };
 
-  const renameColumn = (index: number) => {
-    const name = window.prompt("Rename column", model.columns[index].name);
-    if (name) {
-      mapColumn(index, (column) => ({ ...column, name }));
+  const renameColumn = (colName: string) => {
+    const name = window.prompt("Rename column", colName);
+    if (name?.trim() && name.trim() !== colName) {
+      commitColumns(columns.map((c) => (c.name === colName ? { ...c, name: name.trim() } : c)));
     }
   };
 
-  const deleteColumn = (index: number) => {
-    if (window.confirm(`Delete column "${model.columns[index].name}" and its cards?`)) {
-      commit(model.columns.filter((_, i) => i !== index));
+  const deleteColumn = (colName: string) => {
+    const col = columns.find((c) => c.name === colName);
+    if (!col) return;
+    if (!window.confirm(`Delete column "${colName}"${col.cards.length ? " and its cards?" : "?"}`)) return;
+    // Delete all card files in this column
+    for (const cardId of col.cards) {
+      void fetch(`/api/card?boardPath=${encodeURIComponent(path)}&cardId=${encodeURIComponent(cardId)}`, {
+        method: "DELETE",
+      });
     }
+    commitColumns(columns.filter((c) => c.name !== colName));
   };
 
-  const onDropCard = (event: DragEvent, toColumn: number, beforeCardId: string | null) => {
-    event.preventDefault();
-    event.stopPropagation();
-    try {
-      const drag = JSON.parse(event.dataTransfer.getData("application/x-board-card")) as CardDrag;
-      moveCardTo(drag, toColumn, beforeCardId);
-    } catch {
-      // ignore malformed drag payloads
-    }
-  };
+  if (loading) {
+    return (
+      <div className="board-note">
+        <div className="board-loading">Loading board…</div>
+      </div>
+    );
+  }
 
   return (
     <div className="board-note">
       <div className="board-scroll">
-        {model.columns.map((column, colIndex) => (
+        {columns.map((column) => (
           <section
-            key={colIndex}
+            key={column.name}
             className="board-column"
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={(event) => onDropCard(event, colIndex, null)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => onDropCard(e, column.name, null)}
           >
             <header className="board-column-head">
-              <span className="board-column-name" onDoubleClick={() => renameColumn(colIndex)}>
+              <span className="board-column-name" onDoubleClick={() => renameColumn(column.name)}>
                 {column.name}
               </span>
               <span className="board-column-count">{column.cards.length}</span>
               <button
                 className="board-column-del"
                 aria-label={`Delete column ${column.name}`}
-                onClick={() => deleteColumn(colIndex)}
+                onClick={() => deleteColumn(column.name)}
               >
                 ×
               </button>
             </header>
 
             <div className="board-cards">
-              {column.cards.map((card) => (
-                <div
-                  key={card.id}
-                  className={`board-card ${card.done ? "board-card--done" : ""}`}
-                  draggable
-                  onDragStart={(event) =>
-                    event.dataTransfer.setData(
-                      "application/x-board-card",
-                      JSON.stringify({ cardId: card.id, fromColumn: colIndex }),
-                    )
-                  }
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={(event) => onDropCard(event, colIndex, card.id)}
-                >
-                  <input
-                    type="checkbox"
-                    checked={card.done}
-                    onChange={() => toggleCard(colIndex, card.id)}
-                  />
-                  {editing === card.id ? (
-                    <input
-                      autoFocus
-                      className="board-card-input"
-                      value={draft}
-                      onChange={(event) => setDraft(event.target.value)}
-                      onBlur={() => {
-                        setCardText(colIndex, card.id, draft.trim() || card.text);
-                        setEditing(null);
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.currentTarget.blur();
-                        } else if (event.key === "Escape") {
-                          setEditing(null);
-                        }
-                      }}
-                    />
-                  ) : (
-                    <span
-                      className="board-card-text"
-                      onDoubleClick={() => {
-                        setEditing(card.id);
-                        setDraft(card.text);
-                      }}
-                    >
-                      {card.text}
-                    </span>
-                  )}
-                  <input
-                    type="date"
-                    className="board-card-due"
-                    aria-label="Due date"
-                    title="Due date"
-                    value={card.due ?? ""}
-                    onChange={(event) => setCardDue(colIndex, card.id, event.target.value)}
-                  />
-                  <button
-                    className="board-card-del"
-                    aria-label="Delete card"
-                    onClick={() => deleteCard(colIndex, card.id)}
+              {column.cards.map((cardId) => {
+                const card = cards.get(cardId);
+                if (!card) return null;
+                const expanded = expandedId === cardId;
+                return (
+                  <div
+                    key={cardId}
+                    className={`board-card ${card.done ? "board-card--done" : ""} ${expanded ? "board-card--expanded" : ""}`}
+                    draggable={!expanded}
+                    onDragStart={(e) => onDragStart(e, cardId, column.name)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => onDropCard(e, column.name, cardId)}
+                    onClick={() => !expanded && setExpandedId(cardId)}
                   >
-                    ×
-                  </button>
-                </div>
-              ))}
+                    {/* Collapsed view */}
+                    {!expanded && (
+                      <div className="board-card-collapsed">
+                        <input
+                          type="checkbox"
+                          checked={card.done}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            updateCardState({ ...card, done: !card.done });
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="board-card-title">{card.title || "(untitled)"}</span>
+                        <div className="board-card-chips">
+                          {card.priority && (
+                            <span className={`board-card-chip board-card-chip--${card.priority}`}>
+                              {card.priority}
+                            </span>
+                          )}
+                          {card.due && (
+                            <span className="board-card-chip board-card-chip--due">
+                              📅 {card.due}
+                            </span>
+                          )}
+                          {card.labels?.map((label, i) => (
+                            <span
+                              key={label}
+                              className="board-card-chip"
+                              style={{ background: LABEL_COLORS[i % LABEL_COLORS.length] }}
+                            >
+                              {label}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Expanded view */}
+                    {expanded && (
+                      <div
+                        className="board-card-expanded"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="board-card-expand-header">
+                          <input
+                            type="checkbox"
+                            checked={card.done}
+                            onChange={() => updateCardState({ ...card, done: !card.done })}
+                          />
+                          <input
+                            className="board-card-title-input"
+                            value={card.title}
+                            onChange={(e) => updateCardState({ ...card, title: e.target.value })}
+                            placeholder="Card title"
+                          />
+                          <button
+                            className="board-card-collapse"
+                            aria-label="Collapse card"
+                            onClick={() => setExpandedId(null)}
+                          >
+                            ↑
+                          </button>
+                          <button
+                            className="board-card-del board-card-del--visible"
+                            aria-label="Delete card"
+                            onClick={() => void handleDeleteCard(cardId)}
+                          >
+                            🗑
+                          </button>
+                        </div>
+
+                        <div className="board-card-meta">
+                          <label className="board-card-meta-field">
+                            <span>Due</span>
+                            <input
+                              type="date"
+                              value={card.due ?? ""}
+                              onChange={(e) =>
+                                updateCardState({
+                                  ...card,
+                                  due: e.target.value || undefined,
+                                })
+                              }
+                            />
+                          </label>
+                          <label className="board-card-meta-field">
+                            <span>Priority</span>
+                            <select
+                              value={card.priority ?? ""}
+                              onChange={(e) =>
+                                updateCardState({
+                                  ...card,
+                                  priority: (e.target.value as RichCard["priority"]) || undefined,
+                                })
+                              }
+                            >
+                              <option value="">—</option>
+                              <option value="low">Low</option>
+                              <option value="medium">Medium</option>
+                              <option value="high">High</option>
+                            </select>
+                          </label>
+                          <label className="board-card-meta-field">
+                            <span>Labels</span>
+                            <input
+                              type="text"
+                              placeholder="bug, urgent…"
+                              value={card.labels?.join(", ") ?? ""}
+                              onChange={(e) =>
+                                updateCardState({
+                                  ...card,
+                                  labels: e.target.value
+                                    ? e.target.value.split(",").map((s) => s.trim()).filter(Boolean)
+                                    : undefined,
+                                })
+                              }
+                            />
+                          </label>
+                        </div>
+
+                        <div className="board-card-body-editor">
+                          <MarkdownEditor
+                            value={card.body}
+                            mode="rendered"
+                            onChange={(body) => updateCardState({ ...card, body })}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
-            {adding === colIndex ? (
-              <input
-                autoFocus
-                className="board-add-input"
-                placeholder="Card text…"
-                value={addDraft}
-                onChange={(event) => setAddDraft(event.target.value)}
-                onBlur={() => {
-                  addCard(colIndex, addDraft);
-                  setAddDraft("");
-                  setAdding(null);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    addCard(colIndex, addDraft);
-                    setAddDraft("");
-                  } else if (event.key === "Escape") {
-                    setAddDraft("");
-                    setAdding(null);
-                  }
-                }}
-              />
-            ) : (
-              <button className="board-add-card" onClick={() => setAdding(colIndex)}>
+            {addingCol === column.name ? null : (
+              <button className="board-add-card" onClick={() => void handleAddCard(column.name)}>
                 ＋ Add card
               </button>
             )}

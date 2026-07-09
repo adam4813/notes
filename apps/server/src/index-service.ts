@@ -24,6 +24,12 @@ function isIndexable(path: string): boolean {
   return lower.endsWith(".md") || lower.endsWith(".canvas");
 }
 
+/** Dot-folders with the pattern .<name>.cards or .<name>.events hold sub-notes. */
+function isDotSubFolder(path: string): boolean {
+  const segments = path.split("/");
+  return segments.some((seg) => /^\.[^.].+\.(cards|events)$/.test(seg));
+}
+
 /**
  * Owns the NoteIndex and keeps it in sync with the Tome: a full build on start
  * and incremental updates driven by the file watcher (Observer).
@@ -51,10 +57,11 @@ export class IndexService {
   }
 
   async buildFromTome(): Promise<void> {
-    const entries = await this.tome.listTree();
+    const entries = await this.tome.listTree({ includeDotfiles: true });
     const files: IndexInputFile[] = [];
     for (const path of flattenFiles(entries).filter(isIndexable)) {
-      files.push(await this.readFile(path));
+      const linkable = !isDotSubFolder(path);
+      files.push({ ...(await this.readFile(path)), linkable });
     }
     this.index.rebuild(files);
   }
@@ -80,7 +87,9 @@ export class IndexService {
       return;
     }
     try {
-      this.index.upsert(await this.readFile(change.path));
+      const file = await this.readFile(change.path);
+      const linkable = !isDotSubFolder(change.path);
+      this.index.upsert({ ...file, linkable });
     } catch {
       // File disappeared between event and read; remove any stale entry.
       this.index.remove(change.path);

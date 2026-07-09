@@ -84,4 +84,38 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
     const { path = "" } = request.query as PathQuery;
     return bus.dispatch("note.detectType", { path }, ctx);
   });
+
+  // Card CRUD (board rich cards)
+  app.get("/api/cards", async (request) => {
+    const { boardPath = "" } = request.query as { boardPath?: string };
+    return bus.dispatch("card.list", { boardPath }, ctx);
+  });
+
+  app.get("/api/card", async (request) => {
+    const { boardPath = "", cardId = "" } = request.query as {
+      boardPath?: string;
+      cardId?: string;
+    };
+    return bus.dispatch("card.get", { boardPath, cardId }, ctx);
+  });
+
+  app.post("/api/card/create", async (request) =>
+    bus.dispatch("card.create", request.body, ctx),
+  );
+
+  app.post("/api/card/update", async (request) =>
+    bus.dispatch("card.update", request.body, ctx),
+  );
+
+  app.delete("/api/card", async (request) => {
+    const { boardPath = "", cardId = "" } = request.query as {
+      boardPath?: string;
+      cardId?: string;
+    };
+    return bus.dispatch("card.delete", { boardPath, cardId }, ctx);
+  });
+
+  app.post("/api/card/move", async (request) =>
+    bus.dispatch("card.move", request.body, ctx),
+  );
 }

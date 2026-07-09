@@ -263,7 +263,7 @@ export function NoteEditor({ path }: { path: string }) {
             }
           />
         ) : isBoard ? (
-          <BoardView value={content} onChange={handleChange} />
+          <BoardView value={content} onChange={handleChange} path={path} />
         ) : isTable ? (
           <TableGrid value={content} onChange={handleChange} />
         ) : isMermaid ? (

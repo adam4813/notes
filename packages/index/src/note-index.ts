@@ -7,6 +7,8 @@ export interface IndexInputFile {
   path: string;
   content: string;
   mtimeMs: number;
+  /** When false, file is indexed for FTS but excluded from wikilink autocomplete. */
+  linkable?: boolean;
 }
 
 export interface SearchResult {
@@ -122,8 +124,8 @@ export class NoteIndex {
     const run = this.db.transaction(() => {
       this.removeRows(file.path);
       this.db
-        .prepare("INSERT INTO notes(path, title, type, mtime, hash) VALUES(?, ?, ?, ?, ?)")
-        .run(file.path, parsed.title, parsed.type, file.mtimeMs, hash);
+        .prepare("INSERT INTO notes(path, title, type, mtime, hash, linkable) VALUES(?, ?, ?, ?, ?, ?)")
+        .run(file.path, parsed.title, parsed.type, file.mtimeMs, hash, file.linkable === false ? 0 : 1);
 
       const linkStmt = this.db.prepare(
         "INSERT INTO links(src, target, alias, heading) VALUES(?, ?, ?, ?)",
@@ -170,7 +172,7 @@ export class NoteIndex {
   }
 
   allNotes(): { path: string; title: string; type: string }[] {
-    return this.db.prepare("SELECT path, title, type FROM notes ORDER BY title").all() as {
+    return this.db.prepare("SELECT path, title, type FROM notes WHERE linkable = 1 ORDER BY title").all() as {
       path: string;
       title: string;
       type: string;
@@ -283,8 +285,8 @@ export class NoteIndex {
     if (!target) {
       return undefined;
     }
-    // Match by basename or path-without-extension across any note type (.md, .canvas, …).
-    const rows = this.db.prepare("SELECT path FROM notes").all() as { path: string }[];
+    // Match by basename or path-without-extension across linkable notes only.
+    const rows = this.db.prepare("SELECT path FROM notes WHERE linkable = 1").all() as { path: string }[];
     const matches = rows
       .filter(
         (row) =>

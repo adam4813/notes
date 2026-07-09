@@ -4,6 +4,7 @@ import { APP_NAME } from "@notes/shared";
 import { TomeWatcher, type TomeEventMap } from "@notes/tome";
 import Fastify from "fastify";
 import { registerFileCommands } from "./commands/file-commands";
+import { registerCardCommands } from "./commands/card-commands";
 import { registerIndexCommands } from "./commands/index-commands";
 import { registerNoteTypeCommands } from "./commands/note-type-commands";
 import { loadConfig } from "./config";
@@ -26,6 +27,7 @@ const bus = new CommandBus();
 bus.use(validationMiddleware);
 bus.use(createLoggingMiddleware((message) => app.log.debug(message)));
 registerFileCommands(bus, () => tower.active);
+registerCardCommands(bus, () => tower.active);
 registerNoteTypeCommands(bus, () => tower.active);
 
 const ctx = { tomePath: config.tomePath };

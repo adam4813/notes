@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS meta (
@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS notes (
   title TEXT NOT NULL,
   type TEXT NOT NULL,
   mtime REAL NOT NULL,
-  hash TEXT NOT NULL
+  hash TEXT NOT NULL,
+  linkable INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS links (
