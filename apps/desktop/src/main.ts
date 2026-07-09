@@ -52,6 +52,7 @@ async function main(): Promise<void> {
     win.webContents.openDevTools({ mode: "detach" });
   } else {
     // Production: start the bundled server, then load the packaged web UI.
+    process.env["NOTES_PACKAGED"] = "1";
     const serverPath = path.join(__dirname, "../dist-server/main.js");
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { startServer } = require(serverPath) as { startServer: () => Promise<void> };
