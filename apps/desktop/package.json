@@ -29,7 +29,6 @@
     "typescript": "^5.7.2"
   },
   "dependencies": {
-    "electron-store": "^11.0.2",
     "electron-updater": "^6.8.9"
   }
 }
