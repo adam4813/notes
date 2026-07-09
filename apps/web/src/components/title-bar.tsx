@@ -15,25 +15,36 @@ export function TitleBar() {
 
 /** A simple dropdown menu for the titlebar. */
 function TitleBarMenu({
+  id,
   label,
   items,
+  open,
+  onToggle,
+  onClose,
 }: {
+  id: string;
   label: string;
   items: Array<
     | { type: "separator" }
     | { type: "item"; label: string; onClick: () => void; disabled?: boolean }
   >;
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     const onClose = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+      if (!ref.current?.contains(e.target as Node)) {
+        onCloseMenu();
+      }
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        onCloseMenu();
+      }
     };
     document.addEventListener("mousedown", onClose);
     document.addEventListener("keydown", onKey);
@@ -41,21 +52,29 @@ function TitleBarMenu({
       document.removeEventListener("mousedown", onClose);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, onClose]);
+
+  const onCloseMenu = () => onClose();
 
   return (
     <div className="title-bar-menu" ref={ref}>
       <button
         className={`title-bar-menu-btn ${open ? "title-bar-menu-btn--open" : ""}`}
+        aria-expanded={open}
+        aria-controls={`title-bar-menu-${id}`}
         onMouseDown={(e) => {
           e.stopPropagation();
-          setOpen((v) => !v);
+          onToggle();
         }}
       >
         {label}
       </button>
       {open && (
-        <div className="title-bar-menu-popup" onMouseDown={(e) => e.stopPropagation()}>
+        <div
+          id={`title-bar-menu-${id}`}
+          className="title-bar-menu-popup"
+          onMouseDown={(e) => e.stopPropagation()}
+        >
           {items.map((item, i) =>
             item.type === "separator" ? (
               <div key={i} className="title-bar-menu-sep" />
@@ -65,7 +84,7 @@ function TitleBarMenu({
                 className="title-bar-menu-item"
                 disabled={item.disabled}
                 onClick={() => {
-                  setOpen(false);
+                  onCloseMenu();
                   item.onClick();
                 }}
               >
@@ -84,6 +103,7 @@ function TitleBarInner() {
   const api = window.electronAPI!;
   const isMac = api.platform === "darwin";
   const [maximized, setMaximized] = useState(false);
+  const [openMenu, setOpenMenu] = useState<"file" | "edit" | null>(null);
 
   useEffect(() => {
     void api.isMaximized().then(setMaximized);
@@ -100,7 +120,11 @@ function TitleBarInner() {
       {!isMac && (
         <div className="title-bar-menus" onMouseDown={(e) => e.stopPropagation()}>
           <TitleBarMenu
+            id="file"
             label="File"
+            open={openMenu === "file"}
+            onToggle={() => setOpenMenu((current) => (current === "file" ? null : "file"))}
+            onClose={() => setOpenMenu((current) => (current === "file" ? null : current))}
             items={[
               { type: "item", label: "Change Tome Folder…", onClick: handleChangeTome },
               { type: "separator" },
@@ -112,7 +136,11 @@ function TitleBarInner() {
             ]}
           />
           <TitleBarMenu
+            id="edit"
             label="Edit"
+            open={openMenu === "edit"}
+            onToggle={() => setOpenMenu((current) => (current === "edit" ? null : "edit"))}
+            onClose={() => setOpenMenu((current) => (current === "edit" ? null : current))}
             items={[
               { type: "item", label: "Undo", onClick: () => document.execCommand("undo") },
               { type: "item", label: "Redo", onClick: () => document.execCommand("redo") },
