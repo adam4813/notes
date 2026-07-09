@@ -94,6 +94,29 @@ export function EmbedWidget({ target }: { target: string }) {
   const { path, content = "", type = "markdown" } = state;
   const title = basename(path);
 
+  // Guard: board, calendar, and canvas notes cannot be embedded inline.
+  if (type === "board" || type === "calendar" || type === "canvas") {
+    return (
+      <div className={`embed-card embed-card--${type} embed-card--blocked`}>
+        <div className="embed-header">
+          <span className="embed-type">{TYPE_LABEL[type] ?? type}</span>
+          <span className="embed-title">{title}</span>
+          <button
+            className="embed-open"
+            onClick={() => dispatch({ type: "openFile", path, title })}
+          >
+            Open ↗
+          </button>
+        </div>
+        <div className="embed-body embed-blocked-msg">
+          {type === "canvas"
+            ? "Canvas notes cannot be embedded."
+            : `${TYPE_LABEL[type]} notes cannot be embedded inline.`}
+        </div>
+      </div>
+    );
+  }
+
   const body = () => {
     switch (type) {
       case "mermaid":
@@ -106,8 +129,6 @@ export function EmbedWidget({ target }: { target: string }) {
         return <CalendarView value={content} onChange={save} path={path} />;
       case "grid":
         return <GridView value={content} onChange={save} />;
-      case "canvas":
-        return <div className="embed-note-only">Open the canvas to view or edit it.</div>;
       default:
         return <div className="embed-markdown">{stripFrontmatter(content) || "(empty note)"}</div>;
     }

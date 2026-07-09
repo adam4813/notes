@@ -3015,7 +3015,94 @@ tr:hover .grid-row-delete {
   outline: none;
 }
 
-.canvas-file,
+.canvas-file-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.canvas-file-card--error,
+.canvas-file-card--blocked {
+  opacity: 0.7;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8px;
+  gap: 4px;
+}
+
+.canvas-file-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+  flex-shrink: 0;
+  min-height: 0;
+}
+
+.canvas-file-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.canvas-file-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.canvas-file-open-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 11px;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: var(--fg-muted);
+}
+
+.canvas-file-open-btn:hover {
+  background: var(--hover);
+  color: var(--fg);
+}
+
+.canvas-file-body {
+  flex: 1;
+  overflow: auto;
+  padding: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--fg-muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.canvas-file-hint {
+  font-size: 11px;
+  color: var(--fg-muted);
+  font-style: italic;
+  padding: 4px 8px;
+}
+
+.canvas-file-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--fg-muted);
+  font-size: 12px;
+  font-style: italic;
+}
+
 .canvas-link {
   display: flex;
   align-items: center;
@@ -3025,15 +3112,10 @@ tr:hover .grid-row-delete {
   overflow: hidden;
 }
 
-.canvas-file-name,
 .canvas-link a {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--fg);
-}
-
-.canvas-link a {
   color: var(--accent);
 }
 
@@ -3057,6 +3139,13 @@ tr:hover .grid-row-delete {
   background: var(--accent);
   border: 2px solid var(--bg);
   cursor: crosshair;
+}
+
+.embed-blocked-msg {
+  font-size: 12px;
+  color: var(--fg-muted);
+  font-style: italic;
+  padding: 8px;
 }
 
 .canvas-resize {

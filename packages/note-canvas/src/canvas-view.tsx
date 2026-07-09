@@ -1,7 +1,9 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
+  type DragEvent as ReactDragEvent,
   type PointerEvent as ReactPointerEvent,
   type WheelEvent as ReactWheelEvent,
 } from "react";
@@ -10,6 +12,7 @@ import {
   serializeCanvas,
   type CanvasData,
   type CanvasNode,
+  type FileNode,
 } from "./canvas-format";
 
 interface CanvasViewProps {
@@ -17,6 +20,125 @@ interface CanvasViewProps {
   onChange: (text: string) => void;
   onOpenFile?: (path: string) => void;
   path: string;
+  /** Subscribe to a specific file path's changes; returns a disposer. */
+  subscribeToFileChange?: (filePath: string, cb: () => void) => () => void;
+}
+
+/** Note MIME type set by the explorer on drag. */
+const NOTES_DRAG_MIME = "application/x-notes-path";
+
+function fileBasename(p: string): string {
+  return (p.split("/").pop() ?? p).replace(/\.[^.]+$/, "");
+}
+
+function extractPreview(
+  content: string,
+  filePath: string,
+): { title: string; body: string; type: string } {
+  const fmMatch = /^---\n([\s\S]*?)\n---\n?/.exec(content);
+  const yaml = fmMatch ? fmMatch[1] : "";
+  const bodyText = fmMatch ? content.slice(fmMatch[0].length).trim() : content.trim();
+  const titleMatch = /^title:\s*["']?(.+?)["']?\s*$/m.exec(yaml);
+  const typeMatch = /^type:\s*(.+)$/m.exec(yaml);
+  const h1Match = /^#\s+(.+)$/m.exec(bodyText);
+  const title = (titleMatch?.[1] || h1Match?.[1] || fileBasename(filePath)).trim();
+  const type =
+    typeMatch?.[1].trim() ??
+    (filePath.toLowerCase().endsWith(".canvas") ? "canvas" : "markdown");
+  const preview = bodyText.length > 500 ? `${bodyText.slice(0, 500)}…` : bodyText;
+  return { title, body: preview, type };
+}
+
+function FileNodeCard({
+  file,
+  onOpen,
+  subscribeToFileChange,
+}: {
+  file: string;
+  onOpen?: () => void;
+  subscribeToFileChange?: (filePath: string, cb: () => void) => () => void;
+}) {
+  const [title, setTitle] = useState(() => fileBasename(file));
+  const [body, setBody] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false);
+  const [error, setError] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/file?path=${encodeURIComponent(file)}`);
+      if (!res.ok) {
+        setError(true);
+        return;
+      }
+      const data = (await res.json()) as { content: string };
+      const { title: t, body: b, type } = extractPreview(data.content, file);
+      setTitle(t);
+      setBody(b);
+      setBlocked(["canvas", "board", "calendar"].includes(type));
+      setError(false);
+    } catch {
+      setError(true);
+    }
+  }, [file]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    if (!subscribeToFileChange) return;
+    return subscribeToFileChange(file, () => void load());
+  }, [file, load, subscribeToFileChange]);
+
+  if (blocked) {
+    return (
+      <div className="canvas-file-card canvas-file-card--blocked">
+        <div className="canvas-file-header">
+          <span className="canvas-file-title">🚫 {fileBasename(file)}</span>
+        </div>
+        <div className="canvas-file-hint">This note type cannot be previewed here.</div>
+        <button
+          className="canvas-file-open-btn"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={onOpen}
+        >
+          Open ↗
+        </button>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="canvas-file-card canvas-file-card--error">
+        <div className="canvas-file-header">
+          <span className="canvas-file-title">Note not found</span>
+        </div>
+        <div className="canvas-file-hint">{file}</div>
+      </div>
+    );
+  }
+
+  if (body === null) {
+    return <div className="canvas-file-loading">Loading…</div>;
+  }
+
+  return (
+    <div className="canvas-file-card">
+      <div className="canvas-file-header" onPointerDown={(e) => e.stopPropagation()}>
+        <span className="canvas-file-icon">📄</span>
+        <span className="canvas-file-title">{title}</span>
+        <button
+          className="canvas-file-open-btn"
+          aria-label={`Open ${title}`}
+          onClick={onOpen}
+        >
+          ⤢
+        </button>
+      </div>
+      <div className="canvas-file-body">{body || "(empty note)"}</div>
+    </div>
+  );
 }
 
 interface Viewport {
@@ -77,7 +199,7 @@ function center(node: CanvasNode): { x: number; y: number } {
   return { x: node.x + node.width / 2, y: node.y + node.height / 2 };
 }
 
-export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProps) {
+export function CanvasView({ value, onChange, onOpenFile, path, subscribeToFileChange }: CanvasViewProps) {
   const [data, setData] = useState<CanvasData>(() => parseCanvas(value));
   const [viewport, setViewport] = useState<Viewport>({ x: 40, y: 40, scale: 1 });
   const [selection, setSelection] = useState<Selection>(null);
@@ -328,6 +450,33 @@ export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProp
     addNode({ id: newId("node"), type: "link", x: 0, y: 0, width: 240, height: 80, url });
   };
 
+  /** Handles drops of note files from the explorer onto the canvas. */
+  const onViewportDrop = (event: ReactDragEvent<HTMLDivElement>) => {
+    const notePath = event.dataTransfer.getData(NOTES_DRAG_MIME);
+    if (!notePath) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const world = screenToWorld(event.clientX, event.clientY);
+    const node: FileNode = {
+      id: newId("file"),
+      type: "file",
+      file: notePath,
+      x: world.x - 160,
+      y: world.y - 120,
+      width: 320,
+      height: 240,
+    };
+    commit({ ...data, nodes: [...data.nodes, node] });
+    setSelection({ kind: "node", id: node.id });
+  };
+
+  const onViewportDragOver = (event: ReactDragEvent<HTMLDivElement>) => {
+    if (event.dataTransfer.types.includes(NOTES_DRAG_MIME)) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+    }
+  };
+
   const deleteSelection = () => {
     if (!selection) {
       return;
@@ -393,6 +542,8 @@ export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProp
         ref={containerRef}
         onPointerDown={onBackgroundPointerDown}
         onWheel={onWheel}
+        onDrop={onViewportDrop}
+        onDragOver={onViewportDragOver}
         data-testid="canvas-viewport"
       >
         <div
@@ -532,17 +683,11 @@ export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProp
                   ))}
 
                 {node.type === "file" && (
-                  <div className="canvas-file">
-                    <span className="canvas-file-icon">📄</span>
-                    <span className="canvas-file-name">{node.file}</span>
-                    <button
-                      className="canvas-open"
-                      onPointerDown={(event) => event.stopPropagation()}
-                      onClick={() => onOpenFile?.(node.file)}
-                    >
-                      Open ↗
-                    </button>
-                  </div>
+                  <FileNodeCard
+                    file={node.file}
+                    onOpen={() => onOpenFile?.(node.file)}
+                    subscribeToFileChange={subscribeToFileChange}
+                  />
                 )}
 
                 {node.type === "link" && (

@@ -163,6 +163,14 @@ export function NoteEditor({ path }: { path: string }) {
     [dispatch],
   );
 
+  const subscribeToFileChange = useCallback(
+    (filePath: string, cb: () => void) =>
+      connectTomeChanges((change) => {
+        if (change.path === filePath) cb();
+      }),
+    [],
+  );
+
   // Publish the active document to plugins (word count, etc.).
   useEffect(() => {
     if (saveState === "loading") {
@@ -261,6 +269,7 @@ export function NoteEditor({ path }: { path: string }) {
             onOpenFile={(target) =>
               dispatch({ type: "openFile", path: target, title: basename(target) })
             }
+            subscribeToFileChange={subscribeToFileChange}
           />
         ) : isBoard ? (
           <BoardView value={content} onChange={handleChange} path={path} />
