@@ -1,16 +1,29 @@
 {
   "name": "@notes/desktop",
   "version": "0.0.0",
+  "description": "Notes — local-first knowledge tool (Electron desktop wrapper)",
+  "author": "Notes Contributors",
   "private": true,
   "main": "dist-electron/main.js",
   "scripts": {
     "build:electron": "tsc -p tsconfig.json",
+    "build:server-bundle": "tsup --config tsup.server.config.ts",
+    "build:electron-main": "tsup --config tsup.electron.config.ts",
     "dev": "npm run build:electron && cross-env ELECTRON_DEV=1 electron .",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "generate-icons": "node scripts/generate-icons.mjs",
+    "package": "electron-builder",
+    "package:win": "electron-builder --win",
+    "package:mac": "electron-builder --mac",
+    "package:linux": "electron-builder --linux"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
-    "electron": "^31.0.0",
+    "electron": "31.7.7",
+    "electron-builder": "^26.15.3",
+    "png2icons": "^2.0.1",
+    "sharp": "^0.35.3",
+    "tsup": "^8.3.5",
     "typescript": "^5.7.2"
   }
 }

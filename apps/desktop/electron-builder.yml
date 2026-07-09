@@ -1,0 +1,56 @@
+appId: com.notes.app
+productName: Notes
+copyright: "Copyright © 2026"
+
+# asar disabled for MVP to avoid native-module path complexity
+asar: false
+
+directories:
+  buildResources: resources
+  output: ../../dist-desktop
+
+# All paths relative to apps/desktop/ (electron-builder runs as workspace)
+files:
+  - dist-electron/**
+  - dist-server/**
+  - "!dist-server/main.js.map"
+  - "!dist-electron/*.map"
+
+extraResources:
+  - from: ../web/dist
+    to: web/dist
+  - from: ../../node_modules/better-sqlite3
+    to: node_modules/better-sqlite3
+    filter:
+      - "**"
+      - "!**/*.md"
+      - "!**/test/**"
+      - "!**/build/deps/**"
+
+win:
+  target: nsis
+  icon: resources/icon.ico
+  artifactName: "Notes-Setup-${version}.exe"
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+mac:
+  target: dmg
+  icon: resources/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  artifactName: "Notes-${version}.dmg"
+
+linux:
+  target: AppImage
+  icon: resources/icon.png
+  artifactName: "Notes-${version}.AppImage"
+
+# Uncomment and configure when setting up CI/CD releases:
+# publish:
+#   provider: github
+#   releaseType: draft

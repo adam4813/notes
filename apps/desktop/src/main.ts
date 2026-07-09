@@ -47,12 +47,16 @@ async function main(): Promise<void> {
   win.once("ready-to-show", () => win.show());
 
   if (DEV) {
-    // Dev: server + web run separately; Electron is just the window host.
+    // Dev: server runs separately; Electron is just the window host.
     await win.loadURL(WEB_DEV_URL);
     win.webContents.openDevTools({ mode: "detach" });
   } else {
-    // Prod: load built web files from the app bundle.
-    await win.loadFile(path.join(__dirname, "../web/dist/index.html"));
+    // Production: start the bundled server, then load the packaged web UI.
+    const serverPath = path.join(__dirname, "../dist-server/main.js");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { startServer } = require(serverPath) as { startServer: () => Promise<void> };
+    await startServer();
+    await win.loadFile(path.join(process.resourcesPath, "web", "dist", "index.html"));
   }
 
   setupWindowIpc(win);
