@@ -16,10 +16,9 @@ import { SettingsModal } from "./components/settings-modal";
 import { SETTINGS_TAB_PATH } from "./components/settings-view";
 import { HelpOverlay } from "./components/help-overlay";
 import { TomeReplace } from "./components/tome-replace";
-import { Sidebar } from "./components/sidebar";
+import { Sidebar, type SidebarView } from "./components/sidebar";
 import { StatusBar } from "./components/status-bar";
 import { Toaster } from "./components/toaster";
-import { TitleBar } from "./components/title-bar";
 import { UpdateBanner } from "./components/update-banner";
 import { Workspace } from "./components/workspace";
 import { AppServicesProvider } from "./state/app-services";
@@ -59,6 +58,8 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [replaceOpen, setReplaceOpen] = useState(false);
+  const [sidebarView, setSidebarView] = useState<SidebarView>("explorer");
+  const [sidebarSearchQuery, setSidebarSearchQuery] = useState("");
   const [openSettingsInTab, setOpenSettingsInTabState] = useState(
     () => globalThis.localStorage?.getItem("notes.settings.openInTab") === "true",
   );
@@ -458,6 +459,11 @@ export function App() {
     command.run();
   }, []);
 
+  const openSidebarSearch = useCallback((query: string) => {
+    setSidebarView("search");
+    setSidebarSearchQuery(query);
+  }, []);
+
   const newActions = useMemo(
     () => [
       { id: "note", label: "Markdown note", run: () => createNote() },
@@ -556,7 +562,6 @@ export function App() {
   return (
     <AppServicesProvider value={services}>
       <div className="app-root">
-        <TitleBar />
         <UpdateBanner />
         <div className="shell">
         <Ribbon
@@ -564,9 +569,15 @@ export function App() {
           onCommand={() => setPaletteMode("commands")}
           onQuickOpen={() => setPaletteMode("files")}
           onSettings={openSettings}
+          onSearch={openSidebarSearch}
         />
         <div className="shell-body">
-          <Sidebar newActions={newActions} />
+          <Sidebar
+            newActions={newActions}
+            view={sidebarView}
+            onViewChange={setSidebarView}
+            searchQuery={sidebarSearchQuery}
+          />
           <Workspace />
           <RightPanel />
         </div>

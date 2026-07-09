@@ -9,16 +9,24 @@ export interface NewAction {
   run: () => void;
 }
 
-type SidebarView = "explorer" | "search" | "tags";
+export type SidebarView = "explorer" | "search" | "tags";
 
 const VIEWS: { id: SidebarView; label: string; icon: string }[] = [
   { id: "explorer", label: "Explorer", icon: "📁" },
-  { id: "search", label: "Search", icon: "🔍" },
   { id: "tags", label: "Tags", icon: "🏷️" },
 ];
 
-export function Sidebar({ newActions }: { newActions: NewAction[] }) {
-  const [view, setView] = useState<SidebarView>("explorer");
+export function Sidebar({
+  newActions,
+  view,
+  onViewChange,
+  searchQuery,
+}: {
+  newActions: NewAction[];
+  view: SidebarView;
+  onViewChange: (view: SidebarView) => void;
+  searchQuery: string;
+}) {
   const [pendingTag, setPendingTag] = useState<string | undefined>(undefined);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -39,7 +47,7 @@ export function Sidebar({ newActions }: { newActions: NewAction[] }) {
 
   const pickTag = (tag: string) => {
     setPendingTag(tag);
-    setView("search");
+    onViewChange("search");
   };
 
   return (
@@ -53,7 +61,7 @@ export function Sidebar({ newActions }: { newActions: NewAction[] }) {
             title={entry.label}
             data-testid={`sidebar-view-${entry.id}`}
             className={`sidebar-view-btn ${view === entry.id ? "sidebar-view-btn--active" : ""}`}
-            onClick={() => setView(entry.id)}
+            onClick={() => onViewChange(entry.id)}
           >
             <span aria-hidden>{entry.icon}</span>
             <span className="sidebar-view-label">{entry.label}</span>
@@ -109,7 +117,7 @@ export function Sidebar({ newActions }: { newActions: NewAction[] }) {
             <span className="sidebar-title">Search</span>
           </div>
           <div className="sidebar-scroll">
-            <SearchPane initialTag={pendingTag} />
+            <SearchPane initialTag={pendingTag} initialQuery={searchQuery} />
           </div>
         </>
       )}
