@@ -2,6 +2,8 @@
   --bg: #ffffff;
   --bg-elevated: #f7f7f8;
   --bg-sunken: #efeff1;
+  --bg-app: #fafbff;
+  --bg-island: #f1f3fa;
   --fg: #1c1c1f;
   --fg-muted: #6b7280;
   --border: #e2e2e6;
@@ -12,6 +14,7 @@
   --status-ok: #16a34a;
   --status-offline: #dc2626;
   --shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+  --island-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
   --ribbon-h: 40px;
   --status-h: 26px;
   --app-font-size: 14px;
@@ -23,6 +26,8 @@
   --bg: #17171b;
   --bg-elevated: #1e1e24;
   --bg-sunken: #121216;
+  --bg-app: #2a2d3a;
+  --bg-island: #1f2230;
   --fg: #e6e6ea;
   --fg-muted: #9aa0ab;
   --border: #2c2c34;
@@ -31,6 +36,7 @@
   --hover: rgba(255, 255, 255, 0.06);
   --active: rgba(167, 139, 250, 0.16);
   --shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  --island-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   color-scheme: dark;
 }
 
@@ -38,6 +44,8 @@
   --bg: #fdf6e3;
   --bg-elevated: #eee8d5;
   --bg-sunken: #e6dfc6;
+  --bg-app: #f9f4e3;
+  --bg-island: #ece2c7;
   --fg: #073642;
   --fg-muted: #657b83;
   --border: #d9d2b8;
@@ -46,6 +54,7 @@
   --hover: rgba(0, 0, 0, 0.05);
   --active: rgba(38, 139, 210, 0.14);
   --shadow: 0 8px 30px rgba(88, 110, 117, 0.25);
+  --island-shadow: 0 2px 8px rgba(88, 110, 117, 0.14);
   color-scheme: light;
 }
 
@@ -53,6 +62,8 @@
   --bg: #000000;
   --bg-elevated: #0a0a0a;
   --bg-sunken: #000000;
+  --bg-app: #1a1a1a;
+  --bg-island: #060606;
   --fg: #ffffff;
   --fg-muted: #d0d0d0;
   --border: #ffffff;
@@ -61,6 +72,7 @@
   --hover: rgba(255, 255, 255, 0.14);
   --active: rgba(255, 212, 0, 0.25);
   --shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
+  --island-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
   color-scheme: dark;
 }
 
@@ -78,7 +90,7 @@ body,
 body {
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: var(--app-font-size);
-  background: var(--bg);
+  background: var(--bg-app);
   color: var(--fg);
 }
 
@@ -134,6 +146,7 @@ button {
   display: flex;
   flex-direction: column;
   height: 100%;
+  background: var(--bg-app);
 }
 
 /* Electron auto-update banner */
@@ -324,12 +337,17 @@ button {
   min-height: 0;
   display: grid;
   grid-template-rows: var(--ribbon-h) 1fr var(--status-h);
+  gap: 0;
+  padding: 0;
+  background: var(--bg-app);
 }
 
 .shell-body {
   display: grid;
   grid-template-columns: 240px 1fr 260px;
   min-height: 0;
+  gap: 10px;
+  padding: 10px;
 }
 
 /* Ribbon */
@@ -409,22 +427,25 @@ button {
 /* Sidebar */
 .sidebar,
 .right-panel {
-  background: var(--bg-elevated);
+  background: var(--bg-island);
   min-height: 0;
   display: flex;
   flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--island-shadow);
+  overflow: hidden;
 }
 
 .sidebar {
-  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
 
 .right-panel {
-  border-left: 1px solid var(--border);
-  padding: 8px;
+  padding: 6px;
+  overflow: auto;
 }
 
 .sidebar-header {
@@ -445,7 +466,7 @@ button {
 
 .sidebar-scroll {
   overflow: auto;
-  padding: 6px 4px;
+  padding: 8px 6px;
   flex: 1;
 }
 
@@ -661,7 +682,15 @@ button {
 
 /* Panel sections (right sidebar) */
 .panel-section {
-  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 2px 0;
+  margin-bottom: 6px;
+}
+
+.panel-section:last-child {
+  margin-bottom: 0;
 }
 
 .panel-header--toggle {
@@ -671,7 +700,7 @@ button {
   width: 100%;
   background: transparent;
   border: none;
-  padding: 8px 6px;
+  padding: 8px 10px;
   text-align: left;
 }
 
@@ -680,7 +709,7 @@ button {
 }
 
 .panel-body {
-  padding: 0 6px 8px;
+  padding: 0 10px 10px;
 }
 
 .property-list {
@@ -920,6 +949,7 @@ button {
   display: flex;
   min-width: 0;
   min-height: 0;
+  gap: 10px;
 }
 
 .pane {
@@ -927,29 +957,38 @@ button {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--border);
-}
-
-.pane:last-child {
-  border-right: none;
+  background: var(--bg-island);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--island-shadow);
+  overflow: hidden;
 }
 
 .pane--active .tab-bar {
-  border-bottom-color: var(--accent);
+  border-color: var(--border);
+}
+
+.pane--active {
+  border-color: var(--border);
 }
 
 .tab-bar {
   display: flex;
   align-items: center;
-  background: var(--bg-sunken);
-  border-bottom: 2px solid var(--border);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px 10px 0 0;
   min-height: 34px;
+  margin: 6px 6px 0;
+  padding-right: 2px;
 }
 
 .tab-list {
   display: flex;
   overflow-x: auto;
   flex: 1;
+  gap: 2px;
+  padding: 6px 6px 0;
 }
 
 .tab {
@@ -957,13 +996,21 @@ button {
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  border-right: 1px solid var(--border);
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
   white-space: nowrap;
   color: var(--fg-muted);
 }
 
+.tab:hover {
+  background: var(--hover);
+}
+
 .tab--active {
-  background: var(--bg);
+  background: var(--active);;
+  border-color: var(--border);
+  border-bottom-color: var(--bg-island);
   color: var(--fg);
 }
 
@@ -996,12 +1043,14 @@ button {
 
 .tab-split {
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
   padding: 6px 10px;
   color: var(--fg-muted);
 }
 
 .tab-split:hover:not(:disabled) {
+  background: var(--hover);
   color: var(--fg);
 }
 
@@ -1044,8 +1093,10 @@ button {
 
 .pane-body {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Views */
@@ -1152,6 +1203,9 @@ button {
   background: var(--accent);
   color: var(--accent-fg);
   font-size: 12px;
+  border: none;
+  border-radius: 0;
+  overflow: hidden;
 }
 
 .status-message {
@@ -1490,6 +1544,7 @@ button {
 .note-editor {
   display: flex;
   flex-direction: column;
+  flex: 1;
   height: 100%;
   min-height: 0;
 }
@@ -1778,6 +1833,7 @@ button {
   display: flex;
   align-items: flex-start;
   justify-content: center;
+  background: var(--bg);
 }
 
 .mermaid-diagram {
@@ -2202,6 +2258,7 @@ button {
   overflow: auto;
   padding: 12px;
   user-select: none;
+  background: var(--bg);
 }
 
 .grid-canvas .grid-row {
@@ -2360,6 +2417,9 @@ button {
 }
 
 /* CodeMirror */
+.cm-host {
+  width: 100%;
+}
 .cm-host,
 .cm-host .cm-editor {
   height: 100%;
@@ -2404,10 +2464,12 @@ button {
   flex: 1;
   min-height: 0;
   overflow: auto;
+  background: var(--bg);
 }
 
 .tiptap-host {
   height: 100%;
+  background: var(--bg);
 }
 
 .tiptap-host .ProseMirror {
@@ -2618,6 +2680,7 @@ button {
   min-height: 0;
   overflow: auto;
   outline: none;
+  background: var(--bg);
 }
 
 .data-grid {
@@ -2800,6 +2863,7 @@ tr:hover .grid-row-delete {
   height: 100%;
   min-height: 0;
   overflow: hidden;
+  background: var(--bg);
 }
 
 .board-scroll {
