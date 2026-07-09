@@ -23,13 +23,13 @@ jobs:
         include:
           - platform: windows
             os: windows-latest
-            package_command: npm run package:desktop:win
+            package_script: package:win
           - platform: macos
             os: macos-latest
-            package_command: npm run package:desktop:mac
+            package_script: package:mac
           - platform: linux
             os: ubuntu-latest
-            package_command: npm run package:desktop:linux
+            package_script: package:linux
 
     env:
       # Keep unsigned CI builds straightforward.
@@ -37,10 +37,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -48,24 +48,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build and package
-        run: ${{ matrix.package_command }}
+      - name: Build desktop bundles
+        run: npm run build:desktop
+
+      - name: Package installer (no publish in matrix build)
+        run: npm --workspace @notes/desktop run ${{ matrix.package_script }} -- --publish=never
 
       - name: Collect release artifacts
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path release-artifacts | Out-Null
           if (Test-Path "dist-desktop") {
-            Get-ChildItem "dist-desktop" -File | Where-Object {
-              $_.Extension -in @(".exe", ".dmg", ".AppImage", ".blockmap")
-            } | ForEach-Object {
+            Get-ChildItem "dist-desktop" -File | ForEach-Object {
               Copy-Item $_.FullName -Destination "release-artifacts"
             }
           }
           Get-ChildItem "release-artifacts" -File | Select-Object Name, Length
 
       - name: Upload platform artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: desktop-${{ matrix.platform }}
           path: release-artifacts/*
@@ -77,8 +78,11 @@ jobs:
     needs: build-installers
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: desktop-*
           path: release-artifacts
@@ -87,11 +91,19 @@ jobs:
       - name: Show release files
         run: ls -lah release-artifacts
 
+      - name: Extract Version from package.json
+        id: get_version
+        run: |
+          # Reads the version field and removes the quotes
+          VERSION=$(jq -r '.version' package.json)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION_TAG=v$VERSION" >> $GITHUB_ENV
+
       - name: Create release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
-          tag_name: main-build-${{ github.run_id }}
-          name: Main build ${{ github.run_number }}
+          tag_name: ${{ env.VERSION_TAG }}
+          name: Release ${{ env.VERSION }}
           target_commitish: ${{ github.sha }}
           generate_release_notes: true
           files: release-artifacts/*

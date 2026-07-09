@@ -45,7 +45,9 @@ nsis:
   createStartMenuShortcut: true
 
 mac:
-  target: dmg
+  target:
+    - dmg
+    - zip
   icon: resources/icon.icns
   hardenedRuntime: true
   gatekeeperAssess: false
@@ -59,7 +61,8 @@ linux:
   executableName: notes
   syncDesktopName: true
 
-# Uncomment and configure when setting up CI/CD releases:
-# publish:
-#   provider: github
-#   releaseType: draft
+publish:
+  provider: github
+  owner: adam4813
+  repo: notes
+  releaseType: release
