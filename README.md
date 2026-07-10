@@ -8,6 +8,12 @@ Content lives as plain files on disk (the **source of truth**); a rebuildable SQ
 provides search/link/tag indexing. See [`plan.md`](plan.md) for the full implementation plan
 and [`plan/`](plan/) for per-phase specs.
 
+<img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/31b90b8f-fce9-4b3e-ad34-5150b151e6f0" />
+
+<img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/73a7f351-7fde-4cdc-a6c9-a55a7112ab6b" />
+
+
+
 ## Container model
 
 - **Tome** — a single folder of notes/files; the unit you commit to git.
