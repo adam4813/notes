@@ -5,7 +5,7 @@ import { CalendarView } from "@notes/note-calendar";
 import { GridView } from "@notes/note-grid";
 import { MermaidView } from "@notes/note-mermaid";
 import { TableGrid } from "@notes/note-tables";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { api } from "../api/client";
 import { queueWrite } from "../api/offline-queue";
 import { connectTomeChanges } from "../api/ws";
@@ -53,6 +53,9 @@ export function NoteEditor({ path }: { path: string }) {
   const [mode, setMode] = useState<EditorMode>("rendered");
   const [saveState, setSaveState] = useState<SaveState>("loading");
   const [findOpen, setFindOpen] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const contextMenuTargetRef = useRef<HTMLElement | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
   const regionRef = useRef<HTMLDivElement>(null);
   const dirtyRef = useRef(false);
   const contentRef = useRef("");
@@ -193,7 +196,7 @@ export function NoteEditor({ path }: { path: string }) {
     }
     const type = path.toLowerCase().endsWith(".canvas")
       ? "canvas"
-      : getFrontmatterType(content) ?? "markdown";
+      : (getFrontmatterType(content) ?? "markdown");
     setActiveDocument({ path, content, type });
     return () => setActiveDocument(null);
   }, [path, content, saveState, setActiveDocument]);
@@ -214,6 +217,28 @@ export function NoteEditor({ path }: { path: string }) {
     }
   }, [canFind, findOpen]);
 
+  useEffect(() => {
+    if (!contextMenu) {
+      return;
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
+        setContextMenu(null);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setContextMenu(null);
+      }
+    };
+    window.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [contextMenu]);
+
   if (saveState === "loading") {
     return <div className="note-loading">Loading…</div>;
   }
@@ -221,6 +246,12 @@ export function NoteEditor({ path }: { path: string }) {
   const applyReplace = (next: string) => {
     setContent(next);
     handleChange(next);
+  };
+
+  const runEditCommand = (command: string) => {
+    contextMenuTargetRef.current?.focus();
+    document.execCommand(command);
+    setContextMenu(null);
   };
 
   return (
@@ -233,7 +264,19 @@ export function NoteEditor({ path }: { path: string }) {
         }
       }}
     >
-      <div className="note-editor-region" ref={regionRef}>
+      <div
+        className="note-editor-region"
+        ref={regionRef}
+        onContextMenu={(event: MouseEvent<HTMLDivElement>) => {
+          const target = event.target as HTMLElement | null;
+          if (!target || target.closest(".context-menu")) {
+            return;
+          }
+          event.preventDefault();
+          contextMenuTargetRef.current = target;
+          setContextMenu({ x: event.clientX, y: event.clientY });
+        }}
+      >
         {canToggleMode && (
           <div className="mode-float">
             <div className="mode-switch mode-switch--floating" role="tablist">
@@ -318,6 +361,42 @@ export function NoteEditor({ path }: { path: string }) {
               ) : undefined
             }
           />
+        )}
+        {contextMenu && (
+          <div
+            ref={contextMenuRef}
+            className="context-menu editor-context-menu"
+            role="menu"
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+          >
+            <button role="menuitem" className="context-item" onClick={() => runEditCommand("undo")}>
+              Undo
+            </button>
+            <button role="menuitem" className="context-item" onClick={() => runEditCommand("redo")}>
+              Redo
+            </button>
+            <div className="context-sep" />
+            <button role="menuitem" className="context-item" onClick={() => runEditCommand("cut")}>
+              Cut
+            </button>
+            <button role="menuitem" className="context-item" onClick={() => runEditCommand("copy")}>
+              Copy
+            </button>
+            <button
+              role="menuitem"
+              className="context-item"
+              onClick={() => runEditCommand("paste")}
+            >
+              Paste
+            </button>
+            <button
+              role="menuitem"
+              className="context-item"
+              onClick={() => runEditCommand("selectAll")}
+            >
+              Select all
+            </button>
+          </div>
         )}
       </div>
     </div>

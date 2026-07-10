@@ -8,7 +8,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { marked } from "marked";
-import { MarkdownEditor, NoteToolbar } from "@notes/editor";
+import { MarkdownEditor, NoteToolbar, usePromptDialog } from "@notes/editor";
 import {
   parseCanvas,
   serializeCanvas,
@@ -329,6 +329,7 @@ export function CanvasView({
   path,
   subscribeToFileChange,
 }: CanvasViewProps) {
+  const { openPrompt, promptDialog } = usePromptDialog();
   const [data, setData] = useState<CanvasData>(() => parseCanvas(value));
   const [viewport, setViewport] = useState<Viewport>({ x: 40, y: 40, scale: 1 });
   const [selection, setSelection] = useState<Selection>(null);
@@ -612,16 +613,41 @@ export function CanvasView({
       text: "New note",
     });
 
-  const addFile = () => {
-    const file = window.prompt("Note path to embed (e.g. notes/ideas.md)");
+  const addFile = async () => {
+    const values = await openPrompt({
+      title: "Embed note",
+      fields: [
+        {
+          key: "file",
+          label: "Note path",
+          placeholder: "notes/ideas.md",
+          required: true,
+        },
+      ],
+      confirmLabel: "Embed",
+    });
+    if (!values) {
+      return;
+    }
+    const file = values.file.trim();
     if (!file) {
       return;
     }
     addNode({ id: newId("node"), type: "file", x: 0, y: 0, width: 240, height: 120, file });
   };
 
-  const addLink = () => {
-    const url = window.prompt("Link URL", "https://");
+  const addLink = async () => {
+    const values = await openPrompt({
+      title: "Add link",
+      fields: [
+        { key: "url", label: "Link URL", type: "url", defaultValue: "https://", required: true },
+      ],
+      confirmLabel: "Add",
+    });
+    if (!values) {
+      return;
+    }
+    const url = values.url.trim();
     if (!url) {
       return;
     }
@@ -690,11 +716,15 @@ export function CanvasView({
       ),
     });
 
-  const editEdgeLabel = (edgeId: string) => {
+  const editEdgeLabel = async (edgeId: string) => {
     const edge = data.edges.find((e) => e.id === edgeId);
-    const label = window.prompt("Edge label", edge?.label ?? "");
-    if (label !== null) {
-      setEdgeLabel(edgeId, label.trim());
+    const values = await openPrompt({
+      title: "Edit edge label",
+      fields: [{ key: "label", label: "Label", defaultValue: edge?.label ?? "" }],
+      confirmLabel: "Save",
+    });
+    if (values) {
+      setEdgeLabel(edgeId, values.label.trim());
     }
   };
 
@@ -724,10 +754,10 @@ export function CanvasView({
         <button className="tb-btn" onClick={addText}>
           ＋ Text
         </button>
-        <button className="tb-btn" onClick={addFile}>
+        <button className="tb-btn" onClick={() => void addFile()}>
           ＋ Note
         </button>
-        <button className="tb-btn" onClick={addLink}>
+        <button className="tb-btn" onClick={() => void addLink()}>
           ＋ Link
         </button>
         <button className="tb-btn" disabled={!selection} onClick={deleteSelection}>
@@ -795,7 +825,7 @@ export function CanvasView({
                     }}
                     onDoubleClick={(event) => {
                       event.stopPropagation();
-                      editEdgeLabel(edge.id);
+                      void editEdgeLabel(edge.id);
                     }}
                   />
                   {edge.label ? (
@@ -807,7 +837,7 @@ export function CanvasView({
                       dominantBaseline="central"
                       onDoubleClick={(event) => {
                         event.stopPropagation();
-                        editEdgeLabel(edge.id);
+                        void editEdgeLabel(edge.id);
                       }}
                     >
                       {edge.label}
@@ -822,7 +852,7 @@ export function CanvasView({
                         dominantBaseline="central"
                         onPointerDown={(event) => {
                           event.stopPropagation();
-                          editEdgeLabel(edge.id);
+                          void editEdgeLabel(edge.id);
                         }}
                       >
                         ＋ label
@@ -945,6 +975,7 @@ export function CanvasView({
           <div className="canvas-empty">Add a Text, Note, or Link node to start.</div>
         )}
       </div>
+      {promptDialog}
     </div>
   );
 }

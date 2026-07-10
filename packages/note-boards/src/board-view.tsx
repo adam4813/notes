@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
-import { MarkdownEditor } from "@notes/editor";
-import {
-  parseBoard,
-  serializeBoard,
-  type BoardColumn,
-  type RichCard,
-} from "./board-format";
+import { MarkdownEditor, usePromptDialog } from "@notes/editor";
+import { parseBoard, serializeBoard, type BoardColumn, type RichCard } from "./board-format";
 
 interface BoardViewProps {
   value: string;
@@ -30,6 +25,7 @@ function debounce<T extends (...args: Parameters<T>) => void>(fn: T, ms: number)
 const LABEL_COLORS = ["#e2f0fb", "#fde8d8", "#d9f2e8", "#f5e6fb", "#fef9c3"];
 
 export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewProps) {
+  const { openPrompt, promptDialog } = usePromptDialog();
   const [columns, setColumns] = useState<BoardColumn[]>(() => parseBoard(value).model.columns);
   const [cards, setCards] = useState<Map<string, RichCard>>(new Map());
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -115,18 +111,19 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
     const card = (await res.json()) as RichCard;
     setCards((prev) => new Map(prev).set(card.id, card));
     setColumns((prev) =>
-      prev.map((col) =>
-        col.name === colName ? { ...col, cards: [...col.cards, card.id] } : col,
-      ),
+      prev.map((col) => (col.name === colName ? { ...col, cards: [...col.cards, card.id] } : col)),
     );
     setAddingCol(null);
     setExpandedId(card.id);
   };
 
   const handleDeleteCard = async (cardId: string) => {
-    await fetch(`/api/card?boardPath=${encodeURIComponent(path)}&cardId=${encodeURIComponent(cardId)}`, {
-      method: "DELETE",
-    });
+    await fetch(
+      `/api/card?boardPath=${encodeURIComponent(path)}&cardId=${encodeURIComponent(cardId)}`,
+      {
+        method: "DELETE",
+      },
+    );
     setCards((prev) => {
       const next = new Map(prev);
       next.delete(cardId);
@@ -183,29 +180,41 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
     void handleMoveCard(drag, toColumn, toIndex === -1 ? (targetCol?.cards.length ?? 0) : toIndex);
   };
 
-  const addColumn = () => {
-    const name = window.prompt("Column name", "New Column");
-    if (name?.trim()) {
-      commitColumns([...columns, { name: name.trim(), cards: [] }]);
-    }
+  const addColumn = async () => {
+    const values = await openPrompt({
+      title: "Add column",
+      fields: [{ key: "name", label: "Column name", defaultValue: "New Column", required: true }],
+      confirmLabel: "Add",
+    });
+    const name = values?.name.trim();
+    if (!name) return;
+    commitColumns([...columns, { name, cards: [] }]);
   };
 
-  const renameColumn = (colName: string) => {
-    const name = window.prompt("Rename column", colName);
-    if (name?.trim() && name.trim() !== colName) {
-      commitColumns(columns.map((c) => (c.name === colName ? { ...c, name: name.trim() } : c)));
-    }
+  const renameColumn = async (colName: string) => {
+    const values = await openPrompt({
+      title: "Rename column",
+      fields: [{ key: "name", label: "Column name", defaultValue: colName, required: true }],
+      confirmLabel: "Rename",
+    });
+    const name = values?.name.trim();
+    if (!name || name === colName) return;
+    commitColumns(columns.map((c) => (c.name === colName ? { ...c, name } : c)));
   };
 
   const deleteColumn = (colName: string) => {
     const col = columns.find((c) => c.name === colName);
     if (!col) return;
-    if (!window.confirm(`Delete column "${colName}"${col.cards.length ? " and its cards?" : "?"}`)) return;
+    if (!window.confirm(`Delete column "${colName}"${col.cards.length ? " and its cards?" : "?"}`))
+      return;
     // Delete all card files in this column
     for (const cardId of col.cards) {
-      void fetch(`/api/card?boardPath=${encodeURIComponent(path)}&cardId=${encodeURIComponent(cardId)}`, {
-        method: "DELETE",
-      });
+      void fetch(
+        `/api/card?boardPath=${encodeURIComponent(path)}&cardId=${encodeURIComponent(cardId)}`,
+        {
+          method: "DELETE",
+        },
+      );
     }
     commitColumns(columns.filter((c) => c.name !== colName));
   };
@@ -229,7 +238,10 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
             onDrop={(e) => onDropCard(e, column.name, null)}
           >
             <header className="board-column-head">
-              <span className="board-column-name" onDoubleClick={() => renameColumn(column.name)}>
+              <span
+                className="board-column-name"
+                onDoubleClick={() => void renameColumn(column.name)}
+              >
                 {column.name}
               </span>
               <span className="board-column-count">{column.cards.length}</span>
@@ -296,10 +308,7 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
 
                     {/* Expanded view */}
                     {expanded && (
-                      <div
-                        className="board-card-expanded"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <div className="board-card-expanded" onClick={(e) => e.stopPropagation()}>
                         <div className="board-card-expand-header">
                           <input
                             type="checkbox"
@@ -369,7 +378,10 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
                                 updateCardState({
                                   ...card,
                                   labels: e.target.value
-                                    ? e.target.value.split(",").map((s) => s.trim()).filter(Boolean)
+                                    ? e.target.value
+                                        .split(",")
+                                        .map((s) => s.trim())
+                                        .filter(Boolean)
                                     : undefined,
                                 })
                               }
@@ -406,10 +418,11 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
           </section>
         ))}
 
-        <button className="board-add-column" onClick={addColumn}>
+        <button className="board-add-column" onClick={() => void addColumn()}>
           ＋ Add column
         </button>
       </div>
+      {promptDialog}
     </div>
   );
 }

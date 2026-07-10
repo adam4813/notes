@@ -80,6 +80,8 @@ packages/
 - **Functional React components**; hooks for state. Global app state via **React Context +
   reducers**; heavy widgets (editor, canvas, table) may own encapsulated local stores.
 - **Strict TypeScript** — no implicit `any`, handle `null`/`undefined`, keep functions typed.
+- **Desktop-safe interactions only** — never use `window.prompt` dialogs (they fail in desktop).
+  Use in-app modal/popover UI components for user input instead.
 - Comment only where intent isn't obvious; prefer clear names over narration.
 
 ## Testing & Verification

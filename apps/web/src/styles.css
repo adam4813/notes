@@ -976,6 +976,25 @@ button {
   background: var(--active);
 }
 
+.context-item:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.context-item:disabled:hover {
+  background: transparent;
+}
+
+.context-sep {
+  height: 1px;
+  margin: 4px;
+  background: var(--border);
+}
+
+.editor-context-menu {
+  min-width: 190px;
+}
+
 .context-item--danger {
   color: var(--status-offline);
 }
@@ -1342,6 +1361,51 @@ button {
 .modal-header h2 {
   margin: 0;
   font-size: 18px;
+}
+
+.prompt-dialog {
+  width: min(480px, 94vw);
+}
+
+.prompt-dialog-description {
+  margin: 12px 18px 0;
+  color: var(--fg-muted);
+  font-size: 13px;
+}
+
+.prompt-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px 18px;
+}
+
+.prompt-dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.prompt-dialog-field input {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  padding: 6px 8px;
+}
+
+.prompt-dialog-error {
+  margin: 0;
+  color: var(--status-offline);
+  font-size: 12px;
+}
+
+.prompt-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 .settings-section {

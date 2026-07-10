@@ -1,5 +1,6 @@
 import { useEditorState, type Editor } from "@tiptap/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { usePromptDialog } from "./prompt-dialog";
 
 interface EditorToolbarProps {
   editor: Editor | null;
@@ -8,6 +9,8 @@ interface EditorToolbarProps {
 }
 
 interface ToolbarState {
+  canUndo: boolean;
+  canRedo: boolean;
   bold: boolean;
   italic: boolean;
   strike: boolean;
@@ -25,6 +28,8 @@ interface ToolbarState {
 }
 
 const EMPTY_STATE: ToolbarState = {
+  canUndo: false,
+  canRedo: false,
   bold: false,
   italic: false,
   strike: false,
@@ -65,11 +70,14 @@ function asColorInputValue(value: string | null | undefined, fallback: string): 
 }
 
 export function EditorToolbar({ editor, disabled = false, trailing }: EditorToolbarProps) {
+  const { openPrompt, promptDialog } = usePromptDialog();
   const state = useEditorState({
     editor,
     selector: ({ editor: instance }): ToolbarState =>
       instance
         ? {
+            canUndo: instance.can().chain().focus().undo().run(),
+            canRedo: instance.can().chain().focus().redo().run(),
             bold: instance.isActive("bold"),
             italic: instance.isActive("italic"),
             strike: instance.isActive("strike"),
@@ -191,6 +199,41 @@ export function EditorToolbar({ editor, disabled = false, trailing }: EditorTool
     };
   };
   const hasTextStyle = Boolean(active.textColor || active.backgroundColor);
+  const insertImage = async () => {
+    if (!editor) {
+      return;
+    }
+    const values = await openPrompt({
+      title: "Insert image",
+      fields: [
+        { key: "src", label: "Image URL", type: "url", defaultValue: "https://", required: true },
+        { key: "alt", label: "Alt text", defaultValue: "" },
+        { key: "title", label: "Title", defaultValue: "" },
+      ],
+      confirmLabel: "Insert",
+    });
+    if (!values) {
+      return;
+    }
+    const src = values.src.trim();
+    if (!src) {
+      return;
+    }
+    const alt = values.alt.trim();
+    const title = values.title.trim();
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: "image",
+        attrs: {
+          src,
+          ...(alt ? { alt } : {}),
+          ...(title ? { title } : {}),
+        },
+      })
+      .run();
+  };
 
   const button = (
     key: string,
@@ -198,13 +241,14 @@ export function EditorToolbar({ editor, disabled = false, trailing }: EditorTool
     title: string,
     isActive: boolean,
     run: () => void,
+    disabledWhen = false,
   ) => (
     <button
       key={key}
       type="button"
       title={title}
       aria-pressed={isActive}
-      disabled={isDisabled}
+      disabled={isDisabled || disabledWhen}
       className={`tb-btn ${isActive ? "tb-btn--active" : ""}`}
       onMouseDown={(event) => event.preventDefault()}
       onClick={run}
@@ -214,116 +258,129 @@ export function EditorToolbar({ editor, disabled = false, trailing }: EditorTool
   );
 
   return (
-    <div className="editor-toolbar" role="toolbar" aria-label="Formatting">
-      <div className="editor-toolbar-main">
-        {button("bold", "B", "Bold (Ctrl+B)", active.bold, () => chain().toggleBold().run())}
-        {button("italic", "I", "Italic (Ctrl+I)", active.italic, () =>
-          chain().toggleItalic().run(),
-        )}
-        {button("strike", "S", "Strikethrough", active.strike, () => chain().toggleStrike().run())}
-        {button("code", "</>", "Inline code", active.code, () => chain().toggleCode().run())}
-        <span className="tb-sep" />
-        {button("h1", "H1", "Heading 1", active.h1, () =>
-          chain().toggleHeading({ level: 1 }).run(),
-        )}
-        {button("h2", "H2", "Heading 2", active.h2, () =>
-          chain().toggleHeading({ level: 2 }).run(),
-        )}
-        {button("h3", "H3", "Heading 3", active.h3, () =>
-          chain().toggleHeading({ level: 3 }).run(),
-        )}
-        <span className="tb-sep" />
-        {button("ul", "• List", "Bullet list", active.bullet, () =>
-          chain().toggleBulletList().run(),
-        )}
-        {button("ol", "1. List", "Ordered list", active.ordered, () =>
-          chain().toggleOrderedList().run(),
-        )}
-        {button("task", "☑ Task", "Task list", active.task, () => chain().toggleTaskList().run())}
-        <span className="tb-sep" />
-        {button("quote", "❝", "Blockquote", active.quote, () => chain().toggleBlockquote().run())}
-        {button("codeblock", "{ }", "Code block", active.codeBlock, () =>
-          chain().toggleCodeBlock().run(),
-        )}
-        <span className="tb-sep" />
-        <label className="tb-color-picker" title="Text color">
-          <span className="tb-color-label">A</span>
-          <input
-            type="color"
-            aria-label="Text color"
-            disabled={isDisabled}
-            className="tb-color-input"
-            value={asColorInputValue(active.textColor, "#111827")}
-            onPointerDown={rememberSelection}
-            onInput={(event) => setStyledText({ color: event.currentTarget.value })}
-            onChange={(event) => setStyledText({ color: event.target.value })}
-          />
-        </label>
-        <label className="tb-color-picker" title="Background color">
-          <span className="tb-color-label tb-color-label--bg">▦</span>
-          <input
-            type="color"
-            aria-label="Background color"
-            disabled={isDisabled}
-            className="tb-color-input"
-            value={asColorInputValue(active.backgroundColor, "#fef08a")}
-            onPointerDown={rememberSelection}
-            onInput={(event) => setStyledText({ backgroundColor: event.currentTarget.value })}
-            onChange={(event) => setStyledText({ backgroundColor: event.target.value })}
-          />
-        </label>
-        {button("clear-style", "Tx", "Clear text and background color", hasTextStyle, () =>
-          setStyledText({ color: null, backgroundColor: null }),
-        )}
-        <div className="tb-link-wrap" ref={linkPopoverRef}>
-          <button
-            type="button"
-            title="Link"
-            aria-expanded={linkOpen}
-            aria-haspopup="dialog"
-            disabled={isDisabled}
-            className={`tb-btn ${editor?.isActive("link") ? "tb-btn--active" : ""}`}
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={openLinkPopover}
-          >
-            🔗
-          </button>
-          {linkOpen && (
-            <div className="tb-link-popover" role="dialog" aria-label="Insert link">
-              <input
-                className="tb-link-input"
-                type="url"
-                autoFocus
-                placeholder="https://example.com"
-                value={linkUrl}
-                onChange={(event) => setLinkUrl(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    applyLink();
-                  }
-                  if (event.key === "Escape") {
-                    setLinkOpen(false);
-                  }
-                }}
-              />
-              <div className="tb-link-actions">
-                <button type="button" className="tb-link-ok" onClick={applyLink}>
-                  Set
-                </button>
-                <button type="button" className="tb-link-remove" onClick={removeLink}>
-                  Remove
-                </button>
-                <button type="button" className="tb-link-cancel" onClick={() => setLinkOpen(false)}>
-                  ✕
-                </button>
-              </div>
-            </div>
+    <>
+      <div className="editor-toolbar" role="toolbar" aria-label="Formatting">
+        <div className="editor-toolbar-main">
+          {button("undo", "↶", "Undo (Ctrl+Z)", false, () => chain().undo().run(), !active.canUndo)}
+          {button("redo", "↷", "Redo (Ctrl+Y)", false, () => chain().redo().run(), !active.canRedo)}
+          <span className="tb-sep" />
+          {button("bold", "B", "Bold (Ctrl+B)", active.bold, () => chain().toggleBold().run())}
+          {button("italic", "I", "Italic (Ctrl+I)", active.italic, () =>
+            chain().toggleItalic().run(),
           )}
+          {button("strike", "S", "Strikethrough", active.strike, () =>
+            chain().toggleStrike().run(),
+          )}
+          {button("code", "</>", "Inline code", active.code, () => chain().toggleCode().run())}
+          <span className="tb-sep" />
+          {button("h1", "H1", "Heading 1", active.h1, () =>
+            chain().toggleHeading({ level: 1 }).run(),
+          )}
+          {button("h2", "H2", "Heading 2", active.h2, () =>
+            chain().toggleHeading({ level: 2 }).run(),
+          )}
+          {button("h3", "H3", "Heading 3", active.h3, () =>
+            chain().toggleHeading({ level: 3 }).run(),
+          )}
+          <span className="tb-sep" />
+          {button("ul", "• List", "Bullet list", active.bullet, () =>
+            chain().toggleBulletList().run(),
+          )}
+          {button("ol", "1. List", "Ordered list", active.ordered, () =>
+            chain().toggleOrderedList().run(),
+          )}
+          {button("task", "☑ Task", "Task list", active.task, () => chain().toggleTaskList().run())}
+          <span className="tb-sep" />
+          {button("quote", "❝", "Blockquote", active.quote, () => chain().toggleBlockquote().run())}
+          {button("codeblock", "{ }", "Code block", active.codeBlock, () =>
+            chain().toggleCodeBlock().run(),
+          )}
+          <span className="tb-sep" />
+          <label className="tb-color-picker" title="Text color">
+            <span className="tb-color-label">A</span>
+            <input
+              type="color"
+              aria-label="Text color"
+              disabled={isDisabled}
+              className="tb-color-input"
+              value={asColorInputValue(active.textColor, "#111827")}
+              onPointerDown={rememberSelection}
+              onInput={(event) => setStyledText({ color: event.currentTarget.value })}
+              onChange={(event) => setStyledText({ color: event.target.value })}
+            />
+          </label>
+          <label className="tb-color-picker" title="Background color">
+            <span className="tb-color-label tb-color-label--bg">▦</span>
+            <input
+              type="color"
+              aria-label="Background color"
+              disabled={isDisabled}
+              className="tb-color-input"
+              value={asColorInputValue(active.backgroundColor, "#fef08a")}
+              onPointerDown={rememberSelection}
+              onInput={(event) => setStyledText({ backgroundColor: event.currentTarget.value })}
+              onChange={(event) => setStyledText({ backgroundColor: event.target.value })}
+            />
+          </label>
+          {button("clear-style", "Tx", "Clear text and background color", hasTextStyle, () =>
+            setStyledText({ color: null, backgroundColor: null }),
+          )}
+          <div className="tb-link-wrap" ref={linkPopoverRef}>
+            <button
+              type="button"
+              title="Link"
+              aria-expanded={linkOpen}
+              aria-haspopup="dialog"
+              disabled={isDisabled}
+              className={`tb-btn ${editor?.isActive("link") ? "tb-btn--active" : ""}`}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={openLinkPopover}
+            >
+              🔗
+            </button>
+            {linkOpen && (
+              <div className="tb-link-popover" role="dialog" aria-label="Insert link">
+                <input
+                  className="tb-link-input"
+                  type="url"
+                  autoFocus
+                  placeholder="https://example.com"
+                  value={linkUrl}
+                  onChange={(event) => setLinkUrl(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      applyLink();
+                    }
+                    if (event.key === "Escape") {
+                      setLinkOpen(false);
+                    }
+                  }}
+                />
+                <div className="tb-link-actions">
+                  <button type="button" className="tb-link-ok" onClick={applyLink}>
+                    Set
+                  </button>
+                  <button type="button" className="tb-link-remove" onClick={removeLink}>
+                    Remove
+                  </button>
+                  <button
+                    type="button"
+                    className="tb-link-cancel"
+                    onClick={() => setLinkOpen(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          {button("image", "🖼", "Insert image by URL", false, () => void insertImage())}
+          {button("hr", "―", "Horizontal rule", false, () => chain().setHorizontalRule().run())}
         </div>
-        {button("hr", "―", "Horizontal rule", false, () => chain().setHorizontalRule().run())}
+        {trailing && <div className="editor-toolbar-trailing">{trailing}</div>}
       </div>
-      {trailing && <div className="editor-toolbar-trailing">{trailing}</div>}
-    </div>
+      {promptDialog}
+    </>
   );
 }

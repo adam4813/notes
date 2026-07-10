@@ -8,3 +8,4 @@ export * from "./suggestion-popup";
 export * from "./wikilink-decorator";
 export * from "./embed-extension";
 export * from "./image-node";
+export * from "./prompt-dialog";

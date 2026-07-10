@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { NoteToolbar } from "@notes/editor";
+import { NoteToolbar, usePromptDialog } from "@notes/editor";
 import {
   cellKey,
   newId,
@@ -32,6 +32,7 @@ function topColor(model: GridModel, x: number, y: number): string | undefined {
 }
 
 export function GridView({ value, onChange }: GridViewProps) {
+  const { openPrompt, promptDialog } = usePromptDialog();
   const [model, setModel] = useState<GridModel>(() => parseGrid(value));
   const [tool, setTool] = useState<Tool>("paint");
   const [color, setColor] = useState(PALETTE[3]);
@@ -213,12 +214,19 @@ export function GridView({ value, onChange }: GridViewProps) {
       ),
     );
 
-  const renameLayer = (id: string) => {
+  const renameLayer = async (id: string) => {
     const layer = model.layers.find((entry) => entry.id === id);
-    const name = window.prompt("Layer name", layer?.name);
-    if (!name) {
+    const values = await openPrompt({
+      title: "Rename layer",
+      fields: [
+        { key: "name", label: "Layer name", defaultValue: layer?.name ?? "", required: true },
+      ],
+      confirmLabel: "Rename",
+    });
+    if (!values) {
       return;
     }
+    const name = values.name;
     setLayers(model.layers.map((entry) => (entry.id === id ? { ...entry, name } : entry)));
   };
 
@@ -233,203 +241,206 @@ export function GridView({ value, onChange }: GridViewProps) {
   };
 
   return (
-    <div
-      className="grid-note"
-      tabIndex={0}
-      onKeyDown={(event) => {
-        const mod = event.ctrlKey || event.metaKey;
-        if (mod && event.key.toLowerCase() === "z" && !event.shiftKey) {
-          event.preventDefault();
-          undo();
-        } else if (
-          mod &&
-          (event.key.toLowerCase() === "y" || (event.shiftKey && event.key.toLowerCase() === "z"))
-        ) {
-          event.preventDefault();
-          redo();
-        }
-      }}
-    >
-      <NoteToolbar label="Grid tools" className="grid-toolbar">
-        <div className="grid-tools" role="radiogroup" aria-label="Tool">
-          {(["paint", "erase", "fill", "token"] as Tool[]).map((option) => (
+    <>
+      <div
+        className="grid-note"
+        tabIndex={0}
+        onKeyDown={(event) => {
+          const mod = event.ctrlKey || event.metaKey;
+          if (mod && event.key.toLowerCase() === "z" && !event.shiftKey) {
+            event.preventDefault();
+            undo();
+          } else if (
+            mod &&
+            (event.key.toLowerCase() === "y" || (event.shiftKey && event.key.toLowerCase() === "z"))
+          ) {
+            event.preventDefault();
+            redo();
+          }
+        }}
+      >
+        <NoteToolbar label="Grid tools" className="grid-toolbar">
+          <div className="grid-tools" role="radiogroup" aria-label="Tool">
+            {(["paint", "erase", "fill", "token"] as Tool[]).map((option) => (
+              <button
+                key={option}
+                role="radio"
+                aria-checked={tool === option}
+                className={`tb-btn ${tool === option ? "tb-btn--active" : ""}`}
+                onClick={() => setTool(option)}
+              >
+                {option === "paint"
+                  ? "Paint"
+                  : option === "erase"
+                    ? "Erase"
+                    : option === "fill"
+                      ? "Fill"
+                      : "Token"}
+              </button>
+            ))}
+          </div>
+          <div className="grid-history">
             <button
-              key={option}
-              role="radio"
-              aria-checked={tool === option}
-              className={`tb-btn ${tool === option ? "tb-btn--active" : ""}`}
-              onClick={() => setTool(option)}
+              className="tb-btn"
+              aria-label="Undo"
+              disabled={history.current.past.length === 0}
+              onClick={undo}
             >
-              {option === "paint"
-                ? "Paint"
-                : option === "erase"
-                  ? "Erase"
-                  : option === "fill"
-                    ? "Fill"
-                    : "Token"}
+              ↶
             </button>
-          ))}
-        </div>
-        <div className="grid-history">
-          <button
-            className="tb-btn"
-            aria-label="Undo"
-            disabled={history.current.past.length === 0}
-            onClick={undo}
-          >
-            ↶
-          </button>
-          <button
-            className="tb-btn"
-            aria-label="Redo"
-            disabled={history.current.future.length === 0}
-            onClick={redo}
-          >
-            ↷
-          </button>
-        </div>
-        <div className="grid-palette">
-          {PALETTE.map((swatch) => (
             <button
-              key={swatch}
-              aria-label={`Color ${swatch}`}
-              className={`grid-swatch ${color === swatch ? "grid-swatch--active" : ""}`}
-              style={{ background: swatch }}
-              onClick={() => setColor(swatch)}
-            />
-          ))}
-          <input
-            type="color"
-            aria-label="Custom color"
-            className="accent-custom"
-            value={/^#[0-9a-fA-F]{6}$/.test(color) ? color : "#3b82f6"}
-            onChange={(event) => setColor(event.target.value)}
-          />
-        </div>
-        {tool === "token" ? (
-          <label className="grid-size-field">
-            Token
+              className="tb-btn"
+              aria-label="Redo"
+              disabled={history.current.future.length === 0}
+              onClick={redo}
+            >
+              ↷
+            </button>
+          </div>
+          <div className="grid-palette">
+            {PALETTE.map((swatch) => (
+              <button
+                key={swatch}
+                aria-label={`Color ${swatch}`}
+                className={`grid-swatch ${color === swatch ? "grid-swatch--active" : ""}`}
+                style={{ background: swatch }}
+                onClick={() => setColor(swatch)}
+              />
+            ))}
             <input
-              className="grid-token-label"
-              aria-label="Token label"
-              maxLength={2}
-              value={tokenLabel}
-              onChange={(event) => setTokenLabel(event.target.value)}
+              type="color"
+              aria-label="Custom color"
+              className="accent-custom"
+              value={/^#[0-9a-fA-F]{6}$/.test(color) ? color : "#3b82f6"}
+              onChange={(event) => setColor(event.target.value)}
             />
-          </label>
-        ) : (
-          <div className="grid-size">
+          </div>
+          {tool === "token" ? (
             <label className="grid-size-field">
-              W
+              Token
               <input
-                type="number"
-                min={1}
-                max={64}
-                aria-label="Grid width"
-                value={model.width}
-                onChange={(event) => resize({ width: Number(event.target.value) })}
+                className="grid-token-label"
+                aria-label="Token label"
+                maxLength={2}
+                value={tokenLabel}
+                onChange={(event) => setTokenLabel(event.target.value)}
               />
             </label>
-            <label className="grid-size-field">
-              H
-              <input
-                type="number"
-                min={1}
-                max={64}
-                aria-label="Grid height"
-                value={model.height}
-                onChange={(event) => resize({ height: Number(event.target.value) })}
-              />
-            </label>
+          ) : (
+            <div className="grid-size">
+              <label className="grid-size-field">
+                W
+                <input
+                  type="number"
+                  min={1}
+                  max={64}
+                  aria-label="Grid width"
+                  value={model.width}
+                  onChange={(event) => resize({ width: Number(event.target.value) })}
+                />
+              </label>
+              <label className="grid-size-field">
+                H
+                <input
+                  type="number"
+                  min={1}
+                  max={64}
+                  aria-label="Grid height"
+                  value={model.height}
+                  onChange={(event) => resize({ height: Number(event.target.value) })}
+                />
+              </label>
+            </div>
+          )}
+        </NoteToolbar>
+
+        {tool === "token" && (
+          <div className="grid-hint">
+            Click a cell to place or remove a token on the active layer.
           </div>
         )}
-      </NoteToolbar>
 
-      {tool === "token" && (
-        <div className="grid-hint">
-          Click a cell to place or remove a token on the active layer.
-        </div>
-      )}
-
-      <div className="grid-body">
-        <div
-          className="grid-canvas"
-          data-testid="grid-canvas"
-          onMouseLeave={() => {
-            painting.current = false;
-          }}
-        >
-          {rows.map((y) => (
-            <div key={y} className="grid-row">
-              {cols.map((x) => {
-                const fill = topColor(model, x, y);
-                const visibleLayers = new Set(
-                  model.layers.filter((layer) => layer.visible).map((layer) => layer.id),
-                );
-                const token = model.tokens.find(
-                  (entry) => entry.x === x && entry.y === y && visibleLayers.has(entry.layer),
-                );
-                return (
-                  <div
-                    key={cellKey(x, y)}
-                    className="grid-cell"
-                    data-cell={cellKey(x, y)}
-                    style={{ width: model.cellSize, height: model.cellSize, background: fill }}
-                    onMouseDown={() => onCellDown(x, y)}
-                    onMouseEnter={() => onCellEnter(x, y)}
-                  >
-                    {token && (
-                      <span className="grid-token" style={{ color: token.color }}>
-                        {token.label}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-
-        <aside className="grid-layers">
-          <div className="grid-layers-head">
-            <span>Layers</span>
-            <button className="btn-ghost" aria-label="Add layer" onClick={addLayer}>
-              ＋
-            </button>
-          </div>
-          <ul className="grid-layer-list">
-            {[...model.layers].reverse().map((layer) => (
-              <li
-                key={layer.id}
-                className={`grid-layer ${layer.id === model.activeLayer ? "grid-layer--active" : ""}`}
-              >
-                <button
-                  className="grid-layer-vis"
-                  aria-label={layer.visible ? "Hide layer" : "Show layer"}
-                  onClick={() => toggleVisible(layer.id)}
-                >
-                  {layer.visible ? "👁" : "🚫"}
-                </button>
-                <button
-                  className="grid-layer-name"
-                  onClick={() => setLayers(model.layers, layer.id)}
-                  onDoubleClick={() => renameLayer(layer.id)}
-                  title="Click to select, double-click to rename"
-                >
-                  {layer.name}
-                </button>
-                <button
-                  className="grid-layer-remove"
-                  aria-label={`Remove ${layer.name}`}
-                  onClick={() => removeLayer(layer.id)}
-                >
-                  ×
-                </button>
-              </li>
+        <div className="grid-body">
+          <div
+            className="grid-canvas"
+            data-testid="grid-canvas"
+            onMouseLeave={() => {
+              painting.current = false;
+            }}
+          >
+            {rows.map((y) => (
+              <div key={y} className="grid-row">
+                {cols.map((x) => {
+                  const fill = topColor(model, x, y);
+                  const visibleLayers = new Set(
+                    model.layers.filter((layer) => layer.visible).map((layer) => layer.id),
+                  );
+                  const token = model.tokens.find(
+                    (entry) => entry.x === x && entry.y === y && visibleLayers.has(entry.layer),
+                  );
+                  return (
+                    <div
+                      key={cellKey(x, y)}
+                      className="grid-cell"
+                      data-cell={cellKey(x, y)}
+                      style={{ width: model.cellSize, height: model.cellSize, background: fill }}
+                      onMouseDown={() => onCellDown(x, y)}
+                      onMouseEnter={() => onCellEnter(x, y)}
+                    >
+                      {token && (
+                        <span className="grid-token" style={{ color: token.color }}>
+                          {token.label}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             ))}
-          </ul>
-        </aside>
+          </div>
+
+          <aside className="grid-layers">
+            <div className="grid-layers-head">
+              <span>Layers</span>
+              <button className="btn-ghost" aria-label="Add layer" onClick={addLayer}>
+                ＋
+              </button>
+            </div>
+            <ul className="grid-layer-list">
+              {[...model.layers].reverse().map((layer) => (
+                <li
+                  key={layer.id}
+                  className={`grid-layer ${layer.id === model.activeLayer ? "grid-layer--active" : ""}`}
+                >
+                  <button
+                    className="grid-layer-vis"
+                    aria-label={layer.visible ? "Hide layer" : "Show layer"}
+                    onClick={() => toggleVisible(layer.id)}
+                  >
+                    {layer.visible ? "👁" : "🚫"}
+                  </button>
+                  <button
+                    className="grid-layer-name"
+                    onClick={() => setLayers(model.layers, layer.id)}
+                    onDoubleClick={() => void renameLayer(layer.id)}
+                    title="Click to select, double-click to rename"
+                  >
+                    {layer.name}
+                  </button>
+                  <button
+                    className="grid-layer-remove"
+                    aria-label={`Remove ${layer.name}`}
+                    onClick={() => removeLayer(layer.id)}
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </aside>
+        </div>
       </div>
-    </div>
+      {promptDialog}
+    </>
   );
 }

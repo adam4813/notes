@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { usePromptDialog } from "@notes/editor";
 import { api, type FileEntry } from "../api/client";
 import { useAppServices } from "../state/app-services";
 import { useWorkspace } from "../state/app-context";
@@ -77,7 +78,12 @@ interface FlatRow {
 }
 
 /** Flattens the visible tree (respecting expanded dirs) for windowing. */
-function flattenVisible(entries: FileEntry[], depth: number, isOpen: (p: string) => boolean, out: FlatRow[]): void {
+function flattenVisible(
+  entries: FileEntry[],
+  depth: number,
+  isOpen: (p: string) => boolean,
+  out: FlatRow[],
+): void {
   for (const entry of entries) {
     out.push({ entry, depth });
     if (entry.type === "directory" && isOpen(entry.path)) {
@@ -86,7 +92,15 @@ function flattenVisible(entries: FileEntry[], depth: number, isOpen: (p: string)
   }
 }
 
-function TreeRow({ entry, depth, handlers }: { entry: FileEntry; depth: number; handlers: NodeHandlers }) {
+function TreeRow({
+  entry,
+  depth,
+  handlers,
+}: {
+  entry: FileEntry;
+  depth: number;
+  handlers: NodeHandlers;
+}) {
   const indent = { paddingLeft: `${depth * 12 + 8}px`, height: `${ROW_HEIGHT}px` };
   const isRenaming = handlers.renamePath === entry.path;
 
@@ -206,6 +220,7 @@ export function Explorer({
   renameRequestPath: string | null;
   onRenameRequestHandled: () => void;
 }) {
+  const { openPrompt, promptDialog } = usePromptDialog();
   const { state, dispatch } = useWorkspace();
   const services = useAppServices();
   const [menu, setMenu] = useState<ContextMenu | null>(null);
@@ -222,7 +237,9 @@ export function Explorer({
     if (!seededOpen.current && state.tree.length > 0) {
       seededOpen.current = true;
       setOpenDirs(
-        new Set(state.tree.filter((entry) => entry.type === "directory").map((entry) => entry.path)),
+        new Set(
+          state.tree.filter((entry) => entry.type === "directory").map((entry) => entry.path),
+        ),
       );
     }
   }, [state.tree]);
@@ -254,7 +271,8 @@ export function Explorer({
   const beginRename = (node: FileEntry) => {
     setMenu(null);
     setRenamePath(node.path);
-    const { stem, ext } = node.type === "file" ? splitName(node.name) : { stem: node.name, ext: "" };
+    const { stem, ext } =
+      node.type === "file" ? splitName(node.name) : { stem: node.name, ext: "" };
     setRenameDraft(stem);
     setRenameExt(ext);
     openAncestors(node.path);
@@ -406,7 +424,12 @@ export function Explorer({
   };
 
   const newFolder = async (dir: string) => {
-    const input = window.prompt("New folder name");
+    const values = await openPrompt({
+      title: "New folder",
+      fields: [{ key: "name", label: "Folder name", required: true }],
+      confirmLabel: "Create",
+    });
+    const input = values?.name.trim();
     if (!input) {
       return;
     }
@@ -525,6 +548,7 @@ export function Explorer({
           ))}
         </div>
       )}
+      {promptDialog}
     </div>
   );
 }

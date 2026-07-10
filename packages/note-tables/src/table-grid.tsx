@@ -5,7 +5,7 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { NoteToolbar } from "@notes/editor";
+import { NoteToolbar, usePromptDialog } from "@notes/editor";
 import {
   COLUMN_TYPES,
   parseTable,
@@ -36,6 +36,7 @@ function compareValues(a: string, b: string, type: ColumnType): number {
 }
 
 export function TableGrid({ value, onChange }: TableGridProps) {
+  const { openPrompt, promptDialog } = usePromptDialog();
   const [model, setModel] = useState<TableModel>(() => parseTable(value));
   const lastSerialized = useRef(value);
   const [sel, setSel] = useState<CellPos>({ r: 0, c: 0 });
@@ -148,51 +149,87 @@ export function TableGrid({ value, onChange }: TableGridProps) {
   );
 
   const renameColumn = useCallback(
-    (c: number) => {
+    async (c: number) => {
       const current = model.columns[c];
-      const name = window.prompt("Column name", current.name);
-      if (name === null) {
+      const values = await openPrompt({
+        title: "Rename column",
+        fields: [{ key: "name", label: "Column name", defaultValue: current.name, required: true }],
+        confirmLabel: "Rename",
+      });
+      if (!values) {
         return;
       }
+      const name = values.name;
       const columns = model.columns.map((column, index) =>
         index === c ? { ...column, name: name.trim() || column.name } : column,
       );
       commit({ ...model, columns });
       setMenuCol(null);
     },
-    [commit, model],
+    [commit, model, openPrompt],
   );
 
   const setColumnType = useCallback(
-    (c: number, type: ColumnType) => {
+    async (c: number, type: ColumnType) => {
+      const current = model.columns[c];
+      let selectOptions: string[] | undefined = current.options;
+      if (type === "select" && !selectOptions) {
+        const values = await openPrompt({
+          title: "Select options",
+          description: "Comma-separated options for this column.",
+          fields: [
+            {
+              key: "options",
+              label: "Options",
+              defaultValue: "Todo, Doing, Done",
+              required: true,
+            },
+          ],
+          confirmLabel: "Set options",
+        });
+        if (!values) {
+          return;
+        }
+        selectOptions = values.options
+          .split(",")
+          .map((option) => option.trim())
+          .filter(Boolean);
+      }
       const columns = model.columns.map((column, index) => {
         if (index !== c) {
           return column;
         }
         const next = { ...column, type };
-        if (type === "select" && !next.options) {
-          const raw = window.prompt("Options (comma-separated)", "Todo, Doing, Done") ?? "";
-          next.options = raw
-            .split(",")
-            .map((option) => option.trim())
-            .filter(Boolean);
+        if (type === "select") {
+          next.options = selectOptions;
         }
         return next;
       });
       commit({ ...model, columns });
       setMenuCol(null);
     },
-    [commit, model],
+    [commit, model, openPrompt],
   );
 
   const editColumnOptions = useCallback(
-    (c: number) => {
+    async (c: number) => {
       const current = model.columns[c];
-      const raw = window.prompt("Options (comma-separated)", (current.options ?? []).join(", "));
-      if (raw === null) {
+      const values = await openPrompt({
+        title: "Edit options",
+        fields: [
+          {
+            key: "options",
+            label: "Options (comma-separated)",
+            defaultValue: (current.options ?? []).join(", "),
+            required: true,
+          },
+        ],
+        confirmLabel: "Save",
+      });
+      if (!values) {
         return;
       }
-      const options = raw
+      const options = values.options
         .split(",")
         .map((option) => option.trim())
         .filter(Boolean);
@@ -202,7 +239,7 @@ export function TableGrid({ value, onChange }: TableGridProps) {
       commit({ ...model, columns });
       setMenuCol(null);
     },
-    [commit, model],
+    [commit, model, openPrompt],
   );
 
   const sortByColumn = useCallback(
@@ -317,103 +354,106 @@ export function TableGrid({ value, onChange }: TableGridProps) {
   };
 
   return (
-    <div className="table-note">
-      <NoteToolbar
-        label="Table tools"
-        className="table-toolbar"
-        trailing={
-          <span className="table-meta">
-            {rowCount} rows · {columnCount} columns
-          </span>
-        }
-      >
-        <button className="tb-btn" onClick={addRow}>
-          ＋ Row
-        </button>
-        <button className="tb-btn" onClick={addColumn}>
-          ＋ Column
-        </button>
-      </NoteToolbar>
-      <div
-        className="table-scroll"
-        ref={gridRef}
-        tabIndex={0}
-        role="grid"
-        onKeyDown={onGridKeyDown}
-      >
-        <table className="data-grid">
-          <thead>
-            <tr>
-              <th className="grid-gutter" />
-              {model.columns.map((column, c) => (
-                <th key={c} className="grid-head">
-                  <div className="grid-head-inner">
-                    <span className="grid-head-name" title={`${column.name} (${column.type})`}>
-                      {column.name}
-                    </span>
-                    <button
-                      className="grid-head-menu"
-                      aria-label={`Options for ${column.name}`}
-                      onClick={() => setMenuCol((prev) => (prev === c ? null : c))}
-                    >
-                      ▾
-                    </button>
-                  </div>
-                  {menuCol === c && (
-                    <div className="grid-col-menu" role="menu">
-                      <button onClick={() => renameColumn(c)}>Rename…</button>
-                      <button onClick={() => sortByColumn(c, "asc")}>Sort ascending</button>
-                      <button onClick={() => sortByColumn(c, "desc")}>Sort descending</button>
-                      <div className="grid-menu-label">Type</div>
-                      {COLUMN_TYPES.map((type) => (
-                        <button
-                          key={type}
-                          className={type === column.type ? "grid-menu-active" : ""}
-                          onClick={() => setColumnType(c, type)}
-                        >
-                          {type}
-                        </button>
-                      ))}
-                      {column.type === "select" && (
-                        <button onClick={() => editColumnOptions(c)}>Edit options…</button>
-                      )}
-                      <button className="grid-menu-danger" onClick={() => deleteColumn(c)}>
-                        Delete column
+    <>
+      <div className="table-note">
+        <NoteToolbar
+          label="Table tools"
+          className="table-toolbar"
+          trailing={
+            <span className="table-meta">
+              {rowCount} rows · {columnCount} columns
+            </span>
+          }
+        >
+          <button className="tb-btn" onClick={addRow}>
+            ＋ Row
+          </button>
+          <button className="tb-btn" onClick={addColumn}>
+            ＋ Column
+          </button>
+        </NoteToolbar>
+        <div
+          className="table-scroll"
+          ref={gridRef}
+          tabIndex={0}
+          role="grid"
+          onKeyDown={onGridKeyDown}
+        >
+          <table className="data-grid">
+            <thead>
+              <tr>
+                <th className="grid-gutter" />
+                {model.columns.map((column, c) => (
+                  <th key={c} className="grid-head">
+                    <div className="grid-head-inner">
+                      <span className="grid-head-name" title={`${column.name} (${column.type})`}>
+                        {column.name}
+                      </span>
+                      <button
+                        className="grid-head-menu"
+                        aria-label={`Options for ${column.name}`}
+                        onClick={() => setMenuCol((prev) => (prev === c ? null : c))}
+                      >
+                        ▾
                       </button>
                     </div>
-                  )}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {model.rows.map((row, r) => (
-              <tr key={r}>
-                <td className="grid-gutter">
-                  <span className="grid-rownum">{r + 1}</span>
-                  <button
-                    className="grid-row-delete"
-                    aria-label={`Delete row ${r + 1}`}
-                    onClick={() => deleteRow(r)}
-                  >
-                    ×
-                  </button>
-                </td>
-                {row.map((_cell, c) => (
-                  <td
-                    key={c}
-                    className={`grid-cell ${sel.r === r && sel.c === c ? "grid-cell--selected" : ""}`}
-                    onMouseDown={() => setSel({ r, c })}
-                    onDoubleClick={() => startEdit({ r, c })}
-                  >
-                    {renderCell(r, c)}
-                  </td>
+                    {menuCol === c && (
+                      <div className="grid-col-menu" role="menu">
+                        <button onClick={() => void renameColumn(c)}>Rename…</button>
+                        <button onClick={() => sortByColumn(c, "asc")}>Sort ascending</button>
+                        <button onClick={() => sortByColumn(c, "desc")}>Sort descending</button>
+                        <div className="grid-menu-label">Type</div>
+                        {COLUMN_TYPES.map((type) => (
+                          <button
+                            key={type}
+                            className={type === column.type ? "grid-menu-active" : ""}
+                            onClick={() => void setColumnType(c, type)}
+                          >
+                            {type}
+                          </button>
+                        ))}
+                        {column.type === "select" && (
+                          <button onClick={() => void editColumnOptions(c)}>Edit options…</button>
+                        )}
+                        <button className="grid-menu-danger" onClick={() => deleteColumn(c)}>
+                          Delete column
+                        </button>
+                      </div>
+                    )}
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {model.rows.map((row, r) => (
+                <tr key={r}>
+                  <td className="grid-gutter">
+                    <span className="grid-rownum">{r + 1}</span>
+                    <button
+                      className="grid-row-delete"
+                      aria-label={`Delete row ${r + 1}`}
+                      onClick={() => deleteRow(r)}
+                    >
+                      ×
+                    </button>
+                  </td>
+                  {row.map((_cell, c) => (
+                    <td
+                      key={c}
+                      className={`grid-cell ${sel.r === r && sel.c === c ? "grid-cell--selected" : ""}`}
+                      onMouseDown={() => setSel({ r, c })}
+                      onDoubleClick={() => startEdit({ r, c })}
+                    >
+                      {renderCell(r, c)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+      {promptDialog}
+    </>
   );
 }
