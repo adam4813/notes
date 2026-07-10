@@ -174,7 +174,7 @@ export function CalendarView({ value, path }: CalendarViewProps) {
                 key={option}
                 role="tab"
                 aria-selected={option === mode}
-                className={`mode-btn ${option === mode ? "mode-btn--active" : ""}`}
+                className={`mode-btn ${option === mode ? "mode-btn--active" : ""} tb-btn`}
                 onClick={() => setMode(option)}
               >
                 {option === "month" ? "Month" : "Agenda"}
@@ -183,22 +183,22 @@ export function CalendarView({ value, path }: CalendarViewProps) {
           </div>
           {mode === "month" && (
             <div className="calendar-nav">
-              <button className="btn-ghost" aria-label="Previous month" onClick={() => step(-1)}>
+              <button className="tb-btn" aria-label="Previous month" onClick={() => step(-1)}>
                 ‹
               </button>
               <span className="calendar-title" data-testid="calendar-title">
                 {MONTHS[month]} {year}
               </span>
-              <button className="btn-ghost" aria-label="Next month" onClick={() => step(1)}>
+              <button className="tb-btn" aria-label="Next month" onClick={() => step(1)}>
                 ›
               </button>
-              <button className="btn-ghost" onClick={() => setCursor(new Date())}>
+              <button className="tb-btn" onClick={() => setCursor(new Date())}>
                 Today
               </button>
             </div>
           )}
           <button
-            className="btn-ghost"
+            className="tb-btn"
             onClick={() => void handleCreateEvent(todayIso)}
             aria-label="New event"
           >

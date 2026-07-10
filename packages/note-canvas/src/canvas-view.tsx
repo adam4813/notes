@@ -696,20 +696,20 @@ export function CanvasView({ value, onChange, onOpenFile, path, subscribeToFileC
   return (
     <div className="canvas-note">
       <div className="canvas-toolbar">
-        <button className="btn-ghost" onClick={addText}>
+        <button className="tb-btn" onClick={addText}>
           ＋ Text
         </button>
-        <button className="btn-ghost" onClick={addFile}>
+        <button className="tb-btn" onClick={addFile}>
           ＋ Note
         </button>
-        <button className="btn-ghost" onClick={addLink}>
+        <button className="tb-btn" onClick={addLink}>
           ＋ Link
         </button>
-        <button className="btn-ghost" disabled={!selection} onClick={deleteSelection}>
+        <button className="tb-btn" disabled={!selection} onClick={deleteSelection}>
           Delete
         </button>
         <span className="canvas-meta">{Math.round(viewport.scale * 100)}%</span>
-        <button className="btn-ghost" onClick={resetView}>
+        <button className="tb-btn" onClick={resetView}>
           Fit view
         </button>
       </div>

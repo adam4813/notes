@@ -1052,15 +1052,17 @@ button {
   align-items: center;
   background: var(--bg);
   border: 1px solid var(--border);
+  border-bottom: none;
   border-radius: 10px 10px 0 0;
   min-height: 34px;
   margin: 6px 6px 0;
-  padding-right: 2px;
+  padding-right: 6px;
 }
 
 .tab-list {
   display: flex;
   overflow-x: auto;
+  overflow-y: hidden;
   flex: 1;
   gap: 2px;
   padding: 6px 6px 0;
@@ -1886,7 +1888,7 @@ button {
   display: inline-flex;
   gap: 2px;
   padding: 6px 10px;
-  border-bottom: 1px solid var(--border);
+  border-block: 1px solid var(--border);
 }
 
 .mermaid-body {
@@ -1962,7 +1964,7 @@ button {
   justify-content: space-between;
   gap: 12px;
   padding: 6px 10px;
-  border-bottom: 1px solid var(--border);
+  border-block: 1px solid var(--border);
 }
 
 .calendar-mode-switch {
@@ -1974,6 +1976,10 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.calendar-nav .tb-btn {
+  font-size: inherit;
 }
 
 .calendar-title {
@@ -2561,7 +2567,7 @@ button {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  background: var(--bg-sunken);
+  background: var(--bg);
 }
 
 .tiptap-host {
@@ -2640,8 +2646,7 @@ button {
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-elevated);
+  border-block: 1px solid var(--border);
 }
 
 .editor-toolbar-main {
@@ -2775,8 +2780,8 @@ button {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 6px 10px;
+  border-block: 1px solid var(--border);
 }
 
 .table-meta {
@@ -3271,8 +3276,8 @@ tr:hover .grid-row-delete {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 6px 10px;
+  border-block: 1px solid var(--border);
 }
 
 .canvas-meta {

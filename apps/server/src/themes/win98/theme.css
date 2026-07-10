@@ -7,7 +7,7 @@
 :root[data-theme="win98"] {
   /* ── Palette ─────────────────────────────────────────────── */
   --bg:           #c0c0c0;   /* classic silver / button-face  */
-  --bg-elevated:  #c0c0c0;
+  --bg-elevated:  #e0e0e0;
   --bg-sunken:    #ffffff;   /* text-box background           */
   --bg-app:       #008080;   /* desktop teal                  */
   --bg-island:    #c0c0c0;
@@ -186,7 +186,7 @@
 /* ── Tab bar ──────────────────────────────────────────────── */
 :root[data-theme="win98"] .tab-bar {
   background: var(--bg);
-  border: 2px solid;
+  border: none;
   border-color: #ffffff #808080 #808080 #ffffff;
   border-radius: 0;
 }
@@ -200,6 +200,9 @@
   font-family: var(--win98-font);
   font-size: 11px;
   padding: 3px 8px;
+}
+:root[data-theme="win98"] .tab .tab-close {
+  //border: none;
 }
 
 :root[data-theme="win98"] .tab--active {
@@ -328,10 +331,17 @@
 }
 
 /* ── File tree ──────────────────────────────────────────── */
+:root[data-theme="win98"] .explorer {
+  background: var(--bg-sunken);
+  box-shadow: inset -2px -2px 2px var(--fg-muted), inset 2px 2px 2px var(--fg-muted);
+}
 :root[data-theme="win98"] .tree-row {
   border-radius: 0;
   font-family: var(--win98-font);
   font-size: 11px;
+  border: none;
+  box-shadow: none;
+  background: none;
 }
 
 :root[data-theme="win98"] .tree-row:hover {

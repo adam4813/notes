@@ -43,7 +43,7 @@ export function MermaidView({ value, onChange }: MermaidViewProps) {
             key={option.id}
             role="tab"
             aria-selected={option.id === mode}
-            className={`mode-btn ${option.id === mode ? "mode-btn--active" : ""}`}
+            className={`mode-btn ${option.id === mode ? "mode-btn--active" : ""} tb-btn`}
             onClick={() => setMode(option.id)}
           >
             {option.label}

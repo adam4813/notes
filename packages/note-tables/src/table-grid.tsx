@@ -309,10 +309,10 @@ export function TableGrid({ value, onChange }: TableGridProps) {
   return (
     <div className="table-note">
       <div className="table-toolbar">
-        <button className="btn-ghost" onClick={addRow}>
+        <button className="tb-btn" onClick={addRow}>
           ＋ Row
         </button>
-        <button className="btn-ghost" onClick={addColumn}>
+        <button className="tb-btn" onClick={addColumn}>
           ＋ Column
         </button>
         <span className="table-meta">

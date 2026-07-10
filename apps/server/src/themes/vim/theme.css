@@ -296,7 +296,7 @@
 }
 
 :root[data-theme="vim"] .tiptap-host {
-  background: var(--bg-sunken);
+  background: var(--bg);
 }
 
 :root[data-theme="vim"] .tiptap-host .ProseMirror {
