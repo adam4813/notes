@@ -1,0 +1,8 @@
+{
+  "id": "win98",
+  "name": "Windows 98",
+  "version": "1.0.0",
+  "colorModes": ["light"],
+  "description": "Classic Windows 98 look-and-feel with system fonts, raised and sunken borders, and a teal title bar.",
+  "author": "Notes built-in"
+}

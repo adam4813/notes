@@ -1,4 +1,5 @@
 import type { PluginInfo } from "@notes/plugin-host";
+import type { ThemeMeta } from "@notes/shared";
 import type { ThemeMode } from "../state/types";
 import { HotkeyRow } from "./hotkey-row";
 
@@ -45,9 +46,12 @@ export interface SettingsBodyProps {
   openInTab: boolean;
   onOpenInTabChange: (openInTab: boolean) => void;
   hotkeys: HotkeySettings;
+  /** Externally installed themes loaded from the Tome's `.notes/themes/`. */
+  externalThemes: ThemeMeta[];
+  onImportDefaultThemes: () => Promise<void>;
 }
 
-const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
+const BUILT_IN_THEME_OPTIONS: { value: string; label: string }[] = [
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
   { value: "system", label: "System" },
@@ -72,7 +76,14 @@ export function SettingsBody(props: SettingsBodyProps) {
     openInTab,
     onOpenInTabChange,
     hotkeys,
+    externalThemes,
+    onImportDefaultThemes,
   } = props;
+
+  const allThemeOptions = [
+    ...BUILT_IN_THEME_OPTIONS,
+    ...externalThemes.map((t) => ({ value: t.id, label: t.name })),
+  ];
 
   const commandTitle = (id: string) => {
     const command = hotkeys.commands.find((entry) => entry.id === id);
@@ -99,7 +110,7 @@ export function SettingsBody(props: SettingsBodyProps) {
         <div className="settings-field">
           <span className="settings-label">Theme</span>
           <div className="segmented" role="radiogroup" aria-label="Theme">
-            {THEME_OPTIONS.map((option) => (
+            {allThemeOptions.map((option) => (
               <button
                 key={option.value}
                 role="radio"
@@ -111,6 +122,16 @@ export function SettingsBody(props: SettingsBodyProps) {
               </button>
             ))}
           </div>
+        </div>
+        <div className="settings-field">
+          <span className="settings-label">Add-ons</span>
+          <button
+            className="settings-import-btn"
+            onClick={() => void onImportDefaultThemes()}
+            title="Copy bundled theme add-ons into your Tome's .notes/themes folder"
+          >
+            Import default themes
+          </button>
         </div>
         <div className="settings-field">
           <span className="settings-label">Accent</span>

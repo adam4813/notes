@@ -6,6 +6,7 @@ import { emptyCalendar } from "@notes/note-calendar";
 import { emptyGrid } from "@notes/note-grid";
 import { emptyMermaid } from "@notes/note-mermaid";
 import { emptyTableMarkdown } from "@notes/note-tables";
+import type { ThemeMeta } from "@notes/shared";
 import { api, type FileEntry } from "./api/client";
 import { flushQueue, pendingCount } from "./api/offline-queue";
 import { connectTomeChanges } from "./api/ws";
@@ -29,6 +30,7 @@ import { useHotkeys } from "./state/use-hotkeys";
 import { loadRecentCommands, pushRecentCommand, type AppCommand } from "./state/commands";
 import { flattenFiles } from "./state/selectors";
 import { applyAccent, applyTheme, loadAccent, ACCENT_PRESETS, applyFontSizes, loadFontSizes } from "./theme/theme";
+import { loadExternalThemes } from "./theme/theme-loader";
 import type { SettingsBodyProps } from "./components/settings-view";
 
 type PaletteMode = "files" | "commands" | null;
@@ -68,6 +70,7 @@ export function App() {
   const [fontSizes, setFontSizes] = useState(() => loadFontSizes());
   const [recentCommandIds, setRecentCommandIds] = useState<string[]>(() => loadRecentCommands());
   const [noteTypes, setNoteTypes] = useState<Record<string, string>>({});
+  const [externalThemes, setExternalThemes] = useState<ThemeMeta[]>([]);
   const plugins = usePlugins();
   const treeRef = useRef(state.tree);
   treeRef.current = state.tree;
@@ -257,6 +260,8 @@ export function App() {
   const seededRef = useRef(false);
   useEffect(() => {
     void refreshTree();
+    // Load external themes on startup.
+    void loadExternalThemes().then(setExternalThemes);
     // First-run onboarding: auto-seed a sample Tome exactly once.
     if (seededRef.current) {
       return;
@@ -473,6 +478,17 @@ export function App() {
     [createNote, createTable, createCanvas, createBoard, createMermaid, createCalendar, createGrid],
   );
 
+  const importDefaultThemes = useCallback(async () => {
+    try {
+      await api.importDefaultThemes();
+      const themes = await loadExternalThemes();
+      setExternalThemes(themes);
+      notify("Default themes imported", { kind: "success" });
+    } catch {
+      notify("Failed to import default themes", { kind: "error" });
+    }
+  }, [notify]);
+
   const settingsProps = useMemo<SettingsBodyProps>(
     () => ({
       plugins: plugins.list,
@@ -488,6 +504,8 @@ export function App() {
       onEditorFontSizeChange: setEditorFontSize,
       openInTab: openSettingsInTab,
       onOpenInTabChange: setOpenSettingsInTab,
+      externalThemes,
+      onImportDefaultThemes: importDefaultThemes,
       hotkeys: {
         commands: commands.map((command) => ({
           id: command.id,
@@ -514,6 +532,8 @@ export function App() {
       setEditorFontSize,
       openSettingsInTab,
       setOpenSettingsInTab,
+      externalThemes,
+      importDefaultThemes,
       commands,
       hotkeys,
     ],

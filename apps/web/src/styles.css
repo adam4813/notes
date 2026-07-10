@@ -459,28 +459,41 @@ button {
   border-left: 1px solid var(--border);
 }
 
+/* Shared surface for all floating popup menus */
+.new-menu,
+.context-menu,
+.split-menu,
+.suggest-popup {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 4px;
+}
+
 .new-menu {
   position: absolute;
   top: 100%;
   right: 0;
   z-index: 30;
   min-width: 160px;
-  padding: 4px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
 }
 
-.new-menu-item {
+.new-menu-item,
+.context-item,
+.suggest-item,
+.split-menu-item {
   text-align: left;
   background: transparent;
   border: none;
   border-radius: 6px;
-  padding: 6px 8px;
   color: var(--fg);
+}
+
+.new-menu-item {
+  padding: 6px 8px;
 }
 
 .new-menu-item:hover {
@@ -599,10 +612,24 @@ button {
   font-size: 12px;
 }
 
-.search-results {
+/* List reset — applied to all navigable/content list components */
+.search-results,
+.tag-list,
+.hotkey-list,
+.plugin-list,
+.property-list,
+.tree-root,
+.tree-children,
+.help-list,
+.grid-layer-list,
+.calendar-agenda,
+.tome-replace-hits {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+.search-results {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -646,14 +673,7 @@ button {
   padding: 0 1px;
 }
 
-/* Tag pane */
-.tag-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.tag-item {
+/* Tag pane */.tag-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -775,9 +795,6 @@ button {
 }
 
 .property-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -853,9 +870,7 @@ button {
 }
 
 .tome-replace-hits {
-  list-style: none;
   margin: 0 0 12px;
-  padding: 0;
   max-height: 220px;
   overflow: auto;
 }
@@ -915,13 +930,6 @@ button {
   right: 0;
 }
 
-.tree-root,
-.tree-children {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
 .tree-row {
   display: flex;
   align-items: center;
@@ -956,22 +964,12 @@ button {
   position: fixed;
   z-index: 60;
   min-width: 168px;
-  padding: 4px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
 }
 
 .context-item {
-  text-align: left;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
   padding: 6px 10px;
-  color: var(--fg);
 }
 
 .context-item:hover {
@@ -1009,8 +1007,8 @@ button {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
-  padding: 12px;
+  gap: 8px;
+  padding: 16px 12px;
   color: var(--fg-muted);
   font-size: 13px;
 }
@@ -1146,20 +1144,11 @@ button {
   right: 0;
   z-index: 40;
   min-width: 200px;
-  padding: 4px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
 }
 
 .split-menu-item {
   display: block;
   width: 100%;
-  text-align: left;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
   padding: 8px 10px;
   white-space: nowrap;
 }
@@ -1387,7 +1376,8 @@ button {
   min-width: 34px;
 }
 
-.segmented {
+.segmented,
+.mode-switch {
   display: inline-flex;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -1401,9 +1391,23 @@ button {
   color: var(--fg);
 }
 
-.segmented-btn--active {
+.segmented-btn--active,
+.mode-btn--active {
   background: var(--accent);
   color: var(--accent-fg);
+}
+
+.settings-import-btn {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 12px;
+  background: var(--bg-elevated);
+  color: var(--fg);
+  font-size: 13px;
+}
+
+.settings-import-btn:hover {
+  background: var(--hover);
 }
 
 .accent-swatches {
@@ -1432,12 +1436,6 @@ button {
   border-radius: 50%;
   background: none;
   cursor: pointer;
-}
-
-.hotkey-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
 }
 
 .hotkey-row {
@@ -1487,12 +1485,6 @@ button {
 
 .hotkey-reset {
   padding: 2px 6px;
-}
-
-.plugin-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
 }
 
 .plugin-row {
@@ -1731,9 +1723,6 @@ button {
 
 /* Help overlay + onboarding */
 .help-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1755,16 +1744,6 @@ button {
   border-radius: 4px;
   padding: 1px 6px;
   white-space: nowrap;
-}
-
-.explorer-empty {
-  padding: 16px 12px;
-  color: var(--fg-muted);
-  font-size: 13px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
 }
 
 .explorer-empty p {
@@ -2255,8 +2234,6 @@ button {
 }
 
 .calendar-agenda {
-  list-style: none;
-  margin: 0;
   padding: 8px;
   overflow: auto;
 }
@@ -2415,9 +2392,7 @@ button {
 }
 
 .grid-layer-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+  /* list-style reset via grouped rule above */
 }
 
 .grid-layer {
@@ -2483,23 +2458,11 @@ button {
   width: min(260px, 56vw);
 }
 
-.mode-switch {
-  display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
 .mode-btn {
   background: transparent;
   border: none;
   padding: 4px 12px;
   color: var(--fg-muted);
-}
-
-.mode-btn--active {
-  background: var(--accent);
-  color: var(--accent-fg);
 }
 
 .save-status {
@@ -2739,20 +2702,11 @@ button {
   min-width: 180px;
   max-height: 240px;
   overflow: auto;
-  padding: 4px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
 }
 
 .suggest-item {
   display: block;
   width: 100%;
-  text-align: left;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
   padding: 6px 8px;
   white-space: nowrap;
 }

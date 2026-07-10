@@ -1,5 +1,18 @@
 export const PACKAGE_NAME = "@notes/shared";
 
+/** Metadata for a user-installable theme package. */
+export interface ThemeMeta {
+  /** Unique identifier, used as the `data-theme` attribute value. */
+  id: string;
+  name: string;
+  version: string;
+  /** Which color modes the theme supports. Light/dark determines whether the
+   *  theme should be offered when the OS prefers that scheme. */
+  colorModes: ("light" | "dark")[];
+  description?: string;
+  author?: string;
+}
+
 /** Product name (working title). */
 export const APP_NAME = "Notes";
 

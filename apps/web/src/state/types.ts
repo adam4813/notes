@@ -1,6 +1,10 @@
 import type { FileEntry } from "../api/client";
 
-export type ThemeMode = "light" | "dark" | "system" | "solarized" | "contrast";
+/**
+ * Theme identifier. Built-in values: "light" | "dark" | "system" | "solarized" | "contrast".
+ * User-installed themes add their own id strings (e.g. "win98").
+ */
+export type ThemeMode = string;
 
 export interface Tab {
   id: string;

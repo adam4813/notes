@@ -1,3 +1,5 @@
+import type { ThemeMeta } from "@notes/shared";
+
 export interface FileEntry {
   path: string;
   name: string;
@@ -87,4 +89,11 @@ export const api = {
   resolve: (text: string) => request<{ path: string | null }>(`/api/resolve?${query({ text })}`),
   reindex: () => request<{ rebuilt: boolean; notes: number }>("/api/reindex", { method: "POST" }),
   tome: () => request<{ id: string }>("/api/tome"),
+  themes: () => request<{ themes: ThemeMeta[] }>("/api/themes"),
+  themeStyle: (id: string) =>
+    fetch(`/api/themes/${encodeURIComponent(id)}/style`).then((r) =>
+      r.ok ? r.text() : Promise.reject(new Error(`Theme "${id}" not found`)),
+    ),
+  importDefaultThemes: () =>
+    request<{ imported: string[] }>("/api/themes/import-defaults", { method: "POST" }),
 };

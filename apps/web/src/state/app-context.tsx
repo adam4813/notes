@@ -20,8 +20,9 @@ const LAYOUT_KEY = "notes.layout";
 
 function loadInitialTheme(): ThemeMode {
   const stored = window.localStorage.getItem(THEME_KEY);
-  const valid: ThemeMode[] = ["light", "dark", "system", "solarized", "contrast"];
-  return valid.includes(stored as ThemeMode) ? (stored as ThemeMode) : "system";
+  if (!stored) return "system";
+  // Accept any non-empty string — external theme ids are valid too.
+  return stored.length > 0 ? stored : "system";
 }
 
 interface PersistedLayout {

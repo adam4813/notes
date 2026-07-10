@@ -41,6 +41,8 @@ const defaultSettings: SettingsBodyProps = {
   onEditorFontSizeChange: noop,
   openInTab: false,
   onOpenInTabChange: noop,
+  externalThemes: [],
+  onImportDefaultThemes: async () => {},
   hotkeys: {
     commands: [],
     comboFor: () => undefined,

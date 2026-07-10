@@ -1,0 +1,533 @@
+/*
+ * Windows 98 theme for Notes
+ * Replicates the classic Win9x aesthetic: silver system-palette,
+ * teal titlebar, raised/sunken 3-D borders, and MS Sans Serif / System font.
+ */
+
+:root[data-theme="win98"] {
+  /* ── Palette ─────────────────────────────────────────────── */
+  --bg:           #c0c0c0;   /* classic silver / button-face  */
+  --bg-elevated:  #c0c0c0;
+  --bg-sunken:    #ffffff;   /* text-box background           */
+  --bg-app:       #008080;   /* desktop teal                  */
+  --bg-island:    #c0c0c0;
+
+  --fg:           #000000;
+  --fg-muted:     #444444;
+
+  --border:       #808080;   /* used for inward edge of frames */
+
+  --accent:       #000080;   /* window title bar / selected   */
+  --accent-fg:    #ffffff;
+
+  --hover:        rgba(0,0,0,0.08);
+  --active:       #000080;   /* selected item highlight        */
+
+  --status-ok:      #008000;
+  --status-offline: #800000;
+
+  /* ── Shadows replaced by 3-D bevels in rule overrides ───── */
+  --shadow:       none;
+  --island-shadow: none;
+
+  /* ── Typography ─────────────────────────────────────────── */
+  --win98-font: "MS Sans Serif", "Microsoft Sans Serif", "Tahoma", Arial, sans-serif;
+
+  color-scheme: light;
+}
+
+/* ── Global reset for this theme ──────────────────────────── */
+:root[data-theme="win98"] body {
+  font-family: var(--win98-font);
+  font-size: 11px;
+  background: var(--bg-app);
+}
+
+/* ── Utility mixins via custom props ──────────────────────── */
+/*  raised = button / panel surface */
+/*  sunken = inset well / input     */
+
+/* ── App root ──────────────────────────────────────────────── */
+:root[data-theme="win98"] .app-root {
+  background: var(--bg-app);
+}
+
+:root[data-theme="win98"] .shell {
+  background: var(--bg-app);
+}
+
+/* ── Ribbon (acts as Win98 menu-bar + toolbar) ─────────────── */
+:root[data-theme="win98"] .ribbon {
+  background: var(--bg);
+  border-bottom: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  padding: 2px 4px;
+}
+
+:root[data-theme="win98"] .ribbon-search-input {
+  border: 2px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  border-radius: 0;
+  background: #ffffff;
+  height: 22px;
+  font-family: var(--win98-font);
+  font-size: 11px;
+}
+
+/* ── Islands / panels ─────────────────────────────────────── */
+:root[data-theme="win98"] .sidebar,
+:root[data-theme="win98"] .right-panel,
+:root[data-theme="win98"] .pane {
+  background: var(--bg);
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  border-radius: 0;
+  box-shadow: 1px 1px 0 #000000;
+}
+
+/* ── Window title bar (sidebar header = win98 title bar) ───── */
+:root[data-theme="win98"] .sidebar-header {
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 11px;
+  padding: 3px 6px;
+  border-bottom: none;
+}
+
+:root[data-theme="win98"] .sidebar-title {
+  color: #ffffff;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+/* ── Buttons ──────────────────────────────────────────────── */
+:root[data-theme="win98"] button,
+:root[data-theme="win98"] .btn-ghost,
+:root[data-theme="win98"] .find-nav,
+:root[data-theme="win98"] .find-action,
+:root[data-theme="win98"] .find-toggle,
+:root[data-theme="win98"] .pane-close,
+:root[data-theme="win98"] .explorer-seed,
+:root[data-theme="win98"] .crash-btn {
+  background: var(--bg);
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  border-radius: 0;
+  box-shadow: 1px 1px 0 #000000;
+  color: #000000;
+  font-family: var(--win98-font);
+  font-size: 11px;
+  padding: 2px 8px;
+  cursor: default;
+}
+
+:root[data-theme="win98"] button:active,
+:root[data-theme="win98"] .btn-ghost:active {
+  border-color: #808080 #ffffff #ffffff #808080;
+  box-shadow: none;
+  padding: 3px 7px 1px 9px;
+}
+
+:root[data-theme="win98"] button:hover,
+:root[data-theme="win98"] .btn-ghost:hover {
+  background: var(--bg);
+}
+
+/* Primary / accent buttons */
+:root[data-theme="win98"] .crash-btn--primary,
+:root[data-theme="win98"] .tome-replace-run,
+:root[data-theme="win98"] .explorer-seed,
+:root[data-theme="win98"] .toast-action,
+:root[data-theme="win98"] .calendar-compose-add {
+  background: var(--bg);
+  color: #000000;
+  border-color: #ffffff #808080 #808080 #ffffff;
+}
+
+/* ── Inputs & Selects ──────────────────────────────────────── */
+:root[data-theme="win98"] input[type="text"],
+:root[data-theme="win98"] input:not([type]),
+:root[data-theme="win98"] input[type="search"],
+:root[data-theme="win98"] input[type="number"],
+:root[data-theme="win98"] textarea,
+:root[data-theme="win98"] select,
+:root[data-theme="win98"] .search-input,
+:root[data-theme="win98"] .find-input,
+:root[data-theme="win98"] .property-input,
+:root[data-theme="win98"] .tree-rename-input,
+:root[data-theme="win98"] .calendar-compose-title,
+:root[data-theme="win98"] .calendar-compose-time,
+:root[data-theme="win98"] .palette-input,
+:root[data-theme="win98"] .search-filter,
+:root[data-theme="win98"] .mermaid-source,
+:root[data-theme="win98"] .grid-token-label,
+:root[data-theme="win98"] .grid-size-field input[type="number"] {
+  background: #ffffff;
+  border: 2px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  border-radius: 0;
+  color: #000000;
+  font-family: var(--win98-font);
+  font-size: 11px;
+}
+
+:root[data-theme="win98"] input:focus,
+:root[data-theme="win98"] textarea:focus,
+:root[data-theme="win98"] select:focus,
+:root[data-theme="win98"] .search-input:focus,
+:root[data-theme="win98"] .find-input:focus {
+  outline: 1px dotted #000000;
+  outline-offset: -3px;
+}
+
+/* ── Tab bar ──────────────────────────────────────────────── */
+:root[data-theme="win98"] .tab-bar {
+  background: var(--bg);
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  border-radius: 0;
+}
+
+:root[data-theme="win98"] .tab {
+  background: var(--bg);
+  border: 2px solid;
+  border-color: #ffffff #808080 transparent #ffffff;
+  border-radius: 0;
+  color: #000000;
+  font-family: var(--win98-font);
+  font-size: 11px;
+  padding: 3px 8px;
+}
+
+:root[data-theme="win98"] .tab--active {
+  background: var(--bg);
+  border-color: #ffffff #808080 var(--bg) #ffffff;
+  color: #000000;
+  font-weight: bold;
+  position: relative;
+  z-index: 1;
+  margin-bottom: -1px;
+}
+
+/* ── Titlebar (Electron) ──────────────────────────────────── */
+:root[data-theme="win98"] .title-bar {
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  border-bottom: 2px solid #808080;
+}
+
+:root[data-theme="win98"] .title-bar-menu-btn {
+  color: #ffffff;
+  font-family: var(--win98-font);
+  font-size: 11px;
+}
+
+:root[data-theme="win98"] .title-bar-menu-btn:hover,
+:root[data-theme="win98"] .title-bar-menu-btn--open {
+  background: #000080;
+  color: #ffffff;
+}
+
+:root[data-theme="win98"] .title-bar-name {
+  color: #ffffff;
+}
+
+:root[data-theme="win98"] .title-bar-btn {
+  color: #000000;
+  background: var(--bg);
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  margin: 2px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  box-shadow: 1px 1px 0 #000000;
+}
+
+:root[data-theme="win98"] .title-bar-btn:hover {
+  background: var(--bg);
+}
+
+:root[data-theme="win98"] .title-bar-btn--close:hover {
+  background: var(--bg);
+  color: #000000;
+}
+
+/* ── Menus / popups ──────────────────────────────────────── */
+:root[data-theme="win98"] .title-bar-menu-popup,
+:root[data-theme="win98"] .context-menu,
+:root[data-theme="win98"] .new-menu,
+:root[data-theme="win98"] .split-menu,
+:root[data-theme="win98"] .palette {
+  background: var(--bg);
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  border-radius: 0;
+  box-shadow: 2px 2px 0 #000000;
+}
+
+:root[data-theme="win98"] .title-bar-menu-item,
+:root[data-theme="win98"] .context-item,
+:root[data-theme="win98"] .new-menu-item,
+:root[data-theme="win98"] .split-menu-item,
+:root[data-theme="win98"] .palette-item {
+  font-family: var(--win98-font);
+  font-size: 11px;
+  border-radius: 0;
+  color: #000000;
+}
+
+:root[data-theme="win98"] .title-bar-menu-item:hover:not(:disabled),
+:root[data-theme="win98"] .context-item:hover,
+:root[data-theme="win98"] .new-menu-item:hover,
+:root[data-theme="win98"] .split-menu-item:hover,
+:root[data-theme="win98"] .palette-item:hover,
+:root[data-theme="win98"] .palette-item--active {
+  background: #000080;
+  color: #ffffff;
+}
+
+/* ── Segmented controls (theme selector, mode switcher) ───── */
+:root[data-theme="win98"] .segmented {
+  border: 2px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  border-radius: 0;
+}
+
+:root[data-theme="win98"] .segmented-btn {
+  border-radius: 0;
+  font-family: var(--win98-font);
+  font-size: 11px;
+}
+
+:root[data-theme="win98"] .segmented-btn--active {
+  background: #000080;
+  color: #ffffff;
+}
+
+/* ── Status bar ─────────────────────────────────────────── */
+:root[data-theme="win98"] .status-bar {
+  background: var(--bg);
+  color: #000000;
+  border-top: 2px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  font-family: var(--win98-font);
+  font-size: 11px;
+}
+
+:root[data-theme="win98"] .status-message,
+:root[data-theme="win98"] .status-path,
+:root[data-theme="win98"] .status-plugin-item {
+  opacity: 1;
+}
+
+:root[data-theme="win98"] .status-plugin-item {
+  border-left: 1px solid #808080;
+}
+
+/* ── File tree ──────────────────────────────────────────── */
+:root[data-theme="win98"] .tree-row {
+  border-radius: 0;
+  font-family: var(--win98-font);
+  font-size: 11px;
+}
+
+:root[data-theme="win98"] .tree-row:hover {
+  background: #000080;
+  color: #ffffff;
+}
+
+:root[data-theme="win98"] .tree-row--drop,
+:root[data-theme="win98"] .tree-row--rename {
+  background: #000080;
+  color: #ffffff;
+  outline: 1px dotted #ffffff;
+}
+
+/* ── Modal dialogs ──────────────────────────────────────── */
+:root[data-theme="win98"] .modal {
+  background: var(--bg);
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  border-radius: 0;
+  box-shadow: 2px 2px 0 #000000;
+}
+
+:root[data-theme="win98"] .modal-header {
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 11px;
+  border-bottom: none;
+  padding: 3px 6px;
+}
+
+:root[data-theme="win98"] .modal-header h2 {
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+:root[data-theme="win98"] .modal-header button {
+  background: var(--bg);
+  color: #000000;
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  font-size: 10px;
+  box-shadow: 1px 1px 0 #000000;
+}
+
+/* ── Settings ──────────────────────────────────────────── */
+:root[data-theme="win98"] .settings-section {
+  border-bottom: 1px solid #808080;
+}
+
+:root[data-theme="win98"] .settings-label {
+  font-family: var(--win98-font);
+  color: #000000;
+}
+
+:root[data-theme="win98"] .settings-hint {
+  font-family: var(--win98-font);
+  color: #444444;
+  font-size: 11px;
+}
+
+:root[data-theme="win98"] .settings-view-header {
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  color: #ffffff;
+}
+
+:root[data-theme="win98"] .settings-view-header h2 {
+  color: #ffffff;
+  font-size: 13px;
+}
+
+/* ── Panel sections ─────────────────────────────────────── */
+:root[data-theme="win98"] .panel-section {
+  background: var(--bg);
+  border: 2px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  border-radius: 0;
+}
+
+:root[data-theme="win98"] .panel-header {
+  color: #000000;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: bold;
+  font-size: 11px;
+}
+
+/* ── Editor ─────────────────────────────────────────────── */
+:root[data-theme="win98"] .cm-content,
+:root[data-theme="win98"] .tiptap-host .ProseMirror {
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+}
+
+:root[data-theme="win98"] .markdown-body pre {
+  background: #ffffff;
+  border: 2px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  border-radius: 0;
+}
+
+:root[data-theme="win98"] .markdown-body code {
+  background: #ffffff;
+  border-radius: 0;
+}
+
+/* ── Focus ring ─────────────────────────────────────────── */
+:root[data-theme="win98"] :focus-visible {
+  outline: 1px dotted #000000;
+  outline-offset: 1px;
+  border-radius: 0;
+}
+
+/* ── Sidebar view switcher tabs ─────────────────────────── */
+:root[data-theme="win98"] .sidebar-view-btn {
+  border-radius: 0;
+  font-family: var(--win98-font);
+  font-size: 11px;
+  border: 1px solid transparent;
+}
+
+:root[data-theme="win98"] .sidebar-view-btn--active {
+  background: #000080;
+  color: #ffffff;
+  border-color: #808080;
+}
+
+/* ── Toasts ─────────────────────────────────────────────── */
+:root[data-theme="win98"] .toast {
+  background: var(--bg);
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  border-radius: 0;
+  box-shadow: 2px 2px 0 #000000;
+  font-family: var(--win98-font);
+  font-size: 11px;
+}
+
+:root[data-theme="win98"] .toast--error {
+  border-top-color: #800000;
+}
+
+:root[data-theme="win98"] .toast--success {
+  border-top-color: #008000;
+}
+
+/* ── Workspace splitter gap ─────────────────────────────── */
+:root[data-theme="win98"] .shell-body {
+  gap: 6px;
+  padding: 6px;
+  background: var(--bg-app);
+}
+
+/* ── Backlinks ──────────────────────────────────────────── */
+:root[data-theme="win98"] .backlink {
+  border: 1px solid #808080;
+  border-radius: 0;
+}
+
+:root[data-theme="win98"] .backlink:hover {
+  background: #000080;
+  color: #ffffff;
+}
+
+/* ── Scrollbars (WebKit) ─────────────────────────────────── */
+:root[data-theme="win98"] ::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+:root[data-theme="win98"] ::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+:root[data-theme="win98"] ::-webkit-scrollbar-thumb {
+  background: var(--bg);
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  box-shadow: 1px 1px 0 #000000;
+}
+
+:root[data-theme="win98"] ::-webkit-scrollbar-button {
+  background: var(--bg);
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  box-shadow: 1px 1px 0 #000000;
+  display: block;
+  height: 16px;
+  width: 16px;
+}
+
+:root[data-theme="win98"] ::-webkit-scrollbar-corner {
+  background: var(--bg);
+}

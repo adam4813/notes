@@ -1,5 +1,10 @@
 import type { CommandBus, RequestContext } from "@notes/core";
 import type { FastifyInstance } from "fastify";
+import {
+  listTomeThemes,
+  getThemeCSS,
+  importDefaultThemes,
+} from "./commands/theme-commands";
 
 interface PathQuery {
   path?: string;
@@ -147,5 +152,27 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
       eventId?: string;
     };
     return bus.dispatch("event.delete", { calendarPath, eventId }, ctx);
+  });
+
+  // ── Themes ──────────────────────────────────────────────────────────────
+  const tomePath = (ctx as { tomePath?: string }).tomePath ?? "";
+
+  app.get("/api/themes", async () => {
+    const themes = await listTomeThemes(tomePath);
+    return { themes: themes.map((t) => t.meta) };
+  });
+
+  app.get("/api/themes/:id/style", async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const css = await getThemeCSS(tomePath, id);
+    if (!css) {
+      return reply.status(404).send({ error: "Theme not found" });
+    }
+    return reply.type("text/css").send(css);
+  });
+
+  app.post("/api/themes/import-defaults", async () => {
+    const imported = await importDefaultThemes(tomePath);
+    return { imported };
   });
 }
