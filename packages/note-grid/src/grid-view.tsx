@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { NoteToolbar } from "@notes/editor";
 import {
   cellKey,
   newId,
@@ -240,20 +241,23 @@ export function GridView({ value, onChange }: GridViewProps) {
         if (mod && event.key.toLowerCase() === "z" && !event.shiftKey) {
           event.preventDefault();
           undo();
-        } else if (mod && (event.key.toLowerCase() === "y" || (event.shiftKey && event.key.toLowerCase() === "z"))) {
+        } else if (
+          mod &&
+          (event.key.toLowerCase() === "y" || (event.shiftKey && event.key.toLowerCase() === "z"))
+        ) {
           event.preventDefault();
           redo();
         }
       }}
     >
-      <div className="grid-toolbar">
+      <NoteToolbar label="Grid tools" className="grid-toolbar">
         <div className="grid-tools" role="radiogroup" aria-label="Tool">
           {(["paint", "erase", "fill", "token"] as Tool[]).map((option) => (
             <button
               key={option}
               role="radio"
               aria-checked={tool === option}
-              className={`mode-btn ${tool === option ? "mode-btn--active" : ""}`}
+              className={`tb-btn ${tool === option ? "tb-btn--active" : ""}`}
               onClick={() => setTool(option)}
             >
               {option === "paint"
@@ -268,7 +272,7 @@ export function GridView({ value, onChange }: GridViewProps) {
         </div>
         <div className="grid-history">
           <button
-            className="btn-ghost"
+            className="tb-btn"
             aria-label="Undo"
             disabled={history.current.past.length === 0}
             onClick={undo}
@@ -276,7 +280,7 @@ export function GridView({ value, onChange }: GridViewProps) {
             ↶
           </button>
           <button
-            className="btn-ghost"
+            className="tb-btn"
             aria-label="Redo"
             disabled={history.current.future.length === 0}
             onClick={redo}
@@ -339,7 +343,7 @@ export function GridView({ value, onChange }: GridViewProps) {
             </label>
           </div>
         )}
-      </div>
+      </NoteToolbar>
 
       {tool === "token" && (
         <div className="grid-hint">

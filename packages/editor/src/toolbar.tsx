@@ -20,6 +20,8 @@ interface ToolbarState {
   task: boolean;
   quote: boolean;
   codeBlock: boolean;
+  textColor: string | null;
+  backgroundColor: string | null;
 }
 
 const EMPTY_STATE: ToolbarState = {
@@ -35,7 +37,32 @@ const EMPTY_STATE: ToolbarState = {
   task: false,
   quote: false,
   codeBlock: false,
+  textColor: null,
+  backgroundColor: null,
 };
+
+function asColorInputValue(value: string | null | undefined, fallback: string): string {
+  const normalized = value?.trim().toLowerCase() ?? "";
+  if (/^#[0-9a-f]{6}$/.test(normalized)) {
+    return normalized;
+  }
+  const shortHex = /^#([0-9a-f]{3})$/.exec(normalized);
+  if (shortHex) {
+    return `#${shortHex[1]
+      .split("")
+      .map((char) => `${char}${char}`)
+      .join("")}`;
+  }
+  const rgb = /^rgba?\(\s*(\d{1,3})\s*[,\s]\s*(\d{1,3})\s*[,\s]\s*(\d{1,3})/.exec(normalized);
+  if (rgb) {
+    const toHex = (part: string) =>
+      Math.max(0, Math.min(255, Number(part)))
+        .toString(16)
+        .padStart(2, "0");
+    return `#${toHex(rgb[1])}${toHex(rgb[2])}${toHex(rgb[3])}`;
+  }
+  return fallback;
+}
 
 export function EditorToolbar({ editor, disabled = false, trailing }: EditorToolbarProps) {
   const state = useEditorState({
@@ -55,6 +82,11 @@ export function EditorToolbar({ editor, disabled = false, trailing }: EditorTool
             task: instance.isActive("taskList"),
             quote: instance.isActive("blockquote"),
             codeBlock: instance.isActive("codeBlock"),
+            textColor:
+              (instance.getAttributes("styledText").color as string | null | undefined) ?? null,
+            backgroundColor:
+              (instance.getAttributes("styledText").backgroundColor as string | null | undefined) ??
+              null,
           }
         : EMPTY_STATE,
   });
@@ -62,6 +94,7 @@ export function EditorToolbar({ editor, disabled = false, trailing }: EditorTool
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
   const linkPopoverRef = useRef<HTMLDivElement>(null);
+  const colorSelectionRef = useRef<{ from: number; to: number } | null>(null);
 
   // Close the link popover when the user clicks outside it.
   useEffect(() => {
@@ -74,6 +107,22 @@ export function EditorToolbar({ editor, disabled = false, trailing }: EditorTool
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [linkOpen]);
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+    const syncSelection = () => {
+      const { from, to, empty } = editor.state.selection;
+      if (!empty) {
+        colorSelectionRef.current = { from, to };
+      }
+    };
+    editor.on("selectionUpdate", syncSelection);
+    return () => {
+      editor.off("selectionUpdate", syncSelection);
+    };
+  }, [editor]);
 
   const openLinkPopover = () => {
     if (!editor) return;
@@ -102,8 +151,54 @@ export function EditorToolbar({ editor, disabled = false, trailing }: EditorTool
   const active = state ?? EMPTY_STATE;
   const isDisabled = disabled || !editor;
   const chain = () => editor!.chain().focus();
+  const rememberSelection = () => {
+    if (!editor) {
+      return;
+    }
+    const { from, to, empty } = editor.state.selection;
+    colorSelectionRef.current = empty ? null : { from, to };
+  };
+  const setStyledText = (patch: { color?: string | null; backgroundColor?: string | null }) => {
+    if (!editor) {
+      return;
+    }
+    const attrs = editor.getAttributes("styledText") as {
+      color?: string | null;
+      backgroundColor?: string | null;
+    };
+    const nextColor = patch.color === undefined ? (attrs.color ?? null) : patch.color;
+    const nextBackground =
+      patch.backgroundColor === undefined ? (attrs.backgroundColor ?? null) : patch.backgroundColor;
+    const nextAttrs = {
+      color: nextColor?.trim() || null,
+      backgroundColor: nextBackground?.trim() || null,
+    };
+    const currentSelection = editor.state.selection;
+    const targetSelection =
+      currentSelection.empty && colorSelectionRef.current ? colorSelectionRef.current : null;
+    const markChain = editor.chain().focus();
+    if (targetSelection) {
+      markChain.setTextSelection(targetSelection);
+    }
+    if (!nextAttrs.color && !nextAttrs.backgroundColor) {
+      markChain.unsetMark("styledText").run();
+      return;
+    }
+    markChain.setMark("styledText", nextAttrs).run();
+    colorSelectionRef.current = targetSelection ?? {
+      from: editor.state.selection.from,
+      to: editor.state.selection.to,
+    };
+  };
+  const hasTextStyle = Boolean(active.textColor || active.backgroundColor);
 
-  const button = (key: string, label: string, title: string, isActive: boolean, run: () => void) => (
+  const button = (
+    key: string,
+    label: string,
+    title: string,
+    isActive: boolean,
+    run: () => void,
+  ) => (
     <button
       key={key}
       type="button"
@@ -122,21 +217,63 @@ export function EditorToolbar({ editor, disabled = false, trailing }: EditorTool
     <div className="editor-toolbar" role="toolbar" aria-label="Formatting">
       <div className="editor-toolbar-main">
         {button("bold", "B", "Bold (Ctrl+B)", active.bold, () => chain().toggleBold().run())}
-        {button("italic", "I", "Italic (Ctrl+I)", active.italic, () => chain().toggleItalic().run())}
+        {button("italic", "I", "Italic (Ctrl+I)", active.italic, () =>
+          chain().toggleItalic().run(),
+        )}
         {button("strike", "S", "Strikethrough", active.strike, () => chain().toggleStrike().run())}
         {button("code", "</>", "Inline code", active.code, () => chain().toggleCode().run())}
         <span className="tb-sep" />
-        {button("h1", "H1", "Heading 1", active.h1, () => chain().toggleHeading({ level: 1 }).run())}
-        {button("h2", "H2", "Heading 2", active.h2, () => chain().toggleHeading({ level: 2 }).run())}
-        {button("h3", "H3", "Heading 3", active.h3, () => chain().toggleHeading({ level: 3 }).run())}
+        {button("h1", "H1", "Heading 1", active.h1, () =>
+          chain().toggleHeading({ level: 1 }).run(),
+        )}
+        {button("h2", "H2", "Heading 2", active.h2, () =>
+          chain().toggleHeading({ level: 2 }).run(),
+        )}
+        {button("h3", "H3", "Heading 3", active.h3, () =>
+          chain().toggleHeading({ level: 3 }).run(),
+        )}
         <span className="tb-sep" />
-        {button("ul", "• List", "Bullet list", active.bullet, () => chain().toggleBulletList().run())}
-        {button("ol", "1. List", "Ordered list", active.ordered, () => chain().toggleOrderedList().run())}
+        {button("ul", "• List", "Bullet list", active.bullet, () =>
+          chain().toggleBulletList().run(),
+        )}
+        {button("ol", "1. List", "Ordered list", active.ordered, () =>
+          chain().toggleOrderedList().run(),
+        )}
         {button("task", "☑ Task", "Task list", active.task, () => chain().toggleTaskList().run())}
         <span className="tb-sep" />
         {button("quote", "❝", "Blockquote", active.quote, () => chain().toggleBlockquote().run())}
         {button("codeblock", "{ }", "Code block", active.codeBlock, () =>
           chain().toggleCodeBlock().run(),
+        )}
+        <span className="tb-sep" />
+        <label className="tb-color-picker" title="Text color">
+          <span className="tb-color-label">A</span>
+          <input
+            type="color"
+            aria-label="Text color"
+            disabled={isDisabled}
+            className="tb-color-input"
+            value={asColorInputValue(active.textColor, "#111827")}
+            onPointerDown={rememberSelection}
+            onInput={(event) => setStyledText({ color: event.currentTarget.value })}
+            onChange={(event) => setStyledText({ color: event.target.value })}
+          />
+        </label>
+        <label className="tb-color-picker" title="Background color">
+          <span className="tb-color-label tb-color-label--bg">▦</span>
+          <input
+            type="color"
+            aria-label="Background color"
+            disabled={isDisabled}
+            className="tb-color-input"
+            value={asColorInputValue(active.backgroundColor, "#fef08a")}
+            onPointerDown={rememberSelection}
+            onInput={(event) => setStyledText({ backgroundColor: event.currentTarget.value })}
+            onChange={(event) => setStyledText({ backgroundColor: event.target.value })}
+          />
+        </label>
+        {button("clear-style", "Tx", "Clear text and background color", hasTextStyle, () =>
+          setStyledText({ color: null, backgroundColor: null }),
         )}
         <div className="tb-link-wrap" ref={linkPopoverRef}>
           <button

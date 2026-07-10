@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MarkdownEditor } from "@notes/editor";
+import { MarkdownEditor, NoteToolbar } from "@notes/editor";
 import { parseCalendar, type RichEvent } from "./calendar-format";
 
 interface CalendarViewProps {
@@ -12,8 +12,18 @@ type CalendarMode = "month" | "agenda";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 const DURATION_OPTIONS = [
@@ -167,14 +177,26 @@ export function CalendarView({ value, path }: CalendarViewProps) {
   return (
     <div className={`calendar-note ${selectedEvent ? "calendar-note--split" : ""}`}>
       <div className="calendar-main">
-        <div className="calendar-toolbar">
+        <NoteToolbar
+          label="Calendar tools"
+          className="calendar-toolbar"
+          trailing={
+            <button
+              className="tb-btn"
+              onClick={() => void handleCreateEvent(todayIso)}
+              aria-label="New event"
+            >
+              ＋ New event
+            </button>
+          }
+        >
           <div className="calendar-mode-switch" role="tablist" aria-label="Calendar view mode">
             {(["month", "agenda"] as CalendarMode[]).map((option) => (
               <button
                 key={option}
                 role="tab"
                 aria-selected={option === mode}
-                className={`mode-btn ${option === mode ? "mode-btn--active" : ""} tb-btn`}
+                className={`tb-btn ${option === mode ? "tb-btn--active" : ""}`}
                 onClick={() => setMode(option)}
               >
                 {option === "month" ? "Month" : "Agenda"}
@@ -197,14 +219,7 @@ export function CalendarView({ value, path }: CalendarViewProps) {
               </button>
             </div>
           )}
-          <button
-            className="tb-btn"
-            onClick={() => void handleCreateEvent(todayIso)}
-            aria-label="New event"
-          >
-            ＋ New event
-          </button>
-        </div>
+        </NoteToolbar>
 
         {loading ? (
           <div className="calendar-loading">Loading events…</div>

@@ -13,6 +13,7 @@ import {
 } from "react";
 import { Markdown } from "tiptap-markdown";
 import { Embed } from "./embed-extension";
+import { StyledTextMark } from "./styled-text-mark";
 import { SuggestionPopup } from "./suggestion-popup";
 import { NOTES_PATH_MIME } from "./types";
 import { EditorToolbar } from "./toolbar";
@@ -89,13 +90,13 @@ export function RenderedEditor({
       StarterKit,
       TaskList,
       TaskItem.configure({ nested: true }),
-      Markdown.configure({ html: false, tightLists: true }),
+      StyledTextMark,
+      Markdown.configure({ html: true, tightLists: true }),
       WikilinkDecorator,
       ...(callbacksRef.current?.renderEmbed
         ? [
             Embed.configure({
-              renderEmbed: (target: string) =>
-                callbacksRef.current?.renderEmbed?.(target) ?? null,
+              renderEmbed: (target: string) => callbacksRef.current?.renderEmbed?.(target) ?? null,
             }),
           ]
         : []),
@@ -279,7 +280,9 @@ export function RenderedEditor({
 
   const moveSuggest = useCallback((delta: number) => {
     setSuggest((prev) =>
-      prev ? { ...prev, index: (prev.index + delta + prev.items.length) % prev.items.length } : prev,
+      prev
+        ? { ...prev, index: (prev.index + delta + prev.items.length) % prev.items.length }
+        : prev,
     );
   }, []);
 

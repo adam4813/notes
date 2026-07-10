@@ -8,7 +8,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { marked } from "marked";
-import { MarkdownEditor } from "@notes/editor";
+import { MarkdownEditor, NoteToolbar } from "@notes/editor";
 import {
   parseCanvas,
   serializeCanvas,
@@ -33,10 +33,7 @@ function fileBasename(p: string): string {
   return (p.split("/").pop() ?? p).replace(/\.[^.]+$/, "");
 }
 
-function detectNoteInfo(
-  content: string,
-  filePath: string,
-): { title: string; type: string } {
+function detectNoteInfo(content: string, filePath: string): { title: string; type: string } {
   const fmMatch = /^---\n([\s\S]*?)\n---\n?/.exec(content);
   const yaml = fmMatch ? fmMatch[1] : "";
   const body = fmMatch ? content.slice(fmMatch[0].length) : content;
@@ -45,12 +42,14 @@ function detectNoteInfo(
   const h1Match = /^#\s+(.+)$/m.exec(body);
   const title = (titleMatch?.[1] || h1Match?.[1] || fileBasename(filePath)).trim();
   const type =
-    typeMatch?.[1].trim() ??
-    (filePath.toLowerCase().endsWith(".canvas") ? "canvas" : "markdown");
+    typeMatch?.[1].trim() ?? (filePath.toLowerCase().endsWith(".canvas") ? "canvas" : "markdown");
   return { title, type };
 }
 
-function estimateFileNodeSize(content: string, filePath: string): { width: number; height: number } {
+function estimateFileNodeSize(
+  content: string,
+  filePath: string,
+): { width: number; height: number } {
   const fmMatch = /^---\n([\s\S]*?)\n---\n?/.exec(content);
   const body = fmMatch ? content.slice(fmMatch[0].length) : content;
   const { title } = detectNoteInfo(content, filePath);
@@ -235,10 +234,7 @@ function FileNodeCard({
             ✓ Done
           </button>
         </div>
-        <div
-          className="canvas-file-editor"
-          onPointerDown={(e) => e.stopPropagation()}
-        >
+        <div className="canvas-file-editor" onPointerDown={(e) => e.stopPropagation()}>
           <MarkdownEditor value={content} mode="rendered" onChange={handleChange} />
         </div>
       </div>
@@ -326,11 +322,17 @@ function center(node: CanvasNode): { x: number; y: number } {
   return { x: node.x + node.width / 2, y: node.y + node.height / 2 };
 }
 
-export function CanvasView({ value, onChange, onOpenFile, path, subscribeToFileChange }: CanvasViewProps) {
+export function CanvasView({
+  value,
+  onChange,
+  onOpenFile,
+  path,
+  subscribeToFileChange,
+}: CanvasViewProps) {
   const [data, setData] = useState<CanvasData>(() => parseCanvas(value));
   const [viewport, setViewport] = useState<Viewport>({ x: 40, y: 40, scale: 1 });
   const [selection, setSelection] = useState<Selection>(null);
-  const [editing, setEditing] = useState<string | null>(null);       // text node inline editing
+  const [editing, setEditing] = useState<string | null>(null); // text node inline editing
   const [editingFileId, setEditingFileId] = useState<string | null>(null); // FileNode edit mode
   const [connectPos, setConnectPos] = useState<{ x: number; y: number } | null>(null);
 
@@ -460,7 +462,11 @@ export function CanvasView({ value, onChange, onOpenFile, path, subscribeToFileC
           ...d,
           nodes: d.nodes.map((n) =>
             n.id === drag.id
-              ? { ...n, width: Math.max(80, drag.origW + dw), height: Math.max(40, drag.origH + dh) }
+              ? {
+                  ...n,
+                  width: Math.max(80, drag.origW + dw),
+                  height: Math.max(40, drag.origH + dh),
+                }
               : n,
           ),
         }));
@@ -596,7 +602,15 @@ export function CanvasView({ value, onChange, onOpenFile, path, subscribeToFileC
   };
 
   const addText = () =>
-    addNode({ id: newId("node"), type: "text", x: 0, y: 0, width: 220, height: 100, text: "New note" });
+    addNode({
+      id: newId("node"),
+      type: "text",
+      x: 0,
+      y: 0,
+      width: 220,
+      height: 100,
+      text: "New note",
+    });
 
   const addFile = () => {
     const file = window.prompt("Note path to embed (e.g. notes/ideas.md)");
@@ -695,7 +709,18 @@ export function CanvasView({ value, onChange, onOpenFile, path, subscribeToFileC
 
   return (
     <div className="canvas-note">
-      <div className="canvas-toolbar">
+      <NoteToolbar
+        label="Canvas tools"
+        className="canvas-toolbar"
+        trailing={
+          <>
+            <span className="canvas-meta">{Math.round(viewport.scale * 100)}%</span>
+            <button className="tb-btn" onClick={resetView}>
+              Fit view
+            </button>
+          </>
+        }
+      >
         <button className="tb-btn" onClick={addText}>
           ＋ Text
         </button>
@@ -708,11 +733,7 @@ export function CanvasView({ value, onChange, onOpenFile, path, subscribeToFileC
         <button className="tb-btn" disabled={!selection} onClick={deleteSelection}>
           Delete
         </button>
-        <span className="canvas-meta">{Math.round(viewport.scale * 100)}%</span>
-        <button className="tb-btn" onClick={resetView}>
-          Fit view
-        </button>
-      </div>
+      </NoteToolbar>
       <div
         className="canvas-viewport"
         ref={containerRef}
@@ -723,7 +744,9 @@ export function CanvasView({ value, onChange, onOpenFile, path, subscribeToFileC
       >
         <div
           className="canvas-world"
-          style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})` }}
+          style={{
+            transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`,
+          }}
         >
           <svg className="canvas-edges" aria-hidden>
             <defs>

@@ -1958,15 +1958,6 @@ button {
   min-height: 0;
 }
 
-.calendar-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 6px 10px;
-  border-block: 1px solid var(--border);
-}
-
 .calendar-mode-switch {
   display: inline-flex;
   gap: 2px;
@@ -2264,15 +2255,6 @@ button {
   flex-direction: column;
   height: 100%;
   min-height: 0;
-}
-
-.grid-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--border);
 }
 
 .grid-tools {
@@ -2702,7 +2684,8 @@ button {
 }
 
 /* Formatting toolbar */
-.editor-toolbar {
+.editor-toolbar,
+.note-toolbar {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2710,17 +2693,24 @@ button {
   border-block: 1px solid var(--border);
 }
 
-.editor-toolbar-main {
+.editor-toolbar-main,
+.note-toolbar-main {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  gap: 6px;
+}
+
+.editor-toolbar-main {
   gap: 2px;
 }
 
-.editor-toolbar-trailing {
+.editor-toolbar-trailing,
+.note-toolbar-trailing {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
+  gap: 6px;
 }
 
 .tb-btn {
@@ -2760,6 +2750,39 @@ button {
   height: 18px;
   background: var(--border);
   margin: 0 4px;
+}
+
+.tb-color-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 2px;
+  color: var(--fg-muted);
+  font-size: 11px;
+}
+
+.tb-color-label {
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+
+.tb-color-label--bg {
+  font-size: 12px;
+}
+
+.tb-color-input {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.tb-color-input:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 /* Autocomplete popup */
@@ -2837,16 +2860,7 @@ button {
   min-height: 0;
 }
 
-.table-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-block: 1px solid var(--border);
-}
-
 .table-meta {
-  margin-left: auto;
   color: var(--fg-muted);
   font-size: 12px;
 }
@@ -3333,16 +3347,7 @@ tr:hover .grid-row-delete {
   min-height: 0;
 }
 
-.canvas-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-block: 1px solid var(--border);
-}
-
 .canvas-meta {
-  margin-left: auto;
   color: var(--fg-muted);
   font-size: 12px;
 }

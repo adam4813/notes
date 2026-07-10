@@ -5,7 +5,14 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { COLUMN_TYPES, parseTable, serializeTable, type ColumnType, type TableModel } from "./table-format";
+import { NoteToolbar } from "@notes/editor";
+import {
+  COLUMN_TYPES,
+  parseTable,
+  serializeTable,
+  type ColumnType,
+  type TableModel,
+} from "./table-format";
 
 interface TableGridProps {
   value: string;
@@ -110,7 +117,10 @@ export function TableGrid({ value, onChange }: TableGridProps) {
   }, [commit, model, columnCount]);
 
   const addColumn = useCallback(() => {
-    const columns = [...model.columns, { name: `Column ${columnCount + 1}`, type: "text" as ColumnType }];
+    const columns = [
+      ...model.columns,
+      { name: `Column ${columnCount + 1}`, type: "text" as ColumnType },
+    ];
     const rows = model.rows.map((row) => [...row, ""]);
     commit({ columns, rows });
   }, [commit, model, columnCount]);
@@ -308,17 +318,22 @@ export function TableGrid({ value, onChange }: TableGridProps) {
 
   return (
     <div className="table-note">
-      <div className="table-toolbar">
+      <NoteToolbar
+        label="Table tools"
+        className="table-toolbar"
+        trailing={
+          <span className="table-meta">
+            {rowCount} rows · {columnCount} columns
+          </span>
+        }
+      >
         <button className="tb-btn" onClick={addRow}>
           ＋ Row
         </button>
         <button className="tb-btn" onClick={addColumn}>
           ＋ Column
         </button>
-        <span className="table-meta">
-          {rowCount} rows · {columnCount} columns
-        </span>
-      </div>
+      </NoteToolbar>
       <div
         className="table-scroll"
         ref={gridRef}
