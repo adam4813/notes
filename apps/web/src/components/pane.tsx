@@ -16,7 +16,7 @@ export function Pane({ pane }: { pane: PaneModel }) {
       <TabBar pane={pane} />
       <div className="pane-body">
         {activeTab ? (
-          <ViewHost path={activeTab.path} />
+          <ViewHost key={activeTab.path} path={activeTab.path} />
         ) : (
           <div className="pane-empty">
             <span>Select a note to open it here.</span>

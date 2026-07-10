@@ -2433,6 +2433,67 @@ button {
   white-space: nowrap;
 }
 
+.tb-link-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.tb-link-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 50;
+  min-width: 280px;
+  padding: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tb-link-input {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 13px;
+}
+
+.tb-link-input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.tb-link-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.tb-link-ok {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 12px;
+}
+
+.tb-link-remove,
+.tb-link-cancel {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg-muted);
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
 .editor-find-btn {
   background: transparent;
   border: 1px solid var(--border);
