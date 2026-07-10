@@ -670,34 +670,33 @@ button {
 
 /* Find bar (inline in the editor toolbar) */
 .find-bar {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
 }
 
 .find-main {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
 .find-main .find-input {
-  width: 160px;
+  width: 180px;
 }
 
 .find-replace {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 30;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  padding: 6px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .find-replace .find-input {
@@ -1765,6 +1764,43 @@ button {
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  position: relative;
+}
+
+.mode-float {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.mode-float:hover,
+.mode-float:focus-within {
+  opacity: 1;
+}
+
+.mode-float .mode-switch,
+.mode-float .save-status {
+  pointer-events: auto;
+}
+
+.mode-switch--floating {
+  background: color-mix(in srgb, var(--bg-elevated) 84%, transparent);
+  border-radius: 8px;
+  box-shadow: var(--island-shadow);
+}
+
+.mode-float .save-status {
+  background: color-mix(in srgb, var(--bg-elevated) 84%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 3px 8px;
 }
 
 /* Note embeds (transclusion) */
@@ -2391,24 +2427,36 @@ button {
   white-space: nowrap;
 }
 
-.editor-toolbar-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-elevated);
-}
-
-.editor-toolbar-row .save-status {
-  margin-left: auto;
-}
-
 .editor-find-btn {
   background: transparent;
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 2px 8px;
+}
+
+.editor-find-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.editor-find-popout {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 340px;
+  max-width: min(90vw, 520px);
+  padding: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.editor-find-popout .find-main .find-input,
+.editor-find-popout .find-replace .find-input {
+  width: min(260px, 56vw);
 }
 
 .mode-switch {
@@ -2445,6 +2493,13 @@ button {
 
 .save-status--offline {
   color: var(--status-checking, #d97706);
+}
+
+.markdown-editor-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .markdown-editor {
@@ -2594,12 +2649,24 @@ button {
 /* Formatting toolbar */
 .editor-toolbar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
   padding: 6px 10px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-elevated);
+}
+
+.editor-toolbar-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+}
+
+.editor-toolbar-trailing {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
 }
 
 .tb-btn {
@@ -2616,6 +2683,16 @@ button {
 .tb-btn:hover {
   background: var(--hover);
   color: var(--fg);
+}
+
+.tb-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.tb-btn:disabled:hover {
+  background: transparent;
+  color: var(--fg-muted);
 }
 
 .tb-btn--active {

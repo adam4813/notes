@@ -2,7 +2,15 @@ import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useCallback, useEffect, useRef, useState, type DragEvent as ReactDragEvent, type MouseEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type DragEvent as ReactDragEvent,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import { Markdown } from "tiptap-markdown";
 import { Embed } from "./embed-extension";
 import { SuggestionPopup } from "./suggestion-popup";
@@ -43,10 +51,18 @@ interface RenderedEditorProps {
   value: string;
   onChange: (markdown: string) => void;
   callbacks?: EditorCallbacks;
+  toolbarTrailing?: ReactNode;
+  toolbarDisabled?: boolean;
 }
 
 /** WYSIWYG editor (TipTap/ProseMirror): toolbar, clickable wikilinks, and autocomplete. */
-export function RenderedEditor({ value, onChange, callbacks }: RenderedEditorProps) {
+export function RenderedEditor({
+  value,
+  onChange,
+  callbacks,
+  toolbarTrailing,
+  toolbarDisabled = false,
+}: RenderedEditorProps) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const callbacksRef = useRef(callbacks);
@@ -309,7 +325,7 @@ export function RenderedEditor({ value, onChange, callbacks }: RenderedEditorPro
 
   return (
     <div className="rendered-editor" ref={containerRef}>
-      <EditorToolbar editor={editor} />
+      <EditorToolbar editor={editor} disabled={toolbarDisabled} trailing={toolbarTrailing} />
       <div
         className="rendered-scroll"
         onClick={handleClick}

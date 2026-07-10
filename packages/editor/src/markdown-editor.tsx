@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+import { EditorToolbar } from "./toolbar";
 import { RenderedEditor } from "./rendered-editor";
 import { SourceEditor } from "./source-editor";
 import type { EditorCallbacks, EditorMode } from "./types";
@@ -7,6 +9,8 @@ interface MarkdownEditorProps {
   mode: EditorMode;
   onChange: (markdown: string) => void;
   callbacks?: EditorCallbacks;
+  toolbarTrailing?: ReactNode;
+  disableToolbarInEdit?: boolean;
 }
 
 /**
@@ -14,22 +18,39 @@ interface MarkdownEditorProps {
  * source view and a TipTap rendered view; in split mode both are shown and stay
  * in sync through the shared value.
  */
-export function MarkdownEditor({ value, mode, onChange, callbacks }: MarkdownEditorProps) {
+export function MarkdownEditor({
+  value,
+  mode,
+  onChange,
+  callbacks,
+  toolbarTrailing,
+  disableToolbarInEdit = false,
+}: MarkdownEditorProps) {
   const showSource = mode === "edit" || mode === "split";
   const showRendered = mode === "rendered" || mode === "split";
 
   return (
-    <div className={`markdown-editor markdown-editor--${mode}`}>
-      {showSource && (
-        <div className="editor-column editor-column--source">
-          <SourceEditor value={value} onChange={onChange} />
-        </div>
+    <div className={`markdown-editor-shell markdown-editor-shell--${mode}`}>
+      {mode === "edit" && disableToolbarInEdit && (
+        <EditorToolbar editor={null} disabled trailing={toolbarTrailing} />
       )}
-      {showRendered && (
-        <div className="editor-column editor-column--rendered">
-          <RenderedEditor value={value} onChange={onChange} callbacks={callbacks} />
-        </div>
-      )}
+      <div className={`markdown-editor markdown-editor--${mode}`}>
+        {showSource && (
+          <div className="editor-column editor-column--source">
+            <SourceEditor value={value} onChange={onChange} />
+          </div>
+        )}
+        {showRendered && (
+          <div className="editor-column editor-column--rendered">
+            <RenderedEditor
+              value={value}
+              onChange={onChange}
+              callbacks={callbacks}
+              toolbarTrailing={toolbarTrailing}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

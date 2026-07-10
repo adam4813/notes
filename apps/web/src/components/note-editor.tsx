@@ -183,10 +183,6 @@ export function NoteEditor({ path }: { path: string }) {
     return () => setActiveDocument(null);
   }, [path, content, saveState, setActiveDocument]);
 
-  if (saveState === "loading") {
-    return <div className="note-loading">Loading…</div>;
-  }
-
   const isCanvas = path.toLowerCase().endsWith(".canvas");
   const frontType = isCanvas ? undefined : getFrontmatterType(content);
   const isBoard = frontType === "board";
@@ -195,6 +191,17 @@ export function NoteEditor({ path }: { path: string }) {
   const isCalendar = frontType === "calendar";
   const isGrid = frontType === "grid";
   const canFind = !isCanvas && !isBoard && !isTable && !isMermaid && !isCalendar && !isGrid;
+  const canToggleMode = canFind;
+
+  useEffect(() => {
+    if (!canFind && findOpen) {
+      setFindOpen(false);
+    }
+  }, [canFind, findOpen]);
+
+  if (saveState === "loading") {
+    return <div className="note-loading">Loading…</div>;
+  }
 
   const applyReplace = (next: string) => {
     setContent(next);
@@ -211,55 +218,25 @@ export function NoteEditor({ path }: { path: string }) {
         }
       }}
     >
-      <div className="editor-toolbar-row">
-        {isCanvas ? (
-          <span className="note-type-badge">Canvas</span>
-        ) : isBoard ? (
-          <span className="note-type-badge">Board</span>
-        ) : isTable ? (
-          <span className="note-type-badge">Table</span>
-        ) : isMermaid ? (
-          <span className="note-type-badge">Mermaid</span>
-        ) : isCalendar ? (
-          <span className="note-type-badge">Calendar</span>
-        ) : isGrid ? (
-          <span className="note-type-badge">Grid</span>
-        ) : (
-          <div className="mode-switch" role="tablist">
-            {EDITOR_MODES.map((candidate) => (
-              <button
-                key={candidate}
-                role="tab"
-                aria-selected={candidate === mode}
-                className={`mode-btn ${candidate === mode ? "mode-btn--active" : ""}`}
-                onClick={() => setMode(candidate)}
-              >
-                {MODE_LABEL[candidate]}
-              </button>
-            ))}
+      <div className="note-editor-region" ref={regionRef}>
+        {canToggleMode && (
+          <div className="mode-float">
+            <div className="mode-switch mode-switch--floating" role="tablist">
+              {EDITOR_MODES.map((candidate) => (
+                <button
+                  key={candidate}
+                  role="tab"
+                  aria-selected={candidate === mode}
+                  className={`mode-btn ${candidate === mode ? "mode-btn--active" : ""}`}
+                  onClick={() => setMode(candidate)}
+                >
+                  {MODE_LABEL[candidate]}
+                </button>
+              ))}
+            </div>
+            <span className={`save-status save-status--${saveState}`}>{SAVE_LABEL[saveState]}</span>
           </div>
         )}
-        <span className={`save-status save-status--${saveState}`}>{SAVE_LABEL[saveState]}</span>
-        {canFind && !findOpen && (
-          <button
-            className="editor-find-btn"
-            title="Find in note (Ctrl/Cmd+F)"
-            aria-label="Find in note"
-            onClick={() => setFindOpen(true)}
-          >
-            🔍
-          </button>
-        )}
-        {canFind && findOpen && (
-          <FindBar
-            regionRef={regionRef}
-            content={content}
-            onReplace={applyReplace}
-            onClose={() => setFindOpen(false)}
-          />
-        )}
-      </div>
-      <div className="note-editor-region" ref={regionRef}>
         {isCanvas ? (
           <CanvasView
             key={path}
@@ -282,7 +259,38 @@ export function NoteEditor({ path }: { path: string }) {
         ) : isGrid ? (
           <GridView value={content} onChange={handleChange} />
         ) : (
-          <MarkdownEditor value={content} mode={mode} onChange={handleChange} callbacks={callbacks} />
+          <MarkdownEditor
+            value={content}
+            mode={mode}
+            onChange={handleChange}
+            callbacks={callbacks}
+            disableToolbarInEdit
+            toolbarTrailing={
+              canFind ? (
+                <div className="editor-find-wrap">
+                  <button
+                    className="editor-find-btn"
+                    title="Find in note (Ctrl/Cmd+F)"
+                    aria-label="Find in note"
+                    aria-expanded={findOpen}
+                    onClick={() => setFindOpen((open) => !open)}
+                  >
+                    🔍 Find
+                  </button>
+                  {findOpen && (
+                    <div className="editor-find-popout">
+                      <FindBar
+                        regionRef={regionRef}
+                        content={content}
+                        onReplace={applyReplace}
+                        onClose={() => setFindOpen(false)}
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : undefined
+            }
+          />
         )}
       </div>
     </div>

@@ -1,7 +1,10 @@
 import { useEditorState, type Editor } from "@tiptap/react";
+import type { ReactNode } from "react";
 
 interface EditorToolbarProps {
   editor: Editor | null;
+  disabled?: boolean;
+  trailing?: ReactNode;
 }
 
 interface ToolbarState {
@@ -34,7 +37,7 @@ const EMPTY_STATE: ToolbarState = {
   codeBlock: false,
 };
 
-export function EditorToolbar({ editor }: EditorToolbarProps) {
+export function EditorToolbar({ editor, disabled = false, trailing }: EditorToolbarProps) {
   const state = useEditorState({
     editor,
     selector: ({ editor: instance }): ToolbarState =>
@@ -56,14 +59,14 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         : EMPTY_STATE,
   });
 
-  if (!editor) {
-    return null;
-  }
-
   const active = state ?? EMPTY_STATE;
-  const chain = () => editor.chain().focus();
+  const isDisabled = disabled || !editor;
+  const chain = () => editor!.chain().focus();
 
   const setLink = () => {
+    if (!editor) {
+      return;
+    }
     const previous = (editor.getAttributes("link").href as string | undefined) ?? "";
     const url = window.prompt("Link URL", previous);
     if (url === null) {
@@ -82,6 +85,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       type="button"
       title={title}
       aria-pressed={isActive}
+      disabled={isDisabled}
       className={`tb-btn ${isActive ? "tb-btn--active" : ""}`}
       onMouseDown={(event) => event.preventDefault()}
       onClick={run}
@@ -92,25 +96,28 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
 
   return (
     <div className="editor-toolbar" role="toolbar" aria-label="Formatting">
-      {button("bold", "B", "Bold (Ctrl+B)", active.bold, () => chain().toggleBold().run())}
-      {button("italic", "I", "Italic (Ctrl+I)", active.italic, () => chain().toggleItalic().run())}
-      {button("strike", "S", "Strikethrough", active.strike, () => chain().toggleStrike().run())}
-      {button("code", "</>", "Inline code", active.code, () => chain().toggleCode().run())}
-      <span className="tb-sep" />
-      {button("h1", "H1", "Heading 1", active.h1, () => chain().toggleHeading({ level: 1 }).run())}
-      {button("h2", "H2", "Heading 2", active.h2, () => chain().toggleHeading({ level: 2 }).run())}
-      {button("h3", "H3", "Heading 3", active.h3, () => chain().toggleHeading({ level: 3 }).run())}
-      <span className="tb-sep" />
-      {button("ul", "• List", "Bullet list", active.bullet, () => chain().toggleBulletList().run())}
-      {button("ol", "1. List", "Ordered list", active.ordered, () => chain().toggleOrderedList().run())}
-      {button("task", "☑ Task", "Task list", active.task, () => chain().toggleTaskList().run())}
-      <span className="tb-sep" />
-      {button("quote", "❝", "Blockquote", active.quote, () => chain().toggleBlockquote().run())}
-      {button("codeblock", "{ }", "Code block", active.codeBlock, () =>
-        chain().toggleCodeBlock().run(),
-      )}
-      {button("link", "🔗", "Link", false, setLink)}
-      {button("hr", "―", "Horizontal rule", false, () => chain().setHorizontalRule().run())}
+      <div className="editor-toolbar-main">
+        {button("bold", "B", "Bold (Ctrl+B)", active.bold, () => chain().toggleBold().run())}
+        {button("italic", "I", "Italic (Ctrl+I)", active.italic, () => chain().toggleItalic().run())}
+        {button("strike", "S", "Strikethrough", active.strike, () => chain().toggleStrike().run())}
+        {button("code", "</>", "Inline code", active.code, () => chain().toggleCode().run())}
+        <span className="tb-sep" />
+        {button("h1", "H1", "Heading 1", active.h1, () => chain().toggleHeading({ level: 1 }).run())}
+        {button("h2", "H2", "Heading 2", active.h2, () => chain().toggleHeading({ level: 2 }).run())}
+        {button("h3", "H3", "Heading 3", active.h3, () => chain().toggleHeading({ level: 3 }).run())}
+        <span className="tb-sep" />
+        {button("ul", "• List", "Bullet list", active.bullet, () => chain().toggleBulletList().run())}
+        {button("ol", "1. List", "Ordered list", active.ordered, () => chain().toggleOrderedList().run())}
+        {button("task", "☑ Task", "Task list", active.task, () => chain().toggleTaskList().run())}
+        <span className="tb-sep" />
+        {button("quote", "❝", "Blockquote", active.quote, () => chain().toggleBlockquote().run())}
+        {button("codeblock", "{ }", "Code block", active.codeBlock, () =>
+          chain().toggleCodeBlock().run(),
+        )}
+        {button("link", "🔗", "Link", false, setLink)}
+        {button("hr", "―", "Horizontal rule", false, () => chain().setHorizontalRule().run())}
+      </div>
+      {trailing && <div className="editor-toolbar-trailing">{trailing}</div>}
     </div>
   );
 }
