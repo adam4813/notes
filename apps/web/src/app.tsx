@@ -32,6 +32,7 @@ import { flattenFiles } from "./state/selectors";
 import { applyAccent, applyTheme, loadAccent, ACCENT_PRESETS, applyFontSizes, loadFontSizes } from "./theme/theme";
 import { loadExternalThemes } from "./theme/theme-loader";
 import type { SettingsBodyProps } from "./components/settings-view";
+import { normalizeMediaDirectory } from "./lib/images";
 
 type PaletteMode = "files" | "commands" | null;
 
@@ -65,6 +66,9 @@ export function App() {
   const [renameRequestPath, setRenameRequestPath] = useState<string | null>(null);
   const [openSettingsInTab, setOpenSettingsInTabState] = useState(
     () => globalThis.localStorage?.getItem("notes.settings.openInTab") === "true",
+  );
+  const [mediaDirectory, setMediaDirectoryState] = useState(() =>
+    normalizeMediaDirectory(globalThis.localStorage?.getItem("notes.settings.mediaDirectory") ?? "media"),
   );
   const [accent, setAccentState] = useState(() => loadAccent());
   const [fontSizes, setFontSizes] = useState(() => loadFontSizes());
@@ -256,6 +260,12 @@ export function App() {
     },
     [dispatch],
   );
+
+  const setMediaDirectory = useCallback((value: string) => {
+    const normalized = normalizeMediaDirectory(value);
+    setMediaDirectoryState(normalized);
+    globalThis.localStorage?.setItem("notes.settings.mediaDirectory", normalized);
+  }, []);
 
   const seededRef = useRef(false);
   useEffect(() => {
@@ -504,6 +514,8 @@ export function App() {
       onEditorFontSizeChange: setEditorFontSize,
       openInTab: openSettingsInTab,
       onOpenInTabChange: setOpenSettingsInTab,
+      mediaDirectory,
+      onMediaDirectoryChange: setMediaDirectory,
       externalThemes,
       onImportDefaultThemes: importDefaultThemes,
       hotkeys: {
@@ -532,6 +544,8 @@ export function App() {
       setEditorFontSize,
       openSettingsInTab,
       setOpenSettingsInTab,
+      mediaDirectory,
+      setMediaDirectory,
       externalThemes,
       importDefaultThemes,
       commands,

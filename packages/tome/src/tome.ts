@@ -60,12 +60,33 @@ export class Tome {
     return readFile(this.resolve(relativePath), "utf8");
   }
 
+  async readBinary(relativePath: string): Promise<Uint8Array> {
+    return readFile(this.resolve(relativePath));
+  }
+
   /** Atomic write: content is written to a temp file, then renamed into place. */
   async write(relativePath: string, content: string): Promise<void> {
+    await this.writeBytes(relativePath, content, "utf8");
+  }
+
+  /** Atomic binary write: data is written to a temp file, then renamed into place. */
+  async writeBinary(relativePath: string, content: Uint8Array): Promise<void> {
+    await this.writeBytes(relativePath, content);
+  }
+
+  private async writeBytes(
+    relativePath: string,
+    content: string | Uint8Array,
+    encoding?: BufferEncoding,
+  ): Promise<void> {
     const absolute = this.resolve(relativePath);
     await mkdir(dirname(absolute), { recursive: true });
     const temporary = `${absolute}.tmp-${process.pid}-${Date.now()}`;
-    await writeFile(temporary, content, "utf8");
+    if (encoding) {
+      await writeFile(temporary, content as string, encoding);
+    } else {
+      await writeFile(temporary, content as Uint8Array);
+    }
     await rename(temporary, absolute);
   }
 
@@ -74,6 +95,13 @@ export class Tome {
       throw new Error(`File already exists: ${relativePath}`);
     }
     await this.write(relativePath, content);
+  }
+
+  async createBinary(relativePath: string, content: Uint8Array): Promise<void> {
+    if (await this.exists(relativePath)) {
+      throw new Error(`File already exists: ${relativePath}`);
+    }
+    await this.writeBinary(relativePath, content);
   }
 
   async rename(fromPath: string, toPath: string): Promise<void> {

@@ -16,6 +16,39 @@ describe("rename-references", () => {
     );
   });
 
+  it("rewrites image embeds with file extensions", () => {
+    const content = "Screenshot: ![[media/pasted-abc123.png]]";
+    expect(
+      rewriteMarkdownReferences(
+        content,
+        "media/pasted-abc123.png",
+        "media/pasted-abc123-renamed.png",
+      ),
+    ).toBe("Screenshot: ![[media/pasted-abc123-renamed.png]]");
+  });
+
+  it("rewrites pasted raw-image markdown links on image rename", () => {
+    const content = "![shot](/api/file/raw?path=media%2Fpasted-abc123.png)";
+    expect(
+      rewriteMarkdownReferences(
+        content,
+        "media/pasted-abc123.png",
+        "media/pasted-abc123-renamed.png",
+      ),
+    ).toBe("![shot](/api/file/raw?path=media%2Fpasted-abc123-renamed.png)");
+  });
+
+  it("rewrites raw img-tag embeds on image rename", () => {
+    const content = '<img src="/api/file/raw?path=media%2Fpasted-abc123.png" alt="shot">';
+    expect(
+      rewriteMarkdownReferences(
+        content,
+        "media/pasted-abc123.png",
+        "media/pasted-abc123-renamed.png",
+      ),
+    ).toBe('<img src="/api/file/raw?path=media%2Fpasted-abc123-renamed.png" alt="shot">');
+  });
+
   it("rewrites canvas file nodes on rename", () => {
     const canvas =
       '{\n  "nodes": [\n    { "id": "1", "type": "file", "x": 0, "y": 0, "width": 100, "height": 80, "file": "notes/ideas.md" }\n  ],\n  "edges": []\n}\n';

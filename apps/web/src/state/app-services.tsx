@@ -41,6 +41,8 @@ const defaultSettings: SettingsBodyProps = {
   onEditorFontSizeChange: noop,
   openInTab: false,
   onOpenInTabChange: noop,
+  mediaDirectory: "media",
+  onMediaDirectoryChange: noop,
   externalThemes: [],
   onImportDefaultThemes: async () => {},
   hotkeys: {

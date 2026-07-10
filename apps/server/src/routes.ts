@@ -10,6 +10,38 @@ interface PathQuery {
   path?: string;
 }
 
+const RAW_CONTENT_TYPES: Record<string, string> = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".bmp": "image/bmp",
+  ".svg": "image/svg+xml",
+  ".mp3": "audio/mpeg",
+  ".wav": "audio/wav",
+  ".ogg": "audio/ogg",
+  ".m4a": "audio/mp4",
+  ".aac": "audio/aac",
+  ".flac": "audio/flac",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
+  ".mov": "video/quicktime",
+  ".txt": "text/plain; charset=utf-8",
+  ".md": "text/markdown; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".csv": "text/csv; charset=utf-8",
+};
+
+function contentTypeForPath(path: string): string {
+  const dot = path.lastIndexOf(".");
+  if (dot === -1) {
+    return "application/octet-stream";
+  }
+  const ext = path.slice(dot).toLowerCase();
+  return RAW_CONTENT_TYPES[ext] ?? "application/octet-stream";
+}
+
 /** Maps REST endpoints onto command-bus dispatches. Routes never touch the FS directly. */
 export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: RequestContext): void {
   app.get("/api/files", async () => bus.dispatch("file.tree", {}, ctx));
@@ -22,6 +54,20 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
   app.put("/api/file", async (request) => bus.dispatch("file.write", request.body, ctx));
 
   app.post("/api/file", async (request) => bus.dispatch("file.create", request.body, ctx));
+
+  app.post("/api/file/binary", async (request) =>
+    bus.dispatch("file.createBinary", request.body, ctx),
+  );
+
+  app.get("/api/file/raw", async (request, reply) => {
+    const { path = "" } = request.query as PathQuery;
+    const file = (await bus.dispatch("file.readBinary", { path }, ctx)) as {
+      path: string;
+      contentBase64: string;
+    };
+    const bytes = Buffer.from(file.contentBase64, "base64");
+    return reply.type(contentTypeForPath(path)).send(bytes);
+  });
 
   app.post("/api/file/rename", async (request) =>
     bus.dispatch("file.rename", request.body, ctx),

@@ -37,7 +37,7 @@ export function MarkdownEditor({
       <div className={`markdown-editor markdown-editor--${mode}`}>
         {showSource && (
           <div className="editor-column editor-column--source">
-            <SourceEditor value={value} onChange={onChange} />
+            <SourceEditor value={value} onChange={onChange} callbacks={callbacks} />
           </div>
         )}
         {showRendered && (

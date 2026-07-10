@@ -2,8 +2,9 @@ import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 import { Annotation, EditorState } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
-import { useEffect, useRef } from "react";
-import { NOTES_PATH_MIME, noteNameFromPath } from "./types";
+import { useEffect, useRef, type MutableRefObject } from "react";
+import { droppedPathInsertion, NOTES_PATH_MIME } from "./types";
+import type { EditorCallbacks } from "./types";
 
 const externalSync = Annotation.define<boolean>();
 
@@ -11,26 +12,65 @@ const externalSync = Annotation.define<boolean>();
  * CodeMirror extension that handles drops of notes from the explorer.
  * Alt held → plain link; otherwise embed.
  */
-function notesDropExtension() {
+function notesDropExtension(callbacksRef: MutableRefObject<EditorCallbacks | undefined>) {
   return EditorView.domEventHandlers({
     dragover(event) {
-      if (event.dataTransfer?.types.includes(NOTES_PATH_MIME)) {
+      if (
+        event.dataTransfer?.types.includes(NOTES_PATH_MIME) ||
+        (event.dataTransfer?.files.length ?? 0) > 0
+      ) {
         event.preventDefault();
       }
       return false;
     },
     drop(event, view) {
       const path = event.dataTransfer?.getData(NOTES_PATH_MIME);
-      if (!path) {
+      if (path) {
+        event.preventDefault();
+        const text = droppedPathInsertion(path, event.altKey);
+        const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+        if (pos != null) {
+          view.dispatch({ changes: { from: pos, insert: text }, selection: { anchor: pos + text.length } });
+        }
+        return true;
+      }
+      const file = event.dataTransfer?.files?.[0];
+      const onImportFile = callbacksRef.current?.onImportFile;
+      if (!file || !onImportFile) {
         return false;
       }
       event.preventDefault();
-      const name = noteNameFromPath(path);
-      const text = event.altKey ? `[[${name}]]` : `![[${name}]]`;
-      const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
-      if (pos != null) {
-        view.dispatch({ changes: { from: pos, insert: text }, selection: { anchor: pos + text.length } });
+      const insertAt = view.posAtCoords({ x: event.clientX, y: event.clientY }) ?? view.state.selection.main.from;
+      void onImportFile(file).then((insert) => {
+        if (!insert) {
+          return;
+        }
+        view.dispatch({
+          changes: { from: insertAt, to: insertAt, insert },
+          selection: { anchor: insertAt + insert.length },
+        });
+      });
+      return true;
+    },
+    paste(event, view) {
+      const file = Array.from(event.clipboardData?.items ?? [])
+        .find((item) => item.kind === "file")
+        ?.getAsFile();
+      const onImportFile = callbacksRef.current?.onImportFile;
+      if (!file || !onImportFile) {
+        return false;
       }
+      event.preventDefault();
+      const range = view.state.selection.main;
+      void onImportFile(file).then((insert) => {
+        if (!insert) {
+          return;
+        }
+        view.dispatch({
+          changes: { from: range.from, to: range.to, insert },
+          selection: { anchor: range.from + insert.length },
+        });
+      });
       return true;
     },
   });
@@ -39,14 +79,17 @@ function notesDropExtension() {
 interface SourceEditorProps {
   value: string;
   onChange: (value: string) => void;
+  callbacks?: EditorCallbacks;
 }
 
 /** Plain markdown source editor (CodeMirror 6). */
-export function SourceEditor({ value, onChange }: SourceEditorProps) {
+export function SourceEditor({ value, onChange, callbacks }: SourceEditorProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
+  const callbacksRef = useRef(callbacks);
   onChangeRef.current = onChange;
+  callbacksRef.current = callbacks;
 
   useEffect(() => {
     if (!hostRef.current) {
@@ -61,7 +104,7 @@ export function SourceEditor({ value, onChange }: SourceEditorProps) {
           keymap.of([...defaultKeymap, ...historyKeymap]),
           markdown(),
           EditorView.lineWrapping,
-          notesDropExtension(),
+          notesDropExtension(callbacksRef),
           EditorView.updateListener.of((update) => {
             if (!update.docChanged) {
               return;

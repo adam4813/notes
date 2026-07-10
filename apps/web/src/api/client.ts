@@ -61,6 +61,12 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ path, content }),
     }),
+  createBinary: (path: string, contentBase64: string) =>
+    request<{ path: string }>("/api/file/binary", {
+      method: "POST",
+      body: JSON.stringify({ path, contentBase64 }),
+    }),
+  fileRawUrl: (path: string) => `/api/file/raw?${query({ path })}`,
   remove: (path: string) =>
     request<{ path: string }>(`/api/file?${query({ path })}`, { method: "DELETE" }),
   mkdir: (path: string) =>

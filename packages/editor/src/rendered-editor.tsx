@@ -7,6 +7,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type ClipboardEvent as ReactClipboardEvent,
   type DragEvent as ReactDragEvent,
   type MouseEvent,
   type ReactNode,
@@ -16,7 +17,7 @@ import { Embed } from "./embed-extension";
 import { ImageNode } from "./image-node";
 import { StyledTextMark } from "./styled-text-mark";
 import { SuggestionPopup } from "./suggestion-popup";
-import { NOTES_PATH_MIME } from "./types";
+import { droppedPathInsertion, NOTES_PATH_MIME } from "./types";
 import { EditorToolbar } from "./toolbar";
 import type { EditorCallbacks, WikiSuggestion } from "./types";
 import { WikilinkDecorator } from "./wikilink-decorator";
@@ -306,22 +307,34 @@ export function RenderedEditor({
         return;
       }
       const path = event.dataTransfer.getData(NOTES_PATH_MIME);
-      if (!path) {
+      if (path) {
+        event.preventDefault();
+        const text = droppedPathInsertion(path, event.altKey);
+        const coords = editor.view.posAtCoords({ left: event.clientX, top: event.clientY });
+        if (coords == null) {
+          editor.chain().focus().insertContent(text).run();
+        } else {
+          editor.chain().focus().insertContentAt(coords.pos, text).run();
+        }
+        return;
+      }
+      const file = event.dataTransfer.files[0];
+      const onImportFile = callbacksRef.current?.onImportFile;
+      if (!file || !onImportFile) {
         return;
       }
       event.preventDefault();
-
-      const target = path.replace(/\.[^.]+$/, "");
-      // Alt/Option held → insert a plain link; otherwise embed.
-      const text = event.altKey ? `[[${target}]]` : `![[${target}]]`;
-
-      // Resolve the document position from the drop coordinates.
-      const coords = editor.view.posAtCoords({ left: event.clientX, top: event.clientY });
-      if (coords == null) {
-        editor.chain().focus().insertContent(text).run();
-      } else {
-        editor.chain().focus().insertContentAt(coords.pos, text).run();
-      }
+      void onImportFile(file).then((insert) => {
+        if (!insert) {
+          return;
+        }
+        const coords = editor.view.posAtCoords({ left: event.clientX, top: event.clientY });
+        if (coords == null) {
+          editor.chain().focus().insertContent(insert).run();
+        } else {
+          editor.chain().focus().insertContentAt(coords.pos, insert).run();
+        }
+      });
     },
     [editor],
   );
@@ -338,14 +351,41 @@ export function RenderedEditor({
     }
   }, []);
 
+  const handlePaste = useCallback(
+    (event: ReactClipboardEvent<HTMLDivElement>) => {
+      if (!editor) {
+        return;
+      }
+      const file = Array.from(event.clipboardData.items)
+        .find((item) => item.kind === "file")
+        ?.getAsFile();
+      const onImportFile = callbacksRef.current?.onImportFile;
+      if (!file || !onImportFile) {
+        return;
+      }
+      event.preventDefault();
+      void onImportFile(file).then((insert) => {
+        if (!insert) {
+          return;
+        }
+        editor.chain().focus().insertContent(insert).run();
+      });
+    },
+    [editor],
+  );
+
   return (
     <div className="rendered-editor" ref={containerRef}>
       <EditorToolbar editor={editor} disabled={toolbarDisabled} trailing={toolbarTrailing} />
       <div
         className="rendered-scroll"
         onClick={handleClick}
+        onPaste={handlePaste}
         onDragOver={(event) => {
-          if (event.dataTransfer.types.includes(NOTES_PATH_MIME)) {
+          if (
+            event.dataTransfer.types.includes(NOTES_PATH_MIME) ||
+            event.dataTransfer.files.length > 0
+          ) {
             event.preventDefault();
           }
         }}

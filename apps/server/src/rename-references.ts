@@ -1,6 +1,8 @@
 import { parseCanvas, rewriteCanvasFileNodePaths, serializeCanvas } from "@notes/note-canvas";
 
 const WIKILINK_RE = /(!?)\[\[([^\]]+?)\]\]/g;
+const RAW_IMAGE_RE = /!\[([^\]]*)\]\(\/api\/file\/raw\?path=([^)\s]+)\)/g;
+const RAW_IMG_TAG_RE = /<img([^>]*?)src="\/api\/file\/raw\?path=([^"]+)"([^>]*)>/g;
 
 function stripExtension(path: string): string {
   return path.replace(/\.[^.]+$/, "");
@@ -31,13 +33,11 @@ export function rewriteMarkdownReferences(
   fromPath: string,
   toPath: string,
 ): string {
-  const fromTarget = stripExtension(fromPath);
-  const toTarget = stripExtension(toPath);
-  if (fromTarget.toLowerCase() === toTarget.toLowerCase()) {
+  if (fromPath.toLowerCase() === toPath.toLowerCase()) {
     return content;
   }
 
-  return content.replace(WIKILINK_RE, (match, bang: string, raw: string) => {
+  const withWikilinks = content.replace(WIKILINK_RE, (match, bang: string, raw: string) => {
     const [targetPart, aliasPart] = raw.split("|");
     const [target, ...headingParts] = targetPart.split("#");
     const nextTarget = rewriteTarget(target.trim(), fromPath, toPath);
@@ -48,6 +48,37 @@ export function rewriteMarkdownReferences(
     const alias = aliasPart?.trim() ? `|${aliasPart.trim()}` : "";
     return `${bang}[[${nextTarget}${heading}${alias}]]`;
   });
+
+  const withMarkdownRaw = withWikilinks.replace(RAW_IMAGE_RE, (match, alt: string, encodedPath: string) => {
+    let decodedPath: string;
+    try {
+      decodedPath = decodeURIComponent(encodedPath);
+    } catch {
+      decodedPath = encodedPath;
+    }
+    const nextTarget = rewriteTarget(decodedPath, fromPath, toPath);
+    if (!nextTarget) {
+      return match;
+    }
+    return `![${alt}](/api/file/raw?path=${encodeURIComponent(nextTarget)})`;
+  });
+
+  return withMarkdownRaw.replace(
+    RAW_IMG_TAG_RE,
+    (match, before: string, encodedPath: string, after: string) => {
+      let decodedPath: string;
+      try {
+        decodedPath = decodeURIComponent(encodedPath);
+      } catch {
+        decodedPath = encodedPath;
+      }
+      const nextTarget = rewriteTarget(decodedPath, fromPath, toPath);
+      if (!nextTarget) {
+        return match;
+      }
+      return `<img${before}src="/api/file/raw?path=${encodeURIComponent(nextTarget)}"${after}>`;
+    },
+  );
 }
 
 export function rewriteEmbeddedReferences(

@@ -45,6 +45,8 @@ export interface SettingsBodyProps {
   onEditorFontSizeChange: (size: number) => void;
   openInTab: boolean;
   onOpenInTabChange: (openInTab: boolean) => void;
+  mediaDirectory: string;
+  onMediaDirectoryChange: (value: string) => void;
   hotkeys: HotkeySettings;
   /** Externally installed themes loaded from the Tome's `.notes/themes/`. */
   externalThemes: ThemeMeta[];
@@ -75,6 +77,8 @@ export function SettingsBody(props: SettingsBodyProps) {
     onEditorFontSizeChange,
     openInTab,
     onOpenInTabChange,
+    mediaDirectory,
+    onMediaDirectoryChange,
     hotkeys,
     externalThemes,
     onImportDefaultThemes,
@@ -103,6 +107,25 @@ export function SettingsBody(props: SettingsBodyProps) {
           />
           <span>Open settings in a tab instead of a dialog</span>
         </label>
+      </section>
+
+      <section className="settings-section">
+        <h3>Files</h3>
+        <p className="settings-hint">
+          Imported files (paste/drag-drop) are saved into this folder under your Tome.
+        </p>
+        <div className="settings-field">
+          <span className="settings-label">Directory</span>
+          <input
+            type="text"
+            className="settings-text-input"
+            aria-label="Media directory"
+            data-testid="settings-media-directory"
+            placeholder="media"
+            value={mediaDirectory}
+            onChange={(event) => onMediaDirectoryChange(event.target.value)}
+          />
+        </div>
       </section>
 
       <section className="settings-section">

@@ -1,5 +1,10 @@
 import type { CommandBus } from "@notes/core";
-import type { FileMovePayload, FilePathPayload, FileWritePayload } from "@notes/shared";
+import type {
+  FileBinaryPayload,
+  FileMovePayload,
+  FilePathPayload,
+  FileWritePayload,
+} from "@notes/shared";
 import type { Tome } from "@notes/tome";
 import { rewriteEmbeddedReferences } from "../rename-references";
 
@@ -18,6 +23,14 @@ export function registerFileCommands(bus: CommandBus, getTome: () => Tome): void
     }),
   });
 
+  bus.register<FilePathPayload, { path: string; contentBase64: string }>({
+    name: "file.readBinary",
+    handler: async (payload) => ({
+      path: payload.path,
+      contentBase64: Buffer.from(await getTome().readBinary(payload.path)).toString("base64"),
+    }),
+  });
+
   bus.register<FileWritePayload, { path: string }>({
     name: "file.write",
     handler: async (payload) => {
@@ -30,6 +43,14 @@ export function registerFileCommands(bus: CommandBus, getTome: () => Tome): void
     name: "file.create",
     handler: async (payload) => {
       await getTome().create(payload.path, payload.content);
+      return { path: payload.path };
+    },
+  });
+
+  bus.register<FileBinaryPayload, { path: string }>({
+    name: "file.createBinary",
+    handler: async (payload) => {
+      await getTome().createBinary(payload.path, Buffer.from(payload.contentBase64, "base64"));
       return { path: payload.path };
     },
   });

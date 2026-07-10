@@ -5,6 +5,7 @@ import { MermaidView } from "@notes/note-mermaid";
 import { TableGrid } from "@notes/note-tables";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
+import { isImagePath } from "../lib/images";
 import { connectTomeChanges } from "../api/ws";
 import { useWorkspace } from "../state/app-context";
 
@@ -36,6 +37,7 @@ const TYPE_LABEL: Record<string, string> = {
   mermaid: "Diagram",
   calendar: "Calendar",
   grid: "Grid",
+  image: "Image",
 };
 
 /** Renders an embedded note (`![[target]]`) inline: its widget + save-back. */
@@ -50,6 +52,12 @@ export function EmbedWidget({ target }: { target: string }) {
     let cancelled = false;
     setState({ status: "loading" });
     void (async () => {
+      if (isImagePath(target)) {
+        if (!cancelled) {
+          setState({ status: "ready", path: target, type: "image" });
+        }
+        return;
+      }
       const resolved = await api.resolve(target).catch(() => ({ path: null }));
       if (!resolved.path) {
         if (!cancelled) {
@@ -147,6 +155,8 @@ export function EmbedWidget({ target }: { target: string }) {
 
   const body = () => {
     switch (type) {
+      case "image":
+        return <img className="embed-image" src={api.fileRawUrl(path)} alt={title} />;
       case "mermaid":
         return <MermaidView value={content} onChange={save} />;
       case "table":

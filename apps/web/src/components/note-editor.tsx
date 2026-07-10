@@ -9,6 +9,13 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } fr
 import { api } from "../api/client";
 import { queueWrite } from "../api/offline-queue";
 import { connectTomeChanges } from "../api/ws";
+import {
+  importedFilePath,
+  isImagePath,
+  markdownForImportedFile,
+  normalizeMediaDirectory,
+  toBase64,
+} from "../lib/images";
 import { useAppServices } from "../state/app-services";
 import { useWorkspace } from "../state/app-context";
 import { useToasts } from "../state/toast";
@@ -47,7 +54,7 @@ const SAVE_LABEL: Record<SaveState, string> = {
 
 export function NoteEditor({ path }: { path: string }) {
   const { dispatch } = useWorkspace();
-  const { markModified, setActiveDocument } = useAppServices();
+  const { markModified, setActiveDocument, settings } = useAppServices();
   const { notify } = useToasts();
   const [content, setContent] = useState("");
   const [mode, setMode] = useState<EditorMode>("rendered");
@@ -64,6 +71,7 @@ export function NoteEditor({ path }: { path: string }) {
   // Always-current ref so the unmount cleanup can flush the right path/content.
   const pathRef = useRef(path);
   pathRef.current = path;
+  const isImage = isImagePath(path);
 
   // Flush any unsaved edit when the component unmounts (tab switch / close).
   useEffect(() => {
@@ -71,15 +79,24 @@ export function NoteEditor({ path }: { path: string }) {
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
       }
-      if (dirtyRef.current) {
+      if (!isImage && dirtyRef.current) {
         void api.write(pathRef.current, contentRef.current).catch(() => undefined);
       }
     };
-  }, []); // empty deps: runs only on unmount
+  }, [isImage]); // empty deps: runs only on unmount
 
   useEffect(() => {
     let cancelled = false;
     setSaveState("loading");
+    if (isImage) {
+      setContent("");
+      contentRef.current = "";
+      dirtyRef.current = false;
+      setSaveState("saved");
+      return () => {
+        cancelled = true;
+      };
+    }
     api
       .read(path)
       .then((result) => {
@@ -98,7 +115,7 @@ export function NoteEditor({ path }: { path: string }) {
     return () => {
       cancelled = true;
     };
-  }, [path]);
+  }, [path, isImage]);
 
   const save = useCallback(
     async (value: string) => {
@@ -142,6 +159,9 @@ export function NoteEditor({ path }: { path: string }) {
       if (change.path !== path) {
         return;
       }
+      if (isImage) {
+        return;
+      }
       // Ignore the file-watcher echo of our own atomic write, which would
       // otherwise reload and reset the cursor while the user keeps editing.
       if (Date.now() - lastWriteAtRef.current < 1500) {
@@ -158,7 +178,7 @@ export function NoteEditor({ path }: { path: string }) {
         }
       });
     });
-  }, [path]);
+  }, [path, isImage]);
 
   const callbacks = useMemo<EditorCallbacks>(
     () => ({
@@ -176,9 +196,21 @@ export function NoteEditor({ path }: { path: string }) {
       },
       listNotes: async () => (await api.notes()).notes,
       listTags: async () => (await api.tags()).tags.map((tag) => tag.tag),
+      onImportFile: async (file) => {
+        const mediaPath = importedFilePath(file, normalizeMediaDirectory(settings.mediaDirectory));
+        try {
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          await api.createBinary(mediaPath, toBase64(bytes));
+          notify(`Imported file saved to ${mediaPath}`, { kind: "success" });
+          return markdownForImportedFile(mediaPath, file.type, api.fileRawUrl(mediaPath));
+        } catch {
+          notify("Couldn't import dropped file", { kind: "error" });
+          return null;
+        }
+      },
       renderEmbed: (embedTarget) => <EmbedWidget target={embedTarget} />,
     }),
-    [dispatch],
+    [dispatch, notify, settings.mediaDirectory],
   );
 
   const subscribeToFileChange = useCallback(
@@ -194,12 +226,14 @@ export function NoteEditor({ path }: { path: string }) {
     if (saveState === "loading") {
       return;
     }
-    const type = path.toLowerCase().endsWith(".canvas")
+    const type = isImage
+      ? "image"
+      : path.toLowerCase().endsWith(".canvas")
       ? "canvas"
       : (getFrontmatterType(content) ?? "markdown");
     setActiveDocument({ path, content, type });
     return () => setActiveDocument(null);
-  }, [path, content, saveState, setActiveDocument]);
+  }, [path, content, saveState, setActiveDocument, isImage]);
 
   const isCanvas = path.toLowerCase().endsWith(".canvas");
   const frontType = isCanvas ? undefined : getFrontmatterType(content);
@@ -208,7 +242,7 @@ export function NoteEditor({ path }: { path: string }) {
   const isMermaid = frontType === "mermaid";
   const isCalendar = frontType === "calendar";
   const isGrid = frontType === "grid";
-  const canFind = !isCanvas && !isBoard && !isTable && !isMermaid && !isCalendar && !isGrid;
+  const canFind = !isImage && !isCanvas && !isBoard && !isTable && !isMermaid && !isCalendar && !isGrid;
   const canToggleMode = canFind;
 
   useEffect(() => {
@@ -295,7 +329,17 @@ export function NoteEditor({ path }: { path: string }) {
             <span className={`save-status save-status--${saveState}`}>{SAVE_LABEL[saveState]}</span>
           </div>
         )}
-        {isCanvas ? (
+        {isImage ? (
+          <div className="image-note">
+            <div className="image-note-header">
+              <span className="note-type-badge">Image</span>
+              <span className="image-note-path">{path}</span>
+            </div>
+            <div className="image-note-body">
+              <img className="image-note-preview" src={api.fileRawUrl(path)} alt={basename(path)} />
+            </div>
+          </div>
+        ) : isCanvas ? (
           <CanvasView
             key={path}
             path={path}
