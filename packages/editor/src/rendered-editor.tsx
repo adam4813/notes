@@ -13,6 +13,7 @@ import {
 } from "react";
 import { Markdown } from "tiptap-markdown";
 import { Embed } from "./embed-extension";
+import { ImageNode } from "./image-node";
 import { StyledTextMark } from "./styled-text-mark";
 import { SuggestionPopup } from "./suggestion-popup";
 import { NOTES_PATH_MIME } from "./types";
@@ -91,8 +92,9 @@ export function RenderedEditor({
       StarterKit,
       TaskList,
       TaskItem.configure({ nested: true }),
+      ImageNode,
       StyledTextMark,
-      Markdown.configure({ html: true, tightLists: true }),
+      Markdown.configure({ html: true, tightLists: true, transformPastedText: true }),
       WikilinkDecorator,
       ...(callbacksRef.current?.renderEmbed
         ? [

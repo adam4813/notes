@@ -7,3 +7,4 @@ export * from "./note-toolbar";
 export * from "./suggestion-popup";
 export * from "./wikilink-decorator";
 export * from "./embed-extension";
+export * from "./image-node";

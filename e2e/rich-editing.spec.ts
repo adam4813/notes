@@ -15,6 +15,25 @@ test("toolbar applies bold formatting in the rendered editor", async ({ page }) 
   await expect(rendered.locator("strong")).toContainText("bold me");
 });
 
+test("manually authored img tag renders in rendered mode", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "＋ New note" }).click();
+  await page.getByRole("tab", { name: "Edit", exact: true }).click();
+
+  const source = page.locator(".cm-content");
+  await expect(source).toBeVisible();
+  await source.click();
+  await page.keyboard.press("Control+End");
+  await page.keyboard.type(
+    '\n<img src="https://example.com/external-image.png" alt="External image" title="External title" />',
+  );
+
+  await page.getByRole("tab", { name: "Rendered", exact: true }).click();
+  const renderedImage = page.locator('.ProseMirror img[alt="External image"]').first();
+  await expect(renderedImage).toHaveAttribute("src", "https://example.com/external-image.png");
+  await expect(renderedImage).toHaveAttribute("title", "External title");
+});
+
 test("undo in rendered mode does not clear content after switching modes", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "＋ New note" }).click();

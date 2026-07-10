@@ -2655,6 +2655,11 @@ button {
   background: none;
 }
 
+.tiptap-host .ProseMirror img {
+  max-width: 100%;
+  height: auto;
+}
+
 .tiptap-host .ProseMirror ul[data-type="taskList"] {
   list-style: none;
   padding-left: 0.5rem;
