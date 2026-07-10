@@ -1,0 +1,8 @@
+{
+  "id": "vim",
+  "name": "Vim Default",
+  "version": "1.0.0",
+  "colorModes": ["dark"],
+  "description": "Classic Vim default dark terminal aesthetic: monospace everything, no rounded corners, iconic cyan accent and inverted status line.",
+  "author": "Notes built-in"
+}

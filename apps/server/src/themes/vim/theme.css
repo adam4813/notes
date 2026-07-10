@@ -1,0 +1,426 @@
+/*
+ * Vim Default theme for Notes
+ * Evokes the classic Vim :colorscheme default on a dark terminal:
+ * monospace UI, zero border-radius, cyan accent, inverted status line.
+ */
+
+:root[data-theme="vim"] {
+  /* ── Palette ─────────────────────────────────────────────── */
+  --bg:           #1c1c1c;   /* Normal bg (vim: background)    */
+  --bg-elevated:  #262626;   /* Slightly lighter panels        */
+  --bg-sunken:    #121212;   /* Sunken/deepest areas           */
+  --bg-app:       #080808;   /* Desktop / app chrome           */
+  --bg-island:    #1e1e1e;   /* Island surfaces                */
+
+  --fg:           #d0d0d0;   /* Normal (vim: fg)               */
+  --fg-muted:     #585858;   /* Comment / dimmed text          */
+
+  --border:       #3a3a3a;   /* Thin separators                */
+
+  --accent:       #00afff;   /* Keyword cyan                   */
+  --accent-fg:    #000000;
+
+  --hover:        rgba(255, 255, 255, 0.06);
+  --active:       rgba(0, 175, 255, 0.18);
+
+  --status-ok:      #5faf00;   /* DiffAdd green                */
+  --status-offline: #ff5f5f;   /* Error red                    */
+
+  --shadow:       0 4px 24px rgba(0, 0, 0, 0.7);
+  --island-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+
+  /* ── Vim-specific tokens ─────────────────────────────────── */
+  --vim-statusline-bg: #005fd7;   /* :hi StatusLine       */
+  --vim-statusline-fg: #ffffff;
+  --vim-visual-bg:     #005f87;   /* Visual selection     */
+  --vim-string:        #ffaf00;   /* String yellow        */
+  --vim-fn:            #87afff;   /* Function blue        */
+
+  --vim-font: ui-monospace, "Cascadia Code", "Fira Code", "Consolas",
+              "Courier New", monospace;
+
+  color-scheme: dark;
+}
+
+/* ── Global font: monospace for everything ─────────────────── */
+:root[data-theme="vim"] body {
+  font-family: var(--vim-font);
+  font-size: 13px;
+  background: var(--bg-app);
+}
+
+/* ── Zero border-radius everywhere ────────────────────────── */
+:root[data-theme="vim"] *,
+:root[data-theme="vim"] *::before,
+:root[data-theme="vim"] *::after {
+  border-radius: 0 !important;
+}
+
+/* ── App chrome ─────────────────────────────────────────────── */
+:root[data-theme="vim"] .app-root,
+:root[data-theme="vim"] .shell {
+  background: var(--bg-app);
+}
+
+/* ── Ribbon ──────────────────────────────────────────────── */
+:root[data-theme="vim"] .ribbon {
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+}
+
+:root[data-theme="vim"] .ribbon-search-input {
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-family: var(--vim-font);
+  font-size: 12px;
+}
+
+/* ── Islands ──────────────────────────────────────────────── */
+:root[data-theme="vim"] .sidebar,
+:root[data-theme="vim"] .right-panel,
+:root[data-theme="vim"] .pane {
+  background: var(--bg-island);
+  border: 1px solid var(--border);
+  box-shadow: var(--island-shadow);
+}
+
+/* ── Sidebar header — mimics Vim's top-of-window title ─────── */
+:root[data-theme="vim"] .sidebar-header {
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+}
+
+:root[data-theme="vim"] .sidebar-title {
+  color: var(--vim-fn);
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--vim-font);
+  font-weight: bold;
+}
+
+/* ── Status bar — iconic Vim inverted status line ──────────── */
+:root[data-theme="vim"] .status-bar {
+  background: var(--vim-statusline-bg);
+  color: var(--vim-statusline-fg);
+  font-family: var(--vim-font);
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 0;
+}
+
+:root[data-theme="vim"] .status-message,
+:root[data-theme="vim"] .status-path,
+:root[data-theme="vim"] .status-plugin-item {
+  opacity: 1;
+}
+
+:root[data-theme="vim"] .status-plugin-item {
+  border-left: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+/* ── Titlebar (Electron) ──────────────────────────────────── */
+:root[data-theme="vim"] .title-bar {
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+}
+
+:root[data-theme="vim"] .title-bar-name {
+  color: var(--fg-muted);
+  font-family: var(--vim-font);
+}
+
+:root[data-theme="vim"] .title-bar-btn {
+  color: var(--fg-muted);
+}
+
+:root[data-theme="vim"] .title-bar-btn--close:hover {
+  background: var(--status-offline);
+  color: #ffffff;
+}
+
+/* ── Tab bar ──────────────────────────────────────────────── */
+:root[data-theme="vim"] .tab-bar {
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+}
+
+:root[data-theme="vim"] .tab {
+  font-family: var(--vim-font);
+  font-size: 12px;
+  color: var(--fg-muted);
+  border-color: transparent;
+}
+
+:root[data-theme="vim"] .tab--active {
+  background: var(--bg-island);
+  border-color: var(--border);
+  color: var(--fg);
+  font-weight: bold;
+}
+
+/* ── Menus / popups ───────────────────────────────────────── */
+:root[data-theme="vim"] .title-bar-menu-popup,
+:root[data-theme="vim"] .context-menu,
+:root[data-theme="vim"] .new-menu,
+:root[data-theme="vim"] .split-menu,
+:root[data-theme="vim"] .palette,
+:root[data-theme="vim"] .suggest-popup,
+:root[data-theme="vim"] .editor-find-popout {
+  background: var(--bg-elevated);
+  border: 1px solid var(--accent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
+:root[data-theme="vim"] .palette-input {
+  font-family: var(--vim-font);
+  font-size: 13px;
+  background: var(--bg-sunken);
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  caret-color: var(--accent);
+}
+
+:root[data-theme="vim"] .palette-item,
+:root[data-theme="vim"] .title-bar-menu-item,
+:root[data-theme="vim"] .context-item,
+:root[data-theme="vim"] .new-menu-item,
+:root[data-theme="vim"] .split-menu-item {
+  font-family: var(--vim-font);
+  font-size: 12px;
+}
+
+:root[data-theme="vim"] .palette-item:hover,
+:root[data-theme="vim"] .palette-item--active,
+:root[data-theme="vim"] .title-bar-menu-item:hover:not(:disabled),
+:root[data-theme="vim"] .context-item:hover,
+:root[data-theme="vim"] .new-menu-item:hover,
+:root[data-theme="vim"] .split-menu-item:hover {
+  background: var(--vim-visual-bg);
+  color: var(--fg);
+}
+
+/* ── Segmented controls / mode switch ─────────────────────── */
+:root[data-theme="vim"] .segmented,
+:root[data-theme="vim"] .mode-switch {
+  border: 1px solid var(--border);
+}
+
+:root[data-theme="vim"] .segmented-btn,
+:root[data-theme="vim"] .mode-btn {
+  font-family: var(--vim-font);
+  font-size: 12px;
+}
+
+:root[data-theme="vim"] .segmented-btn--active,
+:root[data-theme="vim"] .mode-btn--active {
+  background: var(--vim-statusline-bg);
+  color: var(--vim-statusline-fg);
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+:root[data-theme="vim"] button {
+  font-family: var(--vim-font);
+}
+
+:root[data-theme="vim"] .btn-ghost:hover {
+  background: var(--hover);
+}
+
+/* ── Inputs ──────────────────────────────────────────────── */
+:root[data-theme="vim"] input,
+:root[data-theme="vim"] textarea,
+:root[data-theme="vim"] select,
+:root[data-theme="vim"] .search-input,
+:root[data-theme="vim"] .find-input,
+:root[data-theme="vim"] .search-filter,
+:root[data-theme="vim"] .property-input,
+:root[data-theme="vim"] .tree-rename-input,
+:root[data-theme="vim"] .calendar-compose-title,
+:root[data-theme="vim"] .calendar-compose-time {
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-family: var(--vim-font);
+  font-size: 12px;
+}
+
+:root[data-theme="vim"] input:focus,
+:root[data-theme="vim"] textarea:focus,
+:root[data-theme="vim"] select:focus,
+:root[data-theme="vim"] .search-input:focus,
+:root[data-theme="vim"] .find-input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+/* ── File tree ────────────────────────────────────────────── */
+:root[data-theme="vim"] .tree-row {
+  font-family: var(--vim-font);
+  font-size: 12px;
+}
+
+:root[data-theme="vim"] .tree-row:hover {
+  background: var(--vim-visual-bg);
+}
+
+:root[data-theme="vim"] .tree-row--drop,
+:root[data-theme="vim"] .tree-row--rename {
+  background: var(--vim-visual-bg);
+  outline: 1px dashed var(--accent);
+}
+
+/* ── Editor ──────────────────────────────────────────────── */
+:root[data-theme="vim"] .cm-host .cm-editor {
+  background: var(--bg-sunken);
+  font-family: var(--vim-font);
+}
+
+:root[data-theme="vim"] .cm-host .cm-content {
+  caret-color: var(--accent);
+}
+
+:root[data-theme="vim"] .cm-host .cm-activeLine {
+  background: rgba(0, 175, 255, 0.06);
+}
+
+:root[data-theme="vim"] .cm-host .cm-gutters {
+  background: var(--bg-elevated);
+  color: var(--fg-muted);
+  border-right: 1px solid var(--border);
+}
+
+:root[data-theme="vim"] .cm-host .cm-activeLineGutter {
+  background: rgba(0, 175, 255, 0.1);
+  color: var(--fg);
+}
+
+:root[data-theme="vim"] .tiptap-host {
+  background: var(--bg-sunken);
+}
+
+:root[data-theme="vim"] .tiptap-host .ProseMirror {
+  caret-color: var(--accent);
+}
+
+:root[data-theme="vim"] .markdown-body pre,
+:root[data-theme="vim"] .tiptap-host .ProseMirror pre {
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+/* ── Mermaid / code source ────────────────────────────────── */
+:root[data-theme="vim"] .mermaid-source {
+  background: var(--bg-sunken);
+  color: var(--fg);
+  font-family: var(--vim-font);
+}
+
+/* ── Modal ─────────────────────────────────────────────────── */
+:root[data-theme="vim"] .modal {
+  background: var(--bg-elevated);
+  border: 1px solid var(--accent);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+}
+
+:root[data-theme="vim"] .modal-header {
+  background: var(--vim-statusline-bg);
+  border-bottom: none;
+}
+
+:root[data-theme="vim"] .modal-header h2 {
+  color: var(--vim-statusline-fg);
+  font-family: var(--vim-font);
+}
+
+/* ── Settings ──────────────────────────────────────────────── */
+:root[data-theme="vim"] .settings-view-header {
+  background: var(--vim-statusline-bg);
+}
+
+:root[data-theme="vim"] .settings-view-header h2 {
+  color: var(--vim-statusline-fg);
+  font-family: var(--vim-font);
+}
+
+:root[data-theme="vim"] .settings-label,
+:root[data-theme="vim"] .settings-hint {
+  font-family: var(--vim-font);
+}
+
+/* ── Toasts ─────────────────────────────────────────────────── */
+:root[data-theme="vim"] .toast {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  font-family: var(--vim-font);
+}
+
+:root[data-theme="vim"] .toast--error {
+  border-color: var(--status-offline);
+}
+
+:root[data-theme="vim"] .toast--success {
+  border-color: var(--status-ok);
+}
+
+/* ── Toolbar buttons ─────────────────────────────────────── */
+:root[data-theme="vim"] .tb-btn {
+  font-family: var(--vim-font);
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+
+:root[data-theme="vim"] .tb-btn--active {
+  background: var(--vim-visual-bg);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ── Tag count badge ─────────────────────────────────────── */
+:root[data-theme="vim"] .tag-count {
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+}
+
+/* ── Keyboard / hotkey combos ────────────────────────────── */
+:root[data-theme="vim"] .hotkey-combo,
+:root[data-theme="vim"] .help-keys,
+:root[data-theme="vim"] .palette-item-hint {
+  background: var(--bg-sunken);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--vim-font);
+}
+
+/* ── Wikilinks ───────────────────────────────────────────── */
+:root[data-theme="vim"] .wikilink {
+  color: var(--vim-fn);
+}
+
+:root[data-theme="vim"] .wikilink:hover {
+  border-bottom-color: var(--vim-fn);
+}
+
+/* ── Focus ring ──────────────────────────────────────────── */
+:root[data-theme="vim"] :focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ── Scrollbars (WebKit) ─────────────────────────────────── */
+:root[data-theme="vim"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+:root[data-theme="vim"] ::-webkit-scrollbar-track {
+  background: var(--bg-sunken);
+}
+
+:root[data-theme="vim"] ::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+:root[data-theme="vim"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-muted);
+}
