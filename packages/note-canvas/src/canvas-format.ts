@@ -48,6 +48,17 @@ export interface CanvasData {
   edges: CanvasEdge[];
 }
 
+function remapPath(path: string, fromPath: string, toPath: string): string | null {
+  if (path === fromPath) {
+    return toPath;
+  }
+  const prefix = `${fromPath}/`;
+  if (path.startsWith(prefix)) {
+    return `${toPath}/${path.slice(prefix.length)}`;
+  }
+  return null;
+}
+
 /** Parses JSONCanvas text; malformed input yields an empty canvas. */
 export function parseCanvas(text: string): CanvasData {
   try {
@@ -64,6 +75,27 @@ export function parseCanvas(text: string): CanvasData {
 /** Serializes to pretty-printed JSONCanvas. */
 export function serializeCanvas(data: CanvasData): string {
   return `${JSON.stringify({ nodes: data.nodes, edges: data.edges }, null, 2)}\n`;
+}
+
+/** Rewrites FileNode paths after a note rename/move. */
+export function rewriteCanvasFileNodePaths(
+  data: CanvasData,
+  fromPath: string,
+  toPath: string,
+): CanvasData {
+  let changed = false;
+  const nodes = data.nodes.map((node) => {
+    if (node.type !== "file") {
+      return node;
+    }
+    const nextFile = remapPath(node.file, fromPath, toPath);
+    if (!nextFile) {
+      return node;
+    }
+    changed = true;
+    return { ...node, file: nextFile };
+  });
+  return changed ? { ...data, nodes } : data;
 }
 
 export function emptyCanvas(): string {

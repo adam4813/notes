@@ -173,3 +173,4 @@ Files to stage:
 - Links/embeds in card bodies don't navigate/render (no callbacks wired) — user confirmed acceptable for now; card bodies should link rather than embed in a future improvement
 - Missing fields: can add later via plugins
 - No blocking issues reported
+- Follow-up cleanup: board card wikilink callbacks were wired later, so card bodies now open linked notes normally.

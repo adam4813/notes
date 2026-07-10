@@ -1,6 +1,7 @@
 import type { CommandBus } from "@notes/core";
 import type { FileMovePayload, FilePathPayload, FileWritePayload } from "@notes/shared";
 import type { Tome } from "@notes/tome";
+import { rewriteEmbeddedReferences } from "../rename-references";
 
 /** Registers the core `file.*` commands, backed by the active Tome. */
 export function registerFileCommands(bus: CommandBus, getTome: () => Tome): void {
@@ -37,7 +38,28 @@ export function registerFileCommands(bus: CommandBus, getTome: () => Tome): void
     bus.register<FileMovePayload, FileMovePayload>({
       name,
       handler: async (payload) => {
-        await getTome().move(payload.from, payload.to);
+        const tome = getTome();
+        await tome.move(payload.from, payload.to);
+        const entries = await tome.listTree({ includeDotfiles: true });
+        const stack = [...entries];
+        while (stack.length > 0) {
+          const entry = stack.pop();
+          if (!entry) {
+            continue;
+          }
+          if (entry.type === "directory") {
+            stack.push(...(entry.children ?? []));
+            continue;
+          }
+          if (!entry.path.toLowerCase().endsWith(".md") && !entry.path.toLowerCase().endsWith(".canvas")) {
+            continue;
+          }
+          const content = await tome.read(entry.path);
+          const updated = rewriteEmbeddedReferences(entry.path, content, payload.from, payload.to);
+          if (updated !== content) {
+            await tome.write(entry.path, updated);
+          }
+        }
         return payload;
       },
     });

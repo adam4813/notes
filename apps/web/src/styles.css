@@ -302,6 +302,14 @@ button {
   letter-spacing: 0.03em;
 }
 
+.title-bar-controls:before {
+  content: "|";
+  padding-block: 6px;
+  color: var(--fg-muted);
+  font-weight: bold;
+  margin-right: 4px;
+}
+
 .title-bar-controls {
   display: flex;
   height: 100%;
@@ -310,7 +318,6 @@ button {
 
 .title-bar-btn {
   width: 46px;
-  height: 100%;
   border: none;
   background: transparent;
   color: var(--fg-muted);
@@ -320,6 +327,7 @@ button {
   justify-content: center;
   flex-shrink: 0;
   transition: background 0.1s, color 0.1s;
+  padding: 14px;
 }
 
 .title-bar-btn:hover {
@@ -366,6 +374,7 @@ button {
 
 .ribbon--desktop {
   -webkit-app-region: drag;
+  padding-right: 0;
 }
 
 .ribbon--desktop .title-bar-menu-btn,
@@ -938,6 +947,10 @@ button {
   background: var(--active);
 }
 
+.tree-row--rename {
+  background: var(--active);
+}
+
 /* Context menu */
 .context-menu {
   position: fixed;
@@ -977,6 +990,17 @@ button {
 .tree-name {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.tree-rename-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  padding: 3px 6px;
+  font: inherit;
 }
 
 .explorer-empty,

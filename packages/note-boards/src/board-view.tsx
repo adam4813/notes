@@ -11,6 +11,7 @@ interface BoardViewProps {
   value: string;
   onChange: (markdown: string) => void;
   path: string;
+  onOpenWikilink?: (name: string) => void;
 }
 
 interface CardDrag {
@@ -28,7 +29,7 @@ function debounce<T extends (...args: Parameters<T>) => void>(fn: T, ms: number)
 
 const LABEL_COLORS = ["#e2f0fb", "#fde8d8", "#d9f2e8", "#f5e6fb", "#fef9c3"];
 
-export function BoardView({ value, onChange, path }: BoardViewProps) {
+export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewProps) {
   const [columns, setColumns] = useState<BoardColumn[]>(() => parseBoard(value).model.columns);
   const [cards, setCards] = useState<Map<string, RichCard>>(new Map());
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -381,6 +382,13 @@ export function BoardView({ value, onChange, path }: BoardViewProps) {
                             value={card.body}
                             mode="rendered"
                             onChange={(body) => updateCardState({ ...card, body })}
+                            callbacks={
+                              onOpenWikilink
+                                ? {
+                                    onOpenWikilink,
+                                  }
+                                : undefined
+                            }
                           />
                         </div>
                       </div>

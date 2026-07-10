@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { emptyCanvas, parseCanvas, serializeCanvas, type CanvasData } from "./canvas-format";
+import {
+  emptyCanvas,
+  parseCanvas,
+  rewriteCanvasFileNodePaths,
+  serializeCanvas,
+  type CanvasData,
+} from "./canvas-format";
 
 describe("canvas-format", () => {
   it("round-trips nodes and edges", () => {
@@ -20,5 +26,39 @@ describe("canvas-format", () => {
 
   it("produces a valid empty canvas", () => {
     expect(parseCanvas(emptyCanvas())).toEqual({ nodes: [], edges: [] });
+  });
+
+  it("rewrites file node paths on rename", () => {
+    const data: CanvasData = {
+      nodes: [
+        { id: "a", type: "file", x: 0, y: 0, width: 200, height: 100, file: "notes/ideas.md" },
+        {
+          id: "b",
+          type: "file",
+          x: 0,
+          y: 0,
+          width: 200,
+          height: 100,
+          file: "notes/sub/plan.md",
+        },
+      ],
+      edges: [],
+    };
+
+    expect(rewriteCanvasFileNodePaths(data, "notes/ideas.md", "archive/ideas.md")).toEqual({
+      ...data,
+      nodes: [
+        { ...data.nodes[0], file: "archive/ideas.md" },
+        data.nodes[1],
+      ],
+    });
+
+    expect(rewriteCanvasFileNodePaths(data, "notes", "archive")).toEqual({
+      ...data,
+      nodes: [
+        { ...data.nodes[0], file: "archive/ideas.md" },
+        { ...data.nodes[1], file: "archive/sub/plan.md" },
+      ],
+    });
   });
 });

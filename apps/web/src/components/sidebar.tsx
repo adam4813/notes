@@ -21,11 +21,15 @@ export function Sidebar({
   view,
   onViewChange,
   searchQuery,
+  renameRequestPath,
+  onRenameRequestHandled,
 }: {
-  newActions: NewAction[];
+  newActions: NewAction[]; 
   view: SidebarView;
   onViewChange: (view: SidebarView) => void;
   searchQuery: string;
+  renameRequestPath: string | null;
+  onRenameRequestHandled: () => void;
 }) {
   const [pendingTag, setPendingTag] = useState<string | undefined>(undefined);
   const [open, setOpen] = useState(false);
@@ -106,7 +110,10 @@ export function Sidebar({
             </div>
           </div>
           <div className="sidebar-scroll">
-            <Explorer />
+            <Explorer
+              renameRequestPath={renameRequestPath}
+              onRenameRequestHandled={onRenameRequestHandled}
+            />
           </div>
         </>
       )}

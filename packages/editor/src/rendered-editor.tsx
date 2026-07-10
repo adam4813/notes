@@ -14,7 +14,7 @@ import {
 import { Markdown } from "tiptap-markdown";
 import { Embed } from "./embed-extension";
 import { SuggestionPopup } from "./suggestion-popup";
-import { NOTES_PATH_MIME, noteNameFromPath } from "./types";
+import { NOTES_PATH_MIME } from "./types";
 import { EditorToolbar } from "./toolbar";
 import type { EditorCallbacks, WikiSuggestion } from "./types";
 import { WikilinkDecorator } from "./wikilink-decorator";
@@ -140,7 +140,12 @@ export function RenderedEditor({
       return;
     }
     if (value !== readMarkdown(editor)) {
-      editor.commands.setContent(value, { emitUpdate: false });
+      const handle = window.setTimeout(() => {
+        if (!editor.isFocused && value !== readMarkdown(editor)) {
+          editor.commands.setContent(value, { emitUpdate: false });
+        }
+      }, 0);
+      return () => window.clearTimeout(handle);
     }
   }, [value, editor]);
 
@@ -296,9 +301,9 @@ export function RenderedEditor({
       }
       event.preventDefault();
 
-      const name = noteNameFromPath(path);
+      const target = path.replace(/\.[^.]+$/, "");
       // Alt/Option held → insert a plain link; otherwise embed.
-      const text = event.altKey ? `[[${name}]]` : `![[${name}]]`;
+      const text = event.altKey ? `[[${target}]]` : `![[${target}]]`;
 
       // Resolve the document position from the drop coordinates.
       const coords = editor.view.posAtCoords({ left: event.clientX, top: event.clientY });

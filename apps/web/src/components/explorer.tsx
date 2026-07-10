@@ -18,6 +18,17 @@ function baseNoExt(name: string): string {
   return name.replace(/\.[^.]+$/, "");
 }
 
+function splitName(name: string): { stem: string; ext: string } {
+  if (name.startsWith(".") && name.indexOf(".", 1) === -1) {
+    return { stem: name, ext: "" };
+  }
+  const index = name.lastIndexOf(".");
+  if (index <= 0) {
+    return { stem: name, ext: "" };
+  }
+  return { stem: name.slice(0, index), ext: name.slice(index) };
+}
+
 /** Depth-first lookup of a tree entry by path. */
 function findEntry(tree: FileEntry[], path: string): FileEntry | undefined {
   for (const entry of tree) {
@@ -37,10 +48,16 @@ interface NodeHandlers {
   onToggleDir: (path: string) => void;
   onContextMenu: (event: MouseEvent, node: FileEntry) => void;
   onMove: (fromPath: string, toDir: string) => void;
+  onBeginRename: (node: FileEntry) => void;
   dragOverPath: string | null;
   setDragOverPath: (path: string | null) => void;
   typeOf: (path: string) => string | undefined;
   isOpen: (path: string) => boolean;
+  renamePath: string | null;
+  renameDraft: string;
+  onRenameDraftChange: (value: string) => void;
+  onRenameCommit: () => void;
+  onRenameCancel: () => void;
 }
 
 const DRAG_TYPE = "application/x-notes-path";
@@ -71,9 +88,35 @@ function flattenVisible(entries: FileEntry[], depth: number, isOpen: (p: string)
 
 function TreeRow({ entry, depth, handlers }: { entry: FileEntry; depth: number; handlers: NodeHandlers }) {
   const indent = { paddingLeft: `${depth * 12 + 8}px`, height: `${ROW_HEIGHT}px` };
+  const isRenaming = handlers.renamePath === entry.path;
 
   if (entry.type === "directory") {
     const isDropTarget = handlers.dragOverPath === entry.path;
+    if (isRenaming) {
+      return (
+        <div className="tree-row tree-row--rename" style={indent}>
+          <span className="tree-caret">{handlers.isOpen(entry.path) ? "▾" : "▸"}</span>
+          <span className="tree-icon">📁</span>
+          <input
+            className="tree-rename-input"
+            value={handlers.renameDraft}
+            autoFocus
+            onChange={(event) => handlers.onRenameDraftChange(event.target.value)}
+            onBlur={() => handlers.onRenameCommit()}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                handlers.onRenameCommit();
+              } else if (event.key === "Escape") {
+                event.preventDefault();
+                handlers.onRenameCancel();
+              }
+            }}
+            onPointerDown={(event) => event.stopPropagation()}
+          />
+        </div>
+      );
+    }
     return (
       <button
         className={`tree-row tree-dir ${isDropTarget ? "tree-row--drop" : ""}`}
@@ -107,6 +150,32 @@ function TreeRow({ entry, depth, handlers }: { entry: FileEntry; depth: number; 
     : handlers.typeOf(entry.path);
   const typeLabel = noteType ? TYPE_LABEL[noteType] : undefined;
 
+  if (isRenaming) {
+    return (
+      <div className="tree-row tree-row--rename" style={indent}>
+        <span className="tree-icon">{iconFor(entry.name)}</span>
+        <input
+          className="tree-rename-input"
+          value={handlers.renameDraft}
+          autoFocus
+          onChange={(event) => handlers.onRenameDraftChange(event.target.value)}
+          onBlur={() => handlers.onRenameCommit()}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              handlers.onRenameCommit();
+            } else if (event.key === "Escape") {
+              event.preventDefault();
+              handlers.onRenameCancel();
+            }
+          }}
+          onPointerDown={(event) => event.stopPropagation()}
+        />
+        {typeLabel && <span className="tree-type">[{typeLabel}]</span>}
+      </div>
+    );
+  }
+
   return (
     <button
       className="tree-row tree-file"
@@ -130,12 +199,21 @@ interface ContextMenu {
   node?: FileEntry;
 }
 
-export function Explorer() {
+export function Explorer({
+  renameRequestPath,
+  onRenameRequestHandled,
+}: {
+  renameRequestPath: string | null;
+  onRenameRequestHandled: () => void;
+}) {
   const { state, dispatch } = useWorkspace();
   const services = useAppServices();
   const [menu, setMenu] = useState<ContextMenu | null>(null);
   const [dragOverPath, setDragOverPath] = useState<string | null>(null);
   const [openDirs, setOpenDirs] = useState<Set<string>>(new Set());
+  const [renamePath, setRenamePath] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [renameExt, setRenameExt] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Open all top-level directories the first time the tree loads.
@@ -160,6 +238,107 @@ export function Explorer() {
       }
       return next;
     });
+
+  const openAncestors = (path: string) => {
+    setOpenDirs((prev) => {
+      const next = new Set(prev);
+      let current = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
+      while (current) {
+        next.add(current);
+        current = current.includes("/") ? current.slice(0, current.lastIndexOf("/")) : "";
+      }
+      return next;
+    });
+  };
+
+  const beginRename = (node: FileEntry) => {
+    setMenu(null);
+    setRenamePath(node.path);
+    const { stem, ext } = node.type === "file" ? splitName(node.name) : { stem: node.name, ext: "" };
+    setRenameDraft(stem);
+    setRenameExt(ext);
+    openAncestors(node.path);
+    if (node.type === "directory") {
+      setOpenDirs((prev) => {
+        const next = new Set(prev);
+        next.add(node.path);
+        return next;
+      });
+    }
+  };
+
+  const cancelRename = () => {
+    setRenamePath(null);
+    setRenameDraft("");
+    setRenameExt("");
+  };
+
+  const commitRename = async () => {
+    if (!renamePath) {
+      return;
+    }
+    const node = findEntry(state.tree, renamePath);
+    if (!node) {
+      cancelRename();
+      return;
+    }
+    const input = renameDraft.trim();
+    const nextName = node.type === "file" ? `${input.replace(/\.[^.]+$/, "")}${renameExt}` : input;
+    if (!nextName || nextName === node.name) {
+      cancelRename();
+      return;
+    }
+    const dir = dirOf(node.path);
+    const to = dir ? `${dir}/${nextName}` : nextName;
+    services.markModified(node.path);
+    await api.rename(node.path, to);
+    if (node.type === "file") {
+      dispatch({ type: "renamePath", from: node.path, to, title: baseNoExt(nextName) });
+    } else {
+      setOpenDirs((prev) => {
+        const next = new Set<string>();
+        const prefix = `${node.path}/`;
+        const nextPrefix = `${to}/`;
+        for (const path of prev) {
+          if (path === node.path) {
+            next.add(to);
+          } else if (path.startsWith(prefix)) {
+            next.add(`${nextPrefix}${path.slice(prefix.length)}`);
+          } else {
+            next.add(path);
+          }
+        }
+        return next;
+      });
+      dispatch({ type: "renamePrefix", from: node.path, to });
+    }
+    cancelRename();
+    await refresh();
+  };
+
+  useEffect(() => {
+    if (!renamePath) {
+      return;
+    }
+    const node = findEntry(state.tree, renamePath);
+    if (!node) {
+      return;
+    }
+    setRenameDraft(node.name);
+    openAncestors(node.path);
+  }, [renamePath, state.tree]);
+
+  useEffect(() => {
+    if (!renameRequestPath) {
+      return;
+    }
+    const node = findEntry(state.tree, renameRequestPath);
+    if (!node) {
+      return;
+    }
+    beginRename(node);
+    onRenameRequestHandled();
+  }, [renameRequestPath, state.tree, onRenameRequestHandled]);
 
   const rows = useMemo(() => {
     const out: FlatRow[] = [];
@@ -190,23 +369,6 @@ export function Explorer() {
 
   const openNode = (node: FileEntry) =>
     dispatch({ type: "openFile", path: node.path, title: baseNoExt(node.name) });
-
-  const renameNode = async (node: FileEntry) => {
-    const input = window.prompt(`Rename ${node.type}`, node.name);
-    if (!input || input === node.name) {
-      return;
-    }
-    const dir = dirOf(node.path);
-    const to = dir ? `${dir}/${input}` : input;
-    services.markModified(node.path);
-    await api.rename(node.path, to);
-    if (node.type === "file") {
-      dispatch({ type: "renamePath", from: node.path, to, title: baseNoExt(input) });
-    } else {
-      dispatch({ type: "renamePrefix", from: node.path, to });
-    }
-    await refresh();
-  };
 
   const removeNode = async (node: FileEntry) => {
     if (node.type === "file") {
@@ -263,10 +425,16 @@ export function Explorer() {
     onToggleDir: toggleDir,
     onContextMenu: (event, node) => openMenu(event, node),
     onMove: move,
+    onBeginRename: beginRename,
     dragOverPath,
     setDragOverPath,
     typeOf: (path) => services.noteTypes[path],
     isOpen,
+    renamePath,
+    renameDraft,
+    onRenameDraftChange: setRenameDraft,
+    onRenameCommit: () => void commitRename(),
+    onRenameCancel: cancelRename,
   };
 
   const menuItems = (): { label: string; run: () => void; danger?: boolean }[] => {
@@ -284,7 +452,7 @@ export function Explorer() {
         { label: "New folder…", run: () => void newFolder(dir) },
         ...(node
           ? [
-              { label: "Rename…", run: () => void renameNode(node) },
+              { label: "Rename…", run: () => beginRename(node) },
               { label: "Delete", run: () => void removeNode(node), danger: true },
             ]
           : []),
@@ -292,7 +460,7 @@ export function Explorer() {
     }
     return [
       { label: "Open", run: () => openNode(node) },
-      { label: "Rename…", run: () => void renameNode(node) },
+      { label: "Rename…", run: () => beginRename(node) },
       { label: "Delete", run: () => void removeNode(node), danger: true },
     ];
   };

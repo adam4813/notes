@@ -6,7 +6,6 @@ import {
   useState,
   type DragEvent as ReactDragEvent,
   type PointerEvent as ReactPointerEvent,
-  type WheelEvent as ReactWheelEvent,
 } from "react";
 import { marked } from "marked";
 import { MarkdownEditor } from "@notes/editor";
@@ -49,6 +48,18 @@ function detectNoteInfo(
     typeMatch?.[1].trim() ??
     (filePath.toLowerCase().endsWith(".canvas") ? "canvas" : "markdown");
   return { title, type };
+}
+
+function estimateFileNodeSize(content: string, filePath: string): { width: number; height: number } {
+  const fmMatch = /^---\n([\s\S]*?)\n---\n?/.exec(content);
+  const body = fmMatch ? content.slice(fmMatch[0].length) : content;
+  const { title } = detectNoteInfo(content, filePath);
+  const lines = body.split(/\r?\n/);
+  const longestLine = Math.max(title.length, ...lines.map((line) => line.length), 0);
+  return {
+    width: Math.min(600, Math.max(240, Math.round(longestLine * 7.5 + 72))),
+    height: Math.min(400, Math.max(120, Math.round(lines.length * 18 + 56))),
+  };
 }
 
 const BLOCKED_TYPES = new Set(["canvas", "board", "calendar"]);
@@ -227,7 +238,6 @@ function FileNodeCard({
         <div
           className="canvas-file-editor"
           onPointerDown={(e) => e.stopPropagation()}
-          onWheel={(e) => e.stopPropagation()}
         >
           <MarkdownEditor value={content} mode="rendered" onChange={handleChange} />
         </div>
@@ -491,18 +501,30 @@ export function CanvasView({ value, onChange, onOpenFile, path, subscribeToFileC
     };
   }, []);
 
-  const onWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const rect = containerRef.current?.getBoundingClientRect();
-    const cx = event.clientX - (rect?.left ?? 0);
-    const cy = event.clientY - (rect?.top ?? 0);
-    setViewport((vp) => {
-      const worldX = (cx - vp.x) / vp.scale;
-      const worldY = (cy - vp.y) / vp.scale;
-      const scale = Math.min(3, Math.max(0.2, vp.scale * (event.deltaY < 0 ? 1.1 : 0.9)));
-      return { x: cx - worldX * scale, y: cy - worldY * scale, scale };
-    });
-  };
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+    const onWheel = (event: WheelEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest(".canvas-file-card")) {
+        return;
+      }
+      event.preventDefault();
+      const rect = container.getBoundingClientRect();
+      const cx = event.clientX - rect.left;
+      const cy = event.clientY - rect.top;
+      setViewport((vp) => {
+        const worldX = (cx - vp.x) / vp.scale;
+        const worldY = (cy - vp.y) / vp.scale;
+        const scale = Math.min(3, Math.max(0.2, vp.scale * (event.deltaY < 0 ? 1.1 : 0.9)));
+        return { x: cx - worldX * scale, y: cy - worldY * scale, scale };
+      });
+    };
+    container.addEventListener("wheel", onWheel, { passive: false });
+    return () => container.removeEventListener("wheel", onWheel);
+  }, []);
 
   const onBackgroundPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     // If a FileNode is being edited, click on background exits edit mode instead of panning.
@@ -593,20 +615,32 @@ export function CanvasView({ value, onChange, onOpenFile, path, subscribeToFileC
   };
 
   /** Handles drops of note files from the explorer onto the canvas. */
-  const onViewportDrop = (event: ReactDragEvent<HTMLDivElement>) => {
+  const onViewportDrop = async (event: ReactDragEvent<HTMLDivElement>) => {
     const notePath = event.dataTransfer.getData(NOTES_DRAG_MIME);
     if (!notePath) return;
+    const { clientX, clientY } = event;
     event.preventDefault();
     event.stopPropagation();
-    const world = screenToWorld(event.clientX, event.clientY);
+    const world = screenToWorld(clientX, clientY);
+    let width = 320;
+    let height = 240;
+    const res = await fetch(`/api/file?path=${encodeURIComponent(notePath)}`);
+    if (res.ok) {
+      const data = (await res.json()) as { content?: string };
+      if (typeof data.content === "string") {
+        const size = estimateFileNodeSize(data.content, notePath);
+        width = size.width;
+        height = size.height;
+      }
+    }
     const node: FileNode = {
       id: newId("file"),
       type: "file",
       file: notePath,
-      x: world.x - 160,
-      y: world.y - 120,
-      width: 320,
-      height: 240,
+      x: world.x - width / 2,
+      y: world.y - height / 2,
+      width,
+      height,
     };
     commit({ ...data, nodes: [...data.nodes, node] });
     setSelection({ kind: "node", id: node.id });
@@ -683,7 +717,6 @@ export function CanvasView({ value, onChange, onOpenFile, path, subscribeToFileC
         className="canvas-viewport"
         ref={containerRef}
         onPointerDown={onBackgroundPointerDown}
-        onWheel={onWheel}
         onDrop={onViewportDrop}
         onDragOver={onViewportDragOver}
         data-testid="canvas-viewport"

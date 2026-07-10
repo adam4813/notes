@@ -285,16 +285,17 @@ export class NoteIndex {
     if (!target) {
       return undefined;
     }
-    // Match by basename or path-without-extension across linkable notes only.
     const rows = this.db.prepare("SELECT path FROM notes WHERE linkable = 1").all() as { path: string }[];
+    const exact = rows.find(
+      (row) =>
+        row.path.toLowerCase() === target || pathWithoutExtension(row.path).toLowerCase() === target,
+    );
+    if (exact) {
+      return exact.path;
+    }
     const matches = rows
-      .filter(
-        (row) =>
-          baseWithoutExtension(row.path).toLowerCase() === target ||
-          pathWithoutExtension(row.path).toLowerCase() === target,
-      )
+      .filter((row) => baseWithoutExtension(row.path).toLowerCase() === target)
       .sort((a, b) => a.path.length - b.path.length);
-
     return matches[0]?.path;
   }
 

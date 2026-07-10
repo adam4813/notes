@@ -60,6 +60,7 @@ export function App() {
   const [replaceOpen, setReplaceOpen] = useState(false);
   const [sidebarView, setSidebarView] = useState<SidebarView>("explorer");
   const [sidebarSearchQuery, setSidebarSearchQuery] = useState("");
+  const [renameRequestPath, setRenameRequestPath] = useState<string | null>(null);
   const [openSettingsInTab, setOpenSettingsInTabState] = useState(
     () => globalThis.localStorage?.getItem("notes.settings.openInTab") === "true",
   );
@@ -170,19 +171,10 @@ export function App() {
 
   const renamePath = useCallback(
     async (path: string) => {
-      const name = path.split("/").pop() ?? path;
-      const input = window.prompt("Rename note", name);
-      if (!input || input === name) {
-        return;
-      }
-      const dir = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
-      const to = dir ? `${dir}/${input}` : input;
-      markModified(path);
-      await api.rename(path, to);
-      dispatch({ type: "renamePath", from: path, to, title: baseNoExt(to) });
-      await refreshTree();
+      setSidebarView("explorer");
+      setRenameRequestPath(path);
     },
-    [dispatch, refreshTree, markModified],
+    [],
   );
 
   const deletePath = useCallback(
@@ -464,6 +456,10 @@ export function App() {
     setSidebarSearchQuery(query);
   }, []);
 
+  const clearRenameRequest = useCallback(() => {
+    setRenameRequestPath(null);
+  }, []);
+
   const newActions = useMemo(
     () => [
       { id: "note", label: "Markdown note", run: () => createNote() },
@@ -577,6 +573,8 @@ export function App() {
             view={sidebarView}
             onViewChange={setSidebarView}
             searchQuery={sidebarSearchQuery}
+            renameRequestPath={renameRequestPath}
+            onRenameRequestHandled={clearRenameRequest}
           />
           <Workspace />
           <RightPanel />

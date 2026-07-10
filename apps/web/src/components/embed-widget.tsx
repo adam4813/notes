@@ -124,7 +124,21 @@ export function EmbedWidget({ target }: { target: string }) {
       case "table":
         return <TableGrid value={content} onChange={save} />;
       case "board":
-        return <BoardView value={content} onChange={save} path={path} />;
+        return (
+          <BoardView
+            value={content}
+            onChange={save}
+            path={path}
+            onOpenWikilink={(name) => {
+              void (async () => {
+                const resolved = await api.resolve(name);
+                if (resolved.path) {
+                  dispatch({ type: "openFile", path: resolved.path, title: name });
+                }
+              })();
+            }}
+          />
+        );
       case "calendar":
         return <CalendarView value={content} onChange={save} path={path} />;
       case "grid":

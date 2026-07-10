@@ -236,24 +236,11 @@ Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase 
 
 ## 8. Cross-Session Handoff
 
-- **Last session:** 2026-07-09 — **ALL 20 PHASES COMPLETE 🎉** Phase 20: first-launch tome folder picker (JSON file store), auto-updater (electron-updater with 5s delay), UpdateBanner React component, File/Edit inline menus in titlebar. Key fix: electron-store v11 is ESM-only → replaced with simple JSON store. Windows installer `Notes-Setup-0.0.0.exe` fully functional.
-- **Current state:** Full desktop app with installer for Windows (Mac/Linux via platform-specific commands). All features from phases 0–20 working.
-- **Next action:** All planned phases complete. Deferred items and post-MVP todos remain in the SQL todo list.
-- **Current state:** Rich cards/entries + canvas papers on desk fully shipped. Next track: Electron desktop wrapper (phases 17–20) — Phase 17 is ready to start.
-- **Next action:** Implement Phase 17 (Electron Core Scaffold) via `/implement-phase`.
-- **Current state:** Rich board cards shipped. Phase 14 (Calendar Rich Entries) ready — depends on 13 ✅.
-- **Next action:** Implement Phase 14 (Calendar Rich Entries) via `/implement-phase`. Two feature tracks added:
-  (1) **Rich Cards/Entries** (phases 13–16): board cards and calendar entries upgraded to full notes
-  stored in hidden dotfolders (`.Board.cards/`, `.Calendar.events/`), plus canvas FileNode
-  drop-and-preview (phase 15) and inline editing "papers on desk" (phase 16).
-  (2) **Desktop (Electron)** (phases 17–20): chromeless Electron wrapper, build pipeline for
-  Win/Mac/Linux, auto-update via GitHub Releases, first-launch tome folder UX.
-  Phase files written to `plan/phase-13-*.md` through `plan/phase-20-*.md`.
-  Drag-to-embed (explorer → editor) shipped as commit `0e05bb0`.
-- **Current state:** MVP complete (phases 0–12 ✅). Phases 13–20 planned and ready to implement.
-- **Next action:** Implement phase 13 (Board Rich Cards) via `/implement-phase`.
-- **Conventions:** `.github/copilot-instructions.md` is finalized in Phase 0; treat it as the
-  binding style/architecture reference for all later phases.
+- **Last session:** 2026-07-09 — cleanup pass for the desktop/polish backlog. Board card wikilink navigation, canvas FileNode auto-sizing on first embed drop, and the remaining TipTap sync warning path were all cleaned up.
+- **Current state:** All implementation phases 0–20 are complete. The app is in a finished desktop/web state, and the remaining backlog is limited to future post-MVP ideas.
+- **Deferred follow-up:** None open. Any later work should start from a new backlog item or a post-MVP idea.
+- **Next action:** Continue only if a new feature or polish item is chosen.
+- **Conventions:** `.github/copilot-instructions.md` is finalized in Phase 0; treat it as the binding style/architecture reference for all later phases.
 
 ---
 

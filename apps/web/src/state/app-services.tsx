@@ -4,7 +4,7 @@ import type { SettingsBodyProps } from "../components/settings-view";
 export interface AppServices {
   /** Marks a note as modified so it is no longer a discardable provisional note. */
   markModified: (path: string) => void;
-  /** Prompts to rename the note at `path` and updates open tabs. */
+  /** Requests an inline rename for the note at `path` and updates open tabs after commit. */
   renamePath: (path: string) => Promise<void>;
   /** Confirms and deletes the note at `path`, closing any open tabs. */
   deletePath: (path: string) => Promise<void>;

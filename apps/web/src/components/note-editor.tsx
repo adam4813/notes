@@ -249,7 +249,19 @@ export function NoteEditor({ path }: { path: string }) {
             subscribeToFileChange={subscribeToFileChange}
           />
         ) : isBoard ? (
-          <BoardView value={content} onChange={handleChange} path={path} />
+          <BoardView
+            value={content}
+            onChange={handleChange}
+            path={path}
+            onOpenWikilink={(name) => {
+              void (async () => {
+                const resolved = await api.resolve(name);
+                if (resolved.path) {
+                  dispatch({ type: "openFile", path: resolved.path, title: name });
+                }
+              })();
+            }}
+          />
         ) : isTable ? (
           <TableGrid value={content} onChange={handleChange} />
         ) : isMermaid ? (

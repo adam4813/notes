@@ -119,3 +119,4 @@ Files to stage:
 - No blocking issues
 - Scroll preference: "Both — auto-size on embed to fit content (with max size), user can resize after"
   → Deferred: auto-size FileNode to content on first embed drop
+- Follow-up cleanup: dropped canvas FileNodes now auto-size from the embedded note content on first drop.

@@ -179,3 +179,4 @@ Files to stage:
 - Notes UI fully functional inside Electron
 - window.electronAPI available with all expected properties
 - Pre-existing warning in console: "flushSync was called from inside a lifecycle method" (from TipTap RenderedEditor) — present on both desktop and web, non-blocking, deferred
+- Follow-up cleanup: the TipTap sync path was moved out of the lifecycle call site in a later pass.
