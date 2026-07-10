@@ -5,6 +5,7 @@ import { MermaidView } from "@notes/note-mermaid";
 import { TableGrid } from "@notes/note-tables";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
+import { connectTomeChanges } from "../api/ws";
 import { useWorkspace } from "../state/app-context";
 
 function basename(path: string): string {
@@ -43,6 +44,7 @@ export function EmbedWidget({ target }: { target: string }) {
   const [state, setState] = useState<EmbedState>({ status: "loading" });
   const contentRef = useRef("");
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
+  const lastWriteAtRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,6 +73,29 @@ export function EmbedWidget({ target }: { target: string }) {
     };
   }, [target]);
 
+  // Subscribe to file-change events so edits made in the full editor are
+  // reflected here without requiring a manual re-render trigger.
+  useEffect(() => {
+    if (state.status !== "ready" || !state.path) return;
+    const watchPath = state.path;
+    return connectTomeChanges((change) => {
+      if (change.path !== watchPath) return;
+      // Ignore the watcher echo of our own debounced write.
+      if (Date.now() - lastWriteAtRef.current < 1500) return;
+      void api
+        .read(watchPath)
+        .then((result) => {
+          if (result.content === contentRef.current) return;
+          contentRef.current = result.content;
+          const type = watchPath.toLowerCase().endsWith(".canvas")
+            ? "canvas"
+            : (frontmatterType(result.content) ?? "markdown");
+          setState((prev) => ({ ...prev, content: result.content, type }));
+        })
+        .catch(() => undefined);
+    });
+  }, [state.path, state.status]);
+
   const save = (next: string) => {
     setState((prev) => ({ ...prev, content: next }));
     contentRef.current = next;
@@ -81,7 +106,10 @@ export function EmbedWidget({ target }: { target: string }) {
     if (saveTimer.current) {
       clearTimeout(saveTimer.current);
     }
-    saveTimer.current = setTimeout(() => void api.write(path, next).catch(() => undefined), 500);
+    saveTimer.current = setTimeout(() => {
+      lastWriteAtRef.current = Date.now();
+      void api.write(path, next).catch(() => undefined);
+    }, 500);
   };
 
   if (state.status === "loading") {

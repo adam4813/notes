@@ -58,6 +58,29 @@ export function NoteEditor({ path }: { path: string }) {
   const contentRef = useRef("");
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
   const lastWriteAtRef = useRef(0);
+  // Track the path that was used for the most-recent content load so we can
+  // detect a prop change synchronously (during render, before effects fire).
+  const loadedPathRef = useRef<string | null>(null);
+
+  // Synchronously reset state when path changes so the stale content from the
+  // previous note never reaches the render pass below (prevents board/table
+  // widgets from briefly rendering for the incoming note).
+  if (loadedPathRef.current !== path) {
+    // Flush any pending dirty write for the *old* path before switching.
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = undefined;
+    }
+    if (dirtyRef.current && loadedPathRef.current !== null) {
+      void api.write(loadedPathRef.current, contentRef.current).catch(() => undefined);
+    }
+    loadedPathRef.current = path;
+    // Reset derived state synchronously — React applies these before painting.
+    setContent("");
+    setSaveState("loading");
+    dirtyRef.current = false;
+    contentRef.current = "";
+  }
 
   useEffect(() => {
     let cancelled = false;
