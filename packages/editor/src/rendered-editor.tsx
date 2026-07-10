@@ -86,6 +86,7 @@ export function RenderedEditor({
 
   const editor = useEditor({
     immediatelyRender: false,
+    content: value,
     extensions: [
       StarterKit,
       TaskList,
@@ -143,7 +144,11 @@ export function RenderedEditor({
     if (value !== readMarkdown(editor)) {
       const handle = window.setTimeout(() => {
         if (!editor.isFocused && value !== readMarkdown(editor)) {
-          editor.commands.setContent(value, { emitUpdate: false });
+          editor
+            .chain()
+            .setMeta("addToHistory", false)
+            .setContent(value, { emitUpdate: false })
+            .run();
         }
       }, 0);
       return () => window.clearTimeout(handle);

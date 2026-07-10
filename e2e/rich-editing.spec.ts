@@ -15,6 +15,24 @@ test("toolbar applies bold formatting in the rendered editor", async ({ page }) 
   await expect(rendered.locator("strong")).toContainText("bold me");
 });
 
+test("undo in rendered mode does not clear content after switching modes", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "＋ New note" }).click();
+
+  const rendered = page.locator(".ProseMirror").first();
+  await expect(rendered).toBeVisible();
+  await rendered.click();
+  await page.keyboard.press("Control+End");
+  await page.keyboard.type("keep this text");
+
+  await page.getByRole("tab", { name: "Edit", exact: true }).click();
+  await page.getByRole("tab", { name: "Rendered", exact: true }).click();
+
+  await rendered.click();
+  await page.keyboard.press("Control+Z");
+  await expect(rendered).toContainText("keep this text");
+});
+
 test("wikilink autocomplete inserts a link from the index", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "＋ New note" }).click();
