@@ -21,7 +21,6 @@ const THEME_ICON: Record<ThemeMode, string> = {
 interface RibbonProps {
   newActions: Array<{ id: string; label: string; run: () => void }>;
   onCommand: () => void;
-  onQuickOpen: () => void;
   onSettings: () => void;
   onSearch: (query: string) => void;
 }
@@ -104,7 +103,7 @@ function TopBarMenu({
   );
 }
 
-export function Ribbon({ newActions, onCommand, onQuickOpen, onSettings, onSearch }: RibbonProps) {
+export function Ribbon({ newActions, onCommand, onSettings, onSearch }: RibbonProps) {
   const { state, dispatch } = useWorkspace();
   const electronApi = window.electronAPI;
   const isDesktop = Boolean(electronApi);
@@ -194,14 +193,6 @@ export function Ribbon({ newActions, onCommand, onQuickOpen, onSettings, onSearc
 
       <div className="ribbon-right">
         <div className="ribbon-actions">
-          <button
-            className="btn-ghost"
-            title="Quick switcher (Ctrl/Cmd+O)"
-            aria-label="Quick switcher"
-            onClick={onQuickOpen}
-          >
-            🔍
-          </button>
           <button
             className="btn-ghost"
             title="Command palette (Ctrl/Cmd+P)"

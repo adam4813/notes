@@ -601,7 +601,6 @@ export function App() {
         <Ribbon
           newActions={newActions}
           onCommand={() => setPaletteMode("commands")}
-          onQuickOpen={() => setPaletteMode("files")}
           onSettings={openSettings}
           onSearch={openSidebarSearch}
         />
@@ -609,6 +608,7 @@ export function App() {
           <Sidebar
             view={sidebarView}
             onViewChange={setSidebarView}
+            onOpenPicker={() => setPaletteMode("files")}
             searchQuery={sidebarSearchQuery}
             renameRequestPath={renameRequestPath}
             onRenameRequestHandled={clearRenameRequest}

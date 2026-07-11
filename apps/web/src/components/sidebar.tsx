@@ -13,12 +13,14 @@ const VIEWS: { id: SidebarView; label: string; icon: string }[] = [
 export function Sidebar({
   view,
   onViewChange,
+  onOpenPicker,
   searchQuery,
   renameRequestPath,
   onRenameRequestHandled,
 }: {
   view: SidebarView;
   onViewChange: (view: SidebarView) => void;
+  onOpenPicker: () => void;
   searchQuery: string;
   renameRequestPath: string | null;
   onRenameRequestHandled: () => void;
@@ -47,6 +49,15 @@ export function Sidebar({
             <span className="sidebar-view-label">{entry.label}</span>
           </button>
         ))}
+        <div className="sidebar-view-separator" aria-hidden />
+        <button
+          className="sidebar-view-btn sidebar-view-btn--action"
+          title="Open or create note"
+          aria-label="Open or create note"
+          onClick={onOpenPicker}
+        >
+          <span aria-hidden>📂</span>
+        </button>
       </div>
 
       {view === "explorer" && (

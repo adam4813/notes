@@ -583,6 +583,7 @@ button {
 /* Sidebar view switcher */
 .sidebar-views {
   display: flex;
+  align-items: center;
   gap: 2px;
   padding: 6px;
   border-bottom: 1px solid var(--border);
@@ -610,6 +611,25 @@ button {
 .sidebar-view-label {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.sidebar-view-separator {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 3px;
+  background: var(--border);
+}
+
+.sidebar-view-btn--action {
+  flex: 0 0 auto;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: color-mix(in srgb, var(--accent), #000 20%);
+  min-width: 32px;
+}
+
+.sidebar-view-btn--action:hover {
+  filter: brightness(1.05);
 }
 
 /* Search pane */
