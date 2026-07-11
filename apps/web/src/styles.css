@@ -567,15 +567,6 @@ button {
   overflow: auto;
 }
 
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
-}
-
-.sidebar-title,
 .panel-header {
   font-size: 11px;
   text-transform: uppercase;

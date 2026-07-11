@@ -85,20 +85,6 @@
   box-shadow: var(--island-shadow);
 }
 
-/* ── Sidebar header — mimics Vim's top-of-window title ─────── */
-:root[data-theme="vim"] .sidebar-header {
-  background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border);
-}
-
-:root[data-theme="vim"] .sidebar-title {
-  color: var(--vim-fn);
-  text-transform: none;
-  letter-spacing: 0;
-  font-family: var(--vim-font);
-  font-weight: bold;
-}
-
 /* ── Status bar — iconic Vim inverted status line ──────────── */
 :root[data-theme="vim"] .status-bar {
   background: var(--vim-statusline-bg);

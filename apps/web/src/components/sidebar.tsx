@@ -1,13 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Explorer } from "./explorer";
 import { SearchPane } from "./search-pane";
 import { TagPane } from "./tag-pane";
-
-export interface NewAction {
-  id: string;
-  label: string;
-  run: () => void;
-}
 
 export type SidebarView = "explorer" | "search" | "tags";
 
@@ -17,14 +11,12 @@ const VIEWS: { id: SidebarView; label: string; icon: string }[] = [
 ];
 
 export function Sidebar({
-  newActions,
   view,
   onViewChange,
   searchQuery,
   renameRequestPath,
   onRenameRequestHandled,
 }: {
-  newActions: NewAction[]; 
   view: SidebarView;
   onViewChange: (view: SidebarView) => void;
   searchQuery: string;
@@ -32,22 +24,6 @@ export function Sidebar({
   onRenameRequestHandled: () => void;
 }) {
   const [pendingTag, setPendingTag] = useState<string | undefined>(undefined);
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const primary = newActions[0];
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    const onPointerDown = (event: PointerEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [open]);
 
   const pickTag = (tag: string) => {
     setPendingTag(tag);
@@ -74,70 +50,24 @@ export function Sidebar({
       </div>
 
       {view === "explorer" && (
-        <>
-          <div className="sidebar-header">
-            <span className="sidebar-title">Explorer</span>
-            <div className="new-button" ref={ref}>
-              <button className="btn-ghost new-button-main" onClick={() => primary?.run()}>
-                ＋ New note
-              </button>
-              <button
-                className="btn-ghost new-button-caret"
-                aria-label="Choose a note type"
-                aria-haspopup="menu"
-                aria-expanded={open}
-                onClick={() => setOpen((value) => !value)}
-              >
-                ▾
-              </button>
-              {open && (
-                <div className="new-menu" role="menu">
-                  {newActions.map((action) => (
-                    <button
-                      key={action.id}
-                      role="menuitem"
-                      className="new-menu-item"
-                      onClick={() => {
-                        action.run();
-                        setOpen(false);
-                      }}
-                    >
-                      {action.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="sidebar-scroll">
-            <Explorer
-              renameRequestPath={renameRequestPath}
-              onRenameRequestHandled={onRenameRequestHandled}
-            />
-          </div>
-        </>
+        <div className="sidebar-scroll">
+          <Explorer
+            renameRequestPath={renameRequestPath}
+            onRenameRequestHandled={onRenameRequestHandled}
+          />
+        </div>
       )}
 
       {view === "search" && (
-        <>
-          <div className="sidebar-header">
-            <span className="sidebar-title">Search</span>
-          </div>
-          <div className="sidebar-scroll">
-            <SearchPane initialTag={pendingTag} initialQuery={searchQuery} />
-          </div>
-        </>
+        <div className="sidebar-scroll">
+          <SearchPane initialTag={pendingTag} initialQuery={searchQuery} />
+        </div>
       )}
 
       {view === "tags" && (
-        <>
-          <div className="sidebar-header">
-            <span className="sidebar-title">Tags</span>
-          </div>
-          <div className="sidebar-scroll">
-            <TagPane onPickTag={pickTag} />
-          </div>
-        </>
+        <div className="sidebar-scroll">
+          <TagPane onPickTag={pickTag} />
+        </div>
       )}
     </aside>
   );

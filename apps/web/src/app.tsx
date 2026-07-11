@@ -599,7 +599,7 @@ export function App() {
         <UpdateBanner />
         <div className="shell">
         <Ribbon
-          onNewNote={() => createNote()}
+          newActions={newActions}
           onCommand={() => setPaletteMode("commands")}
           onQuickOpen={() => setPaletteMode("files")}
           onSettings={openSettings}
@@ -607,7 +607,6 @@ export function App() {
         />
         <div className="shell-body">
           <Sidebar
-            newActions={newActions}
             view={sidebarView}
             onViewChange={setSidebarView}
             searchQuery={sidebarSearchQuery}

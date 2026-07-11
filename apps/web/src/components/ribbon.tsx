@@ -19,7 +19,7 @@ const THEME_ICON: Record<ThemeMode, string> = {
 };
 
 interface RibbonProps {
-  onNewNote: () => void;
+  newActions: Array<{ id: string; label: string; run: () => void }>;
   onCommand: () => void;
   onQuickOpen: () => void;
   onSettings: () => void;
@@ -104,13 +104,13 @@ function TopBarMenu({
   );
 }
 
-export function Ribbon({ onNewNote, onCommand, onQuickOpen, onSettings, onSearch }: RibbonProps) {
+export function Ribbon({ newActions, onCommand, onQuickOpen, onSettings, onSearch }: RibbonProps) {
   const { state, dispatch } = useWorkspace();
   const electronApi = window.electronAPI;
   const isDesktop = Boolean(electronApi);
   const isMac = electronApi?.platform === "darwin";
   const [maximized, setMaximized] = useState(false);
-  const [openMenu, setOpenMenu] = useState<"file" | "edit" | null>(null);
+  const [openMenu, setOpenMenu] = useState<"file" | "edit" | "new" | null>(null);
 
   useEffect(() => {
     if (!electronApi) {
@@ -162,6 +162,18 @@ export function Ribbon({ onNewNote, onCommand, onQuickOpen, onSettings, onSearch
               { type: "item", label: "Paste", onClick: () => document.execCommand("paste") },
             ]}
           />
+          <TopBarMenu
+            id="new"
+            label="New"
+            open={openMenu === "new"}
+            onToggle={() => setOpenMenu((current) => (current === "new" ? null : "new"))}
+            onClose={() => setOpenMenu((current) => (current === "new" ? null : current))}
+            items={newActions.map((action) => ({
+              type: "item" as const,
+              label: action.label,
+              onClick: action.run,
+            }))}
+          />
         </div>
       </div>
       <div className="ribbon-search">
@@ -182,9 +194,6 @@ export function Ribbon({ onNewNote, onCommand, onQuickOpen, onSettings, onSearch
 
       <div className="ribbon-right">
         <div className="ribbon-actions">
-          <button className="btn-ghost" title="New note" aria-label="New note" onClick={onNewNote}>
-            ＋
-          </button>
           <button
             className="btn-ghost"
             title="Quick switcher (Ctrl/Cmd+O)"
