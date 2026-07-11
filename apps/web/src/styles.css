@@ -1123,8 +1123,7 @@ button {
 
 .tab-list {
   display: flex;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
   flex: 1;
   gap: 2px;
   padding: 6px 6px 0;
@@ -1135,10 +1134,13 @@ button {
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
+  min-width: 140px;
+  max-width: 320px;
   border: 1px solid transparent;
   border-bottom: none;
   border-radius: 8px 8px 0 0;
   white-space: nowrap;
+  overflow: hidden;
   color: var(--fg-muted);
 }
 
@@ -1151,6 +1153,14 @@ button {
   border-color: var(--border);
   border-bottom-color: var(--bg-island);
   color: var(--fg);
+}
+
+.tab-title,
+.tab-file {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tab-file {
@@ -1170,6 +1180,7 @@ button {
   background: transparent;
   border: none;
   color: inherit;
+  flex: 0 0 auto;
   opacity: 0.6;
   border-radius: 4px;
   padding: 0 4px;

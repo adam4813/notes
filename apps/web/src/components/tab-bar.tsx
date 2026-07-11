@@ -43,9 +43,61 @@ export function TabBar({ pane }: { pane: Pane }) {
   const { state, dispatch } = useWorkspace();
   const services = useAppServices();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [overflowMenuOpen, setOverflowMenuOpen] = useState(false);
   const [tabMenu, setTabMenu] = useState<{ x: number; y: number; tab: Tab } | null>(null);
+  const [overflowTabs, setOverflowTabs] = useState<Tab[]>([]);
+  const [hiddenTabIds, setHiddenTabIds] = useState<Set<string>>(new Set());
   const menuRef = useRef<HTMLDivElement>(null);
+  const overflowMenuRef = useRef<HTMLDivElement>(null);
+  const tabListRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const tabMenuRef = useRef<HTMLDivElement>(null);
+
+  const recalcOverflowTabs = () => {
+    const list = tabListRef.current;
+    if (!list) {
+      setOverflowTabs([]);
+      setHiddenTabIds(new Set());
+      return;
+    }
+
+    const GAP = 2;
+    const widthOf = (tab: Tab) => tabRefs.current[tab.id]?.offsetWidth ?? 140;
+    let used = 0;
+    const visible: Tab[] = [];
+
+    for (const tab of pane.tabs) {
+      const width = widthOf(tab);
+      const next = used + width + (visible.length > 0 ? GAP : 0);
+      if (next <= list.clientWidth) {
+        visible.push(tab);
+        used = next;
+      }
+    }
+
+    const active = pane.tabs.find((tab) => tab.id === pane.activeTabId);
+    if (active && !visible.some((tab) => tab.id === active.id)) {
+      let activeNext = used + widthOf(active) + (visible.length > 0 ? GAP : 0);
+      while (visible.length > 0 && activeNext > list.clientWidth) {
+        const removed = visible.pop()!;
+        used -= widthOf(removed) + (visible.length > 0 ? GAP : 0);
+        activeNext = used + widthOf(active) + (visible.length > 0 ? GAP : 0);
+      }
+      if (activeNext <= list.clientWidth || visible.length === 0) {
+        visible.push(active);
+      }
+    }
+
+    const visibleIds = new Set(visible.map((tab) => tab.id));
+    const overflow = pane.tabs.filter((tab) => !visibleIds.has(tab.id));
+    setOverflowTabs(overflow);
+    setHiddenTabIds(new Set(overflow.map((tab) => tab.id)));
+  };
+
+  const scheduleOverflowRecalc = () => {
+    setHiddenTabIds(new Set());
+    window.requestAnimationFrame(recalcOverflowTabs);
+  };
 
   useEffect(() => {
     if (!menuOpen) {
@@ -70,6 +122,28 @@ export function TabBar({ pane }: { pane: Pane }) {
   }, [menuOpen]);
 
   useEffect(() => {
+    if (!overflowMenuOpen) {
+      return;
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      if (overflowMenuRef.current && !overflowMenuRef.current.contains(event.target as Node)) {
+        setOverflowMenuOpen(false);
+      }
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOverflowMenuOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [overflowMenuOpen]);
+
+  useEffect(() => {
     if (!tabMenu) {
       return;
     }
@@ -88,6 +162,20 @@ export function TabBar({ pane }: { pane: Pane }) {
       document.removeEventListener("keydown", onKey);
     };
   }, [tabMenu]);
+
+  useEffect(() => {
+    const list = tabListRef.current;
+    if (!list) {
+      return;
+    }
+    const observer = new ResizeObserver(() => scheduleOverflowRecalc());
+    observer.observe(list);
+    const raf = window.requestAnimationFrame(() => scheduleOverflowRecalc());
+    return () => {
+      window.cancelAnimationFrame(raf);
+      observer.disconnect();
+    };
+  }, [pane.tabs, pane.activeTabId]);
 
   const close = (event: MouseEvent, tabId: string) => {
     event.stopPropagation();
@@ -140,15 +228,23 @@ export function TabBar({ pane }: { pane: Pane }) {
 
   return (
     <div className="tab-bar">
-      <div className="tab-list">
+      <div className="tab-list" ref={tabListRef}>
         {pane.tabs.map((tab) => {
+          if (hiddenTabIds.has(tab.id)) {
+            return null;
+          }
           const fileName = tab.path.startsWith("notes://")
             ? undefined
             : (tab.path.split("/").pop() ?? tab.path);
+          const hoverTitle = fileName ? `${fileName}\n${tab.path}` : `${tab.title}\n${tab.path}`;
           return (
             <div
+              ref={(node) => {
+                tabRefs.current[tab.id] = node;
+              }}
               key={tab.id}
               className={`tab ${tab.id === pane.activeTabId ? "tab--active" : ""}`}
+              title={hoverTitle}
               onClick={() => dispatch({ type: "activateTab", paneId: pane.id, tabId: tab.id })}
               onContextMenu={(event) => openTabMenu(event, tab)}
             >
@@ -156,13 +252,46 @@ export function TabBar({ pane }: { pane: Pane }) {
               {fileName && fileName !== tab.title && (
                 <span className="tab-file">{fileName}</span>
               )}
-              <button className="tab-close" title="Close" onClick={(event) => close(event, tab.id)}>
+              <button className="tab-close" aria-label="Close tab" onClick={(event) => close(event, tab.id)}>
                 ×
               </button>
             </div>
           );
         })}
       </div>
+
+      {overflowTabs.length > 0 && (
+        <div className="split-wrap" ref={overflowMenuRef}>
+          <button
+            className="tab-split"
+            title="Overflow tabs"
+            aria-label="Overflow tabs"
+            aria-haspopup="menu"
+            aria-expanded={overflowMenuOpen}
+            onClick={() => setOverflowMenuOpen((open) => !open)}
+          >
+            ▼
+          </button>
+          {overflowMenuOpen && (
+            <div className="split-menu" role="menu">
+              {overflowTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  role="menuitem"
+                  className="split-menu-item"
+                  title={tab.path}
+                  onClick={() => {
+                    dispatch({ type: "activateTab", paneId: pane.id, tabId: tab.id });
+                    setOverflowMenuOpen(false);
+                  }}
+                >
+                  {tab.title}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="split-wrap" ref={menuRef}>
         <button
