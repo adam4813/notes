@@ -2877,7 +2877,7 @@ button {
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  height: 40px;
+  min-height: 40px;
   border-block: 1px solid var(--border);
 }
 
