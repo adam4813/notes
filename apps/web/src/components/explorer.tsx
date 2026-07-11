@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { usePromptDialog } from "@notes/editor";
 import { api, type FileEntry } from "../api/client";
+import { fitMenuToViewport } from "../lib/context-menu";
 import { useAppServices } from "../state/app-services";
 import { useWorkspace } from "../state/app-context";
 import { useToasts } from "../state/toast";
@@ -231,6 +232,7 @@ export function Explorer({
   const [renamePath, setRenamePath] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
   const [renameExt, setRenameExt] = useState("");
+  const menuRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Open all top-level directories the first time the tree loads.
@@ -371,6 +373,12 @@ export function Explorer({
   useEffect(() => {
     if (!menu) {
       return;
+    }
+    if (menuRef.current) {
+      const next = fitMenuToViewport(menu, menuRef.current);
+      if (next.x !== menu.x || next.y !== menu.y) {
+        setMenu((prev) => (prev ? { ...prev, ...next } : prev));
+      }
     }
     const close = () => setMenu(null);
     const onKey = (event: KeyboardEvent) => event.key === "Escape" && setMenu(null);
@@ -550,6 +558,7 @@ export function Explorer({
 
       {menu && (
         <div
+          ref={menuRef}
           className="context-menu"
           role="menu"
           style={{ left: menu.x, top: menu.y }}

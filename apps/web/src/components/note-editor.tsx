@@ -7,6 +7,7 @@ import { MermaidView } from "@notes/note-mermaid";
 import { TableGrid } from "@notes/note-tables";
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { api } from "../api/client";
+import { fitMenuToViewport } from "../lib/context-menu";
 import { queueWrite } from "../api/offline-queue";
 import { connectTomeChanges } from "../api/ws";
 import {
@@ -254,6 +255,12 @@ export function NoteEditor({ path }: { path: string }) {
   useEffect(() => {
     if (!contextMenu) {
       return;
+    }
+    if (contextMenuRef.current) {
+      const next = fitMenuToViewport(contextMenu, contextMenuRef.current);
+      if (next.x !== contextMenu.x || next.y !== contextMenu.y) {
+        setContextMenu(next);
+      }
     }
     const onPointerDown = (event: PointerEvent) => {
       if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {

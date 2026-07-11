@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { fitMenuToViewport } from "../lib/context-menu";
 import { useAppServices } from "../state/app-services";
 import { useWorkspace } from "../state/app-context";
 import type { Pane, Tab, WorkspaceAction } from "../state/types";
@@ -44,6 +45,7 @@ export function TabBar({ pane }: { pane: Pane }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [tabMenu, setTabMenu] = useState<{ x: number; y: number; tab: Tab } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const tabMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!menuOpen) {
@@ -70,6 +72,12 @@ export function TabBar({ pane }: { pane: Pane }) {
   useEffect(() => {
     if (!tabMenu) {
       return;
+    }
+    if (tabMenuRef.current) {
+      const next = fitMenuToViewport(tabMenu, tabMenuRef.current);
+      if (next.x !== tabMenu.x || next.y !== tabMenu.y) {
+        setTabMenu((prev) => (prev ? { ...prev, ...next } : prev));
+      }
     }
     const close = () => setTabMenu(null);
     const onKey = (event: KeyboardEvent) => event.key === "Escape" && setTabMenu(null);
@@ -189,6 +197,7 @@ export function TabBar({ pane }: { pane: Pane }) {
 
       {tabMenu && (
         <div
+          ref={tabMenuRef}
           className="context-menu"
           role="menu"
           style={{ left: tabMenu.x, top: tabMenu.y }}
