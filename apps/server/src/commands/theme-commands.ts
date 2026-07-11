@@ -7,7 +7,13 @@ import type { ThemeMeta } from "@notes/shared";
 const THEMES_DIR = ".notes/themes";
 
 /** Directory that ships with the server binary containing bundled default themes. */
-const BUNDLED_DIR = join(dirname(fileURLToPath(import.meta.url)), "../themes");
+function bundledThemesDir(): string {
+  const override = process.env["NOTES_THEMES_DIR"];
+  if (override && existsSync(override)) {
+    return override;
+  }
+  return join(dirname(fileURLToPath(import.meta.url)), "../themes");
+}
 
 export interface ThemeEntry {
   meta: ThemeMeta;
@@ -64,9 +70,10 @@ export async function getThemeCSS(tomePath: string, id: string): Promise<string 
 
 /** Lists bundled default themes (shipped with the server). */
 export async function listBundledThemes(): Promise<string[]> {
-  if (!existsSync(BUNDLED_DIR)) return [];
+  const root = bundledThemesDir();
+  if (!existsSync(root)) return [];
   try {
-    return readdir(BUNDLED_DIR);
+    return readdir(root);
   } catch {
     return [];
   }
@@ -77,18 +84,20 @@ export async function listBundledThemes(): Promise<string[]> {
  * Existing theme files are overwritten. Returns the list of imported theme ids.
  */
 export async function importDefaultThemes(tomePath: string): Promise<string[]> {
+  const sourceRoot = bundledThemesDir();
   const bundledIds = await listBundledThemes();
   const imported: string[] = [];
   for (const id of bundledIds) {
-    const src = join(BUNDLED_DIR, id);
+    const src = join(sourceRoot, id);
     const dest = join(tomePath, THEMES_DIR, id);
-    await mkdir(dest, { recursive: true });
-    for (const file of ["meta.json", "theme.css"]) {
-      const srcFile = join(src, file);
-      if (existsSync(srcFile)) {
-        await copyFile(srcFile, join(dest, file));
-      }
+    const metaSrc = join(src, "meta.json");
+    const cssSrc = join(src, "theme.css");
+    if (!existsSync(metaSrc) || !existsSync(cssSrc)) {
+      continue;
     }
+    await mkdir(dest, { recursive: true });
+    await copyFile(metaSrc, join(dest, "meta.json"));
+    await copyFile(cssSrc, join(dest, "theme.css"));
     imported.push(id);
   }
   return imported;

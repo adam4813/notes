@@ -490,10 +490,14 @@ export function App() {
 
   const importDefaultThemes = useCallback(async () => {
     try {
-      await api.importDefaultThemes();
+      const { imported } = await api.importDefaultThemes();
       const themes = await loadExternalThemes();
       setExternalThemes(themes);
-      notify("Default themes imported", { kind: "success" });
+      if (imported.length > 0) {
+        notify(`Imported ${imported.length} default theme(s)`, { kind: "success" });
+      } else {
+        notify("No bundled default themes were found to import", { kind: "error" });
+      }
     } catch {
       notify("Failed to import default themes", { kind: "error" });
     }

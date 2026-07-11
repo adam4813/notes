@@ -8,7 +8,7 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "build:electron": "tsc -p tsconfig.json",
-    "build:server-bundle": "tsup --config tsup.server.config.ts",
+    "build:server-bundle": "tsup --config tsup.server.config.ts && node scripts/copy-server-themes.mjs",
     "build:electron-main": "tsup --config tsup.electron.config.ts",
     "dev": "npm run build:electron && cross-env ELECTRON_DEV=1 electron .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
