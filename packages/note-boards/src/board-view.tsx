@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
-import { MarkdownEditor, usePromptDialog } from "@notes/editor";
-import { parseBoard, serializeBoard, type BoardColumn, type RichCard } from "./board-format";
+import { usePromptDialog } from "@notes/editor";
+import { BoardCard } from "./board-card";
+import { type BoardColumn, parseBoard, type RichCard, serializeBoard } from "./board-format";
 
 interface BoardViewProps {
   value: string;
@@ -21,8 +22,6 @@ function debounce<T extends (...args: Parameters<T>) => void>(fn: T, ms: number)
     timer = setTimeout(() => fn(...args), ms);
   }) as T;
 }
-
-const LABEL_COLORS = ["#e2f0fb", "#fde8d8", "#d9f2e8", "#f5e6fb", "#fef9c3"];
 
 export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewProps) {
   const { openPrompt, promptDialog } = usePromptDialog();
@@ -258,154 +257,19 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
               {column.cards.map((cardId) => {
                 const card = cards.get(cardId);
                 if (!card) return null;
-                const expanded = expandedId === cardId;
                 return (
-                  <div
+                  <BoardCard
                     key={cardId}
-                    className={`board-card ${card.done ? "board-card--done" : ""} ${expanded ? "board-card--expanded" : ""}`}
-                    draggable={!expanded}
-                    onDragStart={(e) => onDragStart(e, cardId, column.name)}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => onDropCard(e, column.name, cardId)}
-                    onClick={() => !expanded && setExpandedId(cardId)}
-                  >
-                    {/* Collapsed view */}
-                    {!expanded && (
-                      <div className="board-card-collapsed">
-                        <input
-                          type="checkbox"
-                          checked={card.done}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            updateCardState({ ...card, done: !card.done });
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <span className="board-card-title">{card.title || "(untitled)"}</span>
-                        <div className="board-card-chips">
-                          {card.priority && (
-                            <span className={`board-card-chip board-card-chip--${card.priority}`}>
-                              {card.priority}
-                            </span>
-                          )}
-                          {card.due && (
-                            <span className="board-card-chip board-card-chip--due">
-                              📅 {card.due}
-                            </span>
-                          )}
-                          {card.labels?.map((label, i) => (
-                            <span
-                              key={label}
-                              className="board-card-chip"
-                              style={{ background: LABEL_COLORS[i % LABEL_COLORS.length] }}
-                            >
-                              {label}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Expanded view */}
-                    {expanded && (
-                      <div className="board-card-expanded" onClick={(e) => e.stopPropagation()}>
-                        <div className="board-card-expand-header">
-                          <input
-                            type="checkbox"
-                            checked={card.done}
-                            onChange={() => updateCardState({ ...card, done: !card.done })}
-                          />
-                          <input
-                            className="board-card-title-input"
-                            value={card.title}
-                            onChange={(e) => updateCardState({ ...card, title: e.target.value })}
-                            placeholder="Card title"
-                          />
-                          <button
-                            className="board-card-collapse"
-                            aria-label="Collapse card"
-                            onClick={() => setExpandedId(null)}
-                          >
-                            ↑
-                          </button>
-                          <button
-                            className="board-card-del board-card-del--visible"
-                            aria-label="Delete card"
-                            onClick={() => void handleDeleteCard(cardId)}
-                          >
-                            🗑
-                          </button>
-                        </div>
-
-                        <div className="board-card-meta">
-                          <label className="board-card-meta-field">
-                            <span>Due</span>
-                            <input
-                              type="date"
-                              value={card.due ?? ""}
-                              onChange={(e) =>
-                                updateCardState({
-                                  ...card,
-                                  due: e.target.value || undefined,
-                                })
-                              }
-                            />
-                          </label>
-                          <label className="board-card-meta-field">
-                            <span>Priority</span>
-                            <select
-                              value={card.priority ?? ""}
-                              onChange={(e) =>
-                                updateCardState({
-                                  ...card,
-                                  priority: (e.target.value as RichCard["priority"]) || undefined,
-                                })
-                              }
-                            >
-                              <option value="">—</option>
-                              <option value="low">Low</option>
-                              <option value="medium">Medium</option>
-                              <option value="high">High</option>
-                            </select>
-                          </label>
-                          <label className="board-card-meta-field">
-                            <span>Labels</span>
-                            <input
-                              type="text"
-                              placeholder="bug, urgent…"
-                              value={card.labels?.join(", ") ?? ""}
-                              onChange={(e) =>
-                                updateCardState({
-                                  ...card,
-                                  labels: e.target.value
-                                    ? e.target.value
-                                        .split(",")
-                                        .map((s) => s.trim())
-                                        .filter(Boolean)
-                                    : undefined,
-                                })
-                              }
-                            />
-                          </label>
-                        </div>
-
-                        <div className="board-card-body-editor">
-                          <MarkdownEditor
-                            value={card.body}
-                            mode="rendered"
-                            onChange={(body) => updateCardState({ ...card, body })}
-                            callbacks={
-                              onOpenWikilink
-                                ? {
-                                    onOpenWikilink,
-                                  }
-                                : undefined
-                            }
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    card={card}
+                    expandedId={expandedId}
+                    setExpandedId={setExpandedId}
+                    onDragStart={onDragStart}
+                    onDropCard={onDropCard}
+                    updateCardState={updateCardState}
+                    handleDeleteCard={handleDeleteCard}
+                    onOpenWikilink={onOpenWikilink}
+                    column={column}
+                  />
                 );
               })}
             </div>
