@@ -1,27 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useWorkspace } from "../state/app-context";
-import type { ThemeMode } from "../state/types";
-
-const NEXT_THEME: Record<ThemeMode, ThemeMode> = {
-  light: "dark",
-  dark: "system",
-  system: "light",
-  solarized: "light",
-  contrast: "light",
-};
-
-const THEME_ICON: Record<ThemeMode, string> = {
-  light: "☀️",
-  dark: "🌙",
-  system: "🖥️",
-  solarized: "🌗",
-  contrast: "◐",
-};
 
 interface RibbonProps {
   newActions: Array<{ id: string; label: string; run: () => void }>;
   onCommand: () => void;
-  onSettings: () => void;
   onSearch: (query: string) => void;
 }
 
@@ -103,8 +84,7 @@ function TopBarMenu({
   );
 }
 
-export function Ribbon({ newActions, onCommand, onSettings, onSearch }: RibbonProps) {
-  const { state, dispatch } = useWorkspace();
+export function Ribbon({ newActions, onCommand, onSearch }: RibbonProps) {
   const electronApi = window.electronAPI;
   const isDesktop = Boolean(electronApi);
   const isMac = electronApi?.platform === "darwin";
@@ -200,18 +180,6 @@ export function Ribbon({ newActions, onCommand, onSettings, onSearch }: RibbonPr
             onClick={onCommand}
           >
             ⌘
-          </button>
-          <button className="btn-ghost" title="Settings" aria-label="Settings" onClick={onSettings}>
-            ⚙
-          </button>
-          <button
-            className="btn-ghost"
-            title={`Theme: ${state.theme}`}
-            aria-label={`Theme: ${state.theme}`}
-            data-testid="theme-toggle"
-            onClick={() => dispatch({ type: "setTheme", theme: NEXT_THEME[state.theme] })}
-          >
-            {THEME_ICON[state.theme]}
           </button>
         </div>
 

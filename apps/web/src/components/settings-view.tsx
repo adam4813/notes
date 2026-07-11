@@ -54,12 +54,27 @@ export interface SettingsBodyProps {
 }
 
 const BUILT_IN_THEME_OPTIONS: { value: string; label: string }[] = [
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
-  { value: "system", label: "System" },
+  { value: "default", label: "Default" },
   { value: "solarized", label: "Solarized" },
   { value: "contrast", label: "High contrast" },
 ];
+
+function uiThemeValue(theme: ThemeMode): string {
+  if (theme === "light" || theme === "dark" || theme === "system") {
+    return "default";
+  }
+  return theme;
+}
+
+function resolveThemeSelection(next: string, current: ThemeMode): ThemeMode {
+  if (next !== "default") {
+    return next;
+  }
+  if (current === "light" || current === "dark" || current === "system") {
+    return current;
+  }
+  return "system";
+}
 
 /** Shared settings content, reused by both the modal and the tab view. */
 export function SettingsBody(props: SettingsBodyProps) {
@@ -88,6 +103,7 @@ export function SettingsBody(props: SettingsBodyProps) {
     ...BUILT_IN_THEME_OPTIONS,
     ...externalThemes.map((t) => ({ value: t.id, label: t.name })),
   ];
+  const selectedTheme = uiThemeValue(theme);
 
   const commandTitle = (id: string) => {
     const command = hotkeys.commands.find((entry) => entry.id === id);
@@ -137,9 +153,9 @@ export function SettingsBody(props: SettingsBodyProps) {
               <button
                 key={option.value}
                 role="radio"
-                aria-checked={theme === option.value}
-                className={`segmented-btn ${theme === option.value ? "segmented-btn--active" : ""}`}
-                onClick={() => onThemeChange(option.value)}
+                aria-checked={selectedTheme === option.value}
+                className={`segmented-btn ${selectedTheme === option.value ? "segmented-btn--active" : ""}`}
+                onClick={() => onThemeChange(resolveThemeSelection(option.value, theme))}
               >
                 {option.label}
               </button>

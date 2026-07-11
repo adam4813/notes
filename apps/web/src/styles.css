@@ -1360,6 +1360,54 @@ button {
   overflow: hidden;
 }
 
+.status-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 8px;
+}
+
+.status-action-btn {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.12);
+  color: inherit;
+  line-height: 1;
+  padding: 3px 8px;
+}
+
+.status-menu-wrap {
+  position: relative;
+}
+
+.status-menu-popup {
+  position: fixed;
+  left: 4px;
+  bottom: 28px;
+  min-width: 180px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 4px;
+  z-index: 70;
+}
+
+.status-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--fg);
+  padding: 6px 8px;
+}
+
+.status-menu-item:hover {
+  background: var(--active);
+}
+
 .status-message {
   flex: 1;
   overflow: hidden;

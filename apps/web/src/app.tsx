@@ -601,7 +601,6 @@ export function App() {
         <Ribbon
           newActions={newActions}
           onCommand={() => setPaletteMode("commands")}
-          onSettings={openSettings}
           onSearch={openSidebarSearch}
         />
         <div className="shell-body">
@@ -616,7 +615,13 @@ export function App() {
           <Workspace />
           <RightPanel />
         </div>
-        <StatusBar pluginItems={plugins.statusItems} />
+        <StatusBar
+          pluginItems={plugins.statusItems}
+          theme={state.theme}
+          externalThemes={externalThemes}
+          onThemeChange={(theme) => dispatch({ type: "setTheme", theme })}
+          onOpenSettings={openSettings}
+        />
         {paletteMode && (
           <Palette
             mode={paletteMode}
