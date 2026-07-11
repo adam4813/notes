@@ -1,4 +1,4 @@
-import { MarkdownEditor, EDITOR_MODES, type EditorCallbacks, type EditorMode } from "@notes/editor";
+import { MarkdownEditor, NoteToolbar, EDITOR_MODES, type EditorCallbacks, type EditorMode } from "@notes/editor";
 import { CanvasView } from "@notes/note-canvas";
 import { BoardView } from "@notes/note-boards";
 import { CalendarView } from "@notes/note-calendar";
@@ -338,10 +338,13 @@ export function NoteEditor({ path }: { path: string }) {
         )}
         {isImage ? (
           <div className="image-note">
-            <div className="image-note-header">
+            <NoteToolbar
+              label="Image"
+              className="image-note-toolbar"
+              trailing={<span className="image-note-path">{path}</span>}
+            >
               <span className="note-type-badge">Image</span>
-              <span className="image-note-path">{path}</span>
-            </div>
+            </NoteToolbar>
             <div className="image-note-body">
               <img className="image-note-preview" src={api.fileRawUrl(path)} alt={basename(path)} />
             </div>

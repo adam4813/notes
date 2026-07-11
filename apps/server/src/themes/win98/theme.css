@@ -176,25 +176,29 @@
 :root[data-theme="win98"] .tab {
   background: var(--bg);
   border: 2px solid;
-  border-color: #ffffff #808080 transparent #ffffff;
+  border-color: #ffffff #808080 #808080 #ffffff;
   border-radius: 0;
   color: #000000;
   font-family: var(--win98-font);
   font-size: 11px;
   padding: 3px 8px;
 }
+
+:root[data-theme="win98"] .tab:hover {
+  background: var(--hover);
+  color: initial;
+}
+
 :root[data-theme="win98"] .tab .tab-close {
   //border: none;
 }
 
 :root[data-theme="win98"] .tab--active {
-  background: var(--bg);
-  border-color: #ffffff #808080 var(--bg) #ffffff;
-  color: #000000;
+  background: #000080;
+  color: white;
   font-weight: bold;
   position: relative;
   z-index: 1;
-  margin-bottom: -1px;
 }
 
 /* ── Titlebar (Electron) ──────────────────────────────────── */
@@ -204,7 +208,7 @@
 }
 
 :root[data-theme="win98"] .title-bar-menu-btn {
-  color: #ffffff;
+  color: initial;
   font-family: var(--win98-font);
   font-size: 11px;
 }
@@ -444,16 +448,24 @@
 
 /* ── Sidebar view switcher tabs ─────────────────────────── */
 :root[data-theme="win98"] .sidebar-view-btn {
+  background: var(--bg);
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
   border-radius: 0;
   font-family: var(--win98-font);
   font-size: 11px;
-  border: 1px solid transparent;
+  padding: 3px 8px;
 }
 
 :root[data-theme="win98"] .sidebar-view-btn--active {
   background: #000080;
   color: #ffffff;
   border-color: #808080;
+}
+
+:root[data-theme="win98"] .sidebar-view-btn:hover {
+  background: var(--hover);
+  color: initial;
 }
 
 /* ── Toasts ─────────────────────────────────────────────── */
