@@ -26,6 +26,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
   chooseTomePath: (): Promise<string | null> =>
     ipcRenderer.invoke("tome:choosePath") as Promise<string | null>,
 
+  revealPath: (relativePath: string): Promise<boolean> =>
+    ipcRenderer.invoke("tome:revealPath", relativePath) as Promise<boolean>,
+  revealPathInTome: (tomePath: string, relativePath: string): Promise<boolean> =>
+    ipcRenderer.invoke("tome:revealPathInTome", { tomePath, relativePath }) as Promise<boolean>,
+
   // Auto-updater
   onUpdateAvailable: (cb: (info: unknown) => void) => {
     const handler = (_event: IpcRendererEvent, info: unknown) => cb(info);

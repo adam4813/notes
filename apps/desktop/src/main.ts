@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { configStore } from "./config-store";
@@ -31,6 +31,14 @@ async function ensureTomePath(): Promise<string> {
 }
 
 function setupWindowIpc(win: BrowserWindow): void {
+  // Re-register safely when windows are recreated (macOS activate flow).
+  ipcMain.removeHandler("window:isMaximized");
+  ipcMain.removeHandler("app:version");
+  ipcMain.removeHandler("tome:getPath");
+  ipcMain.removeHandler("tome:choosePath");
+  ipcMain.removeHandler("tome:revealPath");
+  ipcMain.removeHandler("tome:revealPathInTome");
+
   ipcMain.on("window:minimize", () => win.minimize());
   ipcMain.on("window:maximize", () => {
     if (win.isMaximized()) {
@@ -48,6 +56,42 @@ function setupWindowIpc(win: BrowserWindow): void {
 
   // Tome path IPC
   ipcMain.handle("tome:getPath", () => configStore.get("tomePath"));
+  ipcMain.handle("tome:revealPath", async (_event, relativePath: string) => {
+    const tomePath = configStore.get("tomePath");
+    if (!tomePath || typeof relativePath !== "string" || relativePath.trim().length === 0) {
+      return false;
+    }
+    const absolute = path.resolve(tomePath, relativePath);
+    const relative = path.relative(tomePath, absolute);
+    if (relative.startsWith("..") || path.isAbsolute(relative)) {
+      return false;
+    }
+    shell.showItemInFolder(absolute);
+    return true;
+  });
+  ipcMain.handle(
+    "tome:revealPathInTome",
+    async (_event, payload: { tomePath?: string; relativePath?: string }) => {
+      const tomePath = payload?.tomePath;
+      const relativePath = payload?.relativePath;
+      if (
+        typeof tomePath !== "string" ||
+        tomePath.trim().length === 0 ||
+        typeof relativePath !== "string" ||
+        relativePath.trim().length === 0
+      ) {
+        return false;
+      }
+      const normalizedTomePath = path.resolve(tomePath);
+      const absolute = path.resolve(normalizedTomePath, relativePath);
+      const relative = path.relative(normalizedTomePath, absolute);
+      if (relative.startsWith("..") || path.isAbsolute(relative)) {
+        return false;
+      }
+      shell.showItemInFolder(absolute);
+      return true;
+    },
+  );
 
   ipcMain.handle("tome:choosePath", async () => {
     const current = configStore.get("tomePath");
@@ -57,6 +101,7 @@ function setupWindowIpc(win: BrowserWindow): void {
       properties: ["openDirectory", "createDirectory"],
       buttonLabel: "Use This Folder",
     });
+
     if (result.canceled || !result.filePaths[0]) return null;
     const newPath = result.filePaths[0];
     await mkdir(newPath, { recursive: true });
@@ -110,6 +155,9 @@ async function main(): Promise<void> {
     await ipcMain.emit("tome:choosePath", null, win);
   });
 
+  // Register IPC handlers before the renderer can issue invokes.
+  setupWindowIpc(win);
+
   win.once("ready-to-show", () => {
     win.show();
     setupAutoUpdater(win);
@@ -132,8 +180,6 @@ async function main(): Promise<void> {
     const { port } = await startServer({ tomePath });
     await win.loadURL(`http://127.0.0.1:${port}`);
   }
-
-  setupWindowIpc(win);
 }
 
 app.on("window-all-closed", () => {

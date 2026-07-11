@@ -24,6 +24,10 @@ interface ElectronAPI {
   getTomePath(): Promise<string | null>;
   /** Opens the folder picker to choose a new Tome path; returns the chosen path or null. */
   chooseTomePath(): Promise<string | null>;
+  /** Reveals a Tome-relative path in the native file explorer. */
+  revealPath(relativePath: string): Promise<boolean>;
+  /** Reveals a file in the native explorer, resolved against an explicit Tome path. */
+  revealPathInTome(tomePath: string, relativePath: string): Promise<boolean>;
 
   /** Register a callback for when an update is available. Returns a disposer. */
   onUpdateAvailable(cb: (info: unknown) => void): () => void;

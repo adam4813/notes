@@ -3,6 +3,7 @@ import { usePromptDialog } from "@notes/editor";
 import { api, type FileEntry } from "../api/client";
 import { useAppServices } from "../state/app-services";
 import { useWorkspace } from "../state/app-context";
+import { useToasts } from "../state/toast";
 import { useVirtual } from "../lib/use-virtual";
 
 const ROW_HEIGHT = 28;
@@ -223,6 +224,7 @@ export function Explorer({
   const { openPrompt, promptDialog } = usePromptDialog();
   const { state, dispatch } = useWorkspace();
   const services = useAppServices();
+  const { notify } = useToasts();
   const [menu, setMenu] = useState<ContextMenu | null>(null);
   const [dragOverPath, setDragOverPath] = useState<string | null>(null);
   const [openDirs, setOpenDirs] = useState<Set<string>>(new Set());
@@ -481,8 +483,28 @@ export function Explorer({
           : []),
       ];
     }
+    const electronApi = window.electronAPI;
+    const revealInExplorer = electronApi
+      ? [
+          {
+            label: "Show in file explorer",
+            run: () => {
+              void api
+                .tome()
+                .then(({ id }) => electronApi.revealPathInTome(id, node.path))
+                .then((ok) => {
+                  if (!ok) {
+                    notify("Couldn't reveal the file in the system explorer", { kind: "error" });
+                  }
+                })
+                .catch(() => notify("Couldn't reveal the file in the system explorer", { kind: "error" }));
+            },
+          },
+        ]
+      : [];
     return [
       { label: "Open", run: () => openNode(node) },
+      ...revealInExplorer,
       { label: "Rename…", run: () => beginRename(node) },
       { label: "Delete", run: () => void removeNode(node), danger: true },
     ];
