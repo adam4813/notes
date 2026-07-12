@@ -1,14 +1,13 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type DragEvent as ReactDragEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { marked } from "marked";
-import { MarkdownEditor, NoteToolbar, usePromptDialog } from "@notes/editor";
+import { NoteEditor } from "@notes/web/src/components/note-editor";
+import { NoteToolbar, usePromptDialog } from "@notes/editor";
 import {
   parseCanvas,
   serializeCanvas,
@@ -61,33 +60,21 @@ function estimateFileNodeSize(
   };
 }
 
-const BLOCKED_TYPES = new Set(["canvas", "board", "calendar"]);
-
-/** Renders markdown to sanitized HTML string for lightweight preview. */
-function markdownToHtml(md: string): string {
-  try {
-    return marked.parse(md, { async: false }) as string;
-  } catch {
-    return md;
-  }
-}
+const BLOCKED_TYPES = new Set(["canvas"]);
 
 function FileNodeCard({
   file,
-  isEditing,
   isVisible,
   onOpen,
-  onExitEdit,
   subscribeToFileChange,
 }: {
   file: string;
-  isEditing: boolean;
   isVisible: boolean;
   onOpen?: () => void;
-  onExitEdit?: () => void;
   subscribeToFileChange?: (filePath: string, cb: () => void) => () => void;
 }) {
   const [content, setContent] = useState<string | null>(null);
+  const [type, setType] = useState<string | null>(null);
   const [title, setTitle] = useState(() => fileBasename(file));
   const [blocked, setBlocked] = useState(false);
   const [error, setError] = useState(false);
@@ -101,9 +88,10 @@ function FileNodeCard({
         setError(true);
         return;
       }
-      const data = (await res.json()) as { content: string };
+      const data = (await res.json()) as { content: string; type: string };
       const { title: t, type } = detectNoteInfo(data.content, file);
       setTitle(t);
+      setType(type === "markdown" && file.endsWith(".md") ? "markdown" : data.type.split("/")[0]);
       setBlocked(BLOCKED_TYPES.has(type));
       contentRef.current = data.content;
       setContent(data.content);
@@ -115,21 +103,20 @@ function FileNodeCard({
 
   // Only fetch when the node is visible (or editing).
   useEffect(() => {
-    if (isVisible || isEditing) {
+    if (isVisible) {
       void load();
     }
-  }, [load, isVisible, isEditing]);
+  }, [load, isVisible]);
 
   useEffect(() => {
     if (!subscribeToFileChange) return;
     return subscribeToFileChange(file, () => {
-      if (isVisible || isEditing) void load();
+      if (isVisible) void load();
     });
-  }, [file, load, subscribeToFileChange, isVisible, isEditing]);
+  }, [file, load, subscribeToFileChange, isVisible]);
 
   // Ctrl+S forces immediate save while editing.
   useEffect(() => {
-    if (!isEditing) return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
@@ -143,33 +130,9 @@ function FileNodeCard({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isEditing, file]);
+  }, [file]);
 
-  const handleChange = useCallback(
-    (next: string) => {
-      setContent(next);
-      contentRef.current = next;
-      clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => {
-        void fetch("/api/file", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path: file, content: next }),
-        });
-      }, 800);
-    },
-    [file],
-  );
-
-  // Lightweight HTML preview (memoised, no TipTap instance).
-  const previewHtml = useMemo(() => {
-    if (!content || blocked) return "";
-    const fm = /^---\n[\s\S]*?\n---\n?/.exec(content);
-    const body = fm ? content.slice(fm[0].length) : content;
-    return markdownToHtml(body);
-  }, [content, blocked]);
-
-  // ---- Blocked card (board / calendar / canvas) ----
+  // ---- Blocked card ----
   if (blocked) {
     return (
       <div className="canvas-file-card canvas-file-card--blocked">
@@ -211,55 +174,30 @@ function FileNodeCard({
   }
 
   // ---- Active editor ----
-  if (isEditing) {
-    return (
-      <div className="canvas-file-card canvas-file-card--editing">
-        <div className="canvas-file-header">
-          <span className="canvas-file-icon">📄</span>
-          <span className="canvas-file-title">{title}</span>
-          <button
-            className="canvas-file-open-btn"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={onOpen}
-            aria-label="Open in tab"
-          >
-            ⤢
-          </button>
-          <button
-            className="canvas-file-done-btn"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={onExitEdit}
-            aria-label="Done editing"
-          >
-            ✓ Done
-          </button>
-        </div>
-        <div className="canvas-file-editor" onPointerDown={(e) => e.stopPropagation()}>
-          <MarkdownEditor value={content} mode="rendered" onChange={handleChange} />
-        </div>
-      </div>
-    );
-  }
-
-  // ---- Lightweight HTML preview ----
   return (
-    <div className="canvas-file-card">
+    <div className="canvas-file-card canvas-file-card--editing">
       <div className="canvas-file-header">
         <span className="canvas-file-icon">📄</span>
         <span className="canvas-file-title">{title}</span>
         <button
           className="canvas-file-open-btn"
           onPointerDown={(e) => e.stopPropagation()}
-          aria-label={`Open ${title}`}
           onClick={onOpen}
+          aria-label="Open in tab"
         >
           ⤢
         </button>
       </div>
-      <div
-        className="canvas-file-preview"
-        dangerouslySetInnerHTML={{ __html: previewHtml || "<em>(empty note)</em>" }}
-      />
+
+      {type === "image" ? (
+        <div className="canvas-file-preview">
+          <img src={`/api/file/raw?path=${encodeURIComponent(file)}`} alt={title} />
+        </div>
+      ) : (
+        <div className="canvas-file-editor" onPointerDown={(e) => e.stopPropagation()}>
+          <NoteEditor path={file} defaultMode="rendered" disableModeToggle />
+        </div>
+      )}
     </div>
   );
 }
@@ -334,7 +272,6 @@ export function CanvasView({
   const [viewport, setViewport] = useState<Viewport>({ x: 40, y: 40, scale: 1 });
   const [selection, setSelection] = useState<Selection>(null);
   const [editing, setEditing] = useState<string | null>(null); // text node inline editing
-  const [editingFileId, setEditingFileId] = useState<string | null>(null); // FileNode edit mode
   const [connectPos, setConnectPos] = useState<{ x: number; y: number } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -394,26 +331,21 @@ export function CanvasView({
     setViewport(computeFit(dataRef.current.nodes, rect?.width ?? 800, rect?.height ?? 600));
   };
 
-  // Escape exits FileNode edit mode.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && editingFileId !== null) {
-        setEditingFileId(null);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [editingFileId]);
+  const pushChange = useCallback(
+    (next: CanvasData) => {
+      lastSerialized.current = serializeCanvas(next);
+      onChange(lastSerialized.current);
+    },
+    [onChange],
+  );
 
-  const pushChange = (next: CanvasData) => {
-    lastSerialized.current = serializeCanvas(next);
-    onChange(lastSerialized.current);
-  };
-
-  const commit = (next: CanvasData) => {
-    setData(next);
-    pushChange(next);
-  };
+  const commit = useCallback(
+    (next: CanvasData) => {
+      setData(next);
+      pushChange(next);
+    },
+    [pushChange],
+  );
 
   const screenToWorld = (clientX: number, clientY: number) => {
     const rect = containerRef.current?.getBoundingClientRect();
@@ -534,11 +466,6 @@ export function CanvasView({
   }, []);
 
   const onBackgroundPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    // If a FileNode is being edited, click on background exits edit mode instead of panning.
-    if (editingFileId !== null) {
-      setEditingFileId(null);
-      return;
-    }
     // Nodes, handles, and edge hit-lines stopPropagation, so any event that
     // reaches here is on empty canvas → start a pan and clear selection.
     setSelection(null);
@@ -554,12 +481,6 @@ export function CanvasView({
 
   const startMove = (event: ReactPointerEvent, node: CanvasNode) => {
     event.stopPropagation();
-    // If another FileNode is being edited, exit edit mode without starting a move.
-    if (editingFileId !== null && editingFileId !== node.id) {
-      setEditingFileId(null);
-      setSelection({ kind: "node", id: node.id });
-      return;
-    }
     // If THIS FileNode is being edited, don't start a move from its node div
     // (the title bar doesn't stopPropagation here so it CAN start a move via this handler).
     setSelection({ kind: "node", id: node.id });
@@ -693,7 +614,7 @@ export function CanvasView({
     }
   };
 
-  const deleteSelection = () => {
+  const deleteSelection = useCallback(() => {
     if (!selection) {
       return;
     }
@@ -706,7 +627,19 @@ export function CanvasView({
       commit({ ...data, edges: data.edges.filter((e) => e.id !== selection.id) });
     }
     setSelection(null);
-  };
+  }, [data, selection]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Delete") {
+        deleteSelection();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [deleteSelection]);
 
   const setEdgeLabel = (edgeId: string, label: string) =>
     commit({
@@ -885,7 +818,6 @@ export function CanvasView({
 
           {data.nodes.map((node) => {
             const isSelected = selection?.kind === "node" && selection.id === node.id;
-            const isFileEditing = node.type === "file" && editingFileId === node.id;
             // Viewport culling: skip expensive render when node is off-screen.
             const rect = containerRef.current?.getBoundingClientRect();
             const cw = rect?.width ?? 800;
@@ -901,19 +833,16 @@ export function CanvasView({
             return (
               <div
                 key={node.id}
-                className={`canvas-node canvas-node--${node.type} ${isSelected ? "canvas-node--selected" : ""} ${isFileEditing ? "canvas-node--file-editing" : ""}`}
+                className={`canvas-node canvas-node--${node.type} ${isSelected ? "canvas-node--selected" : ""}`}
                 style={{
                   left: node.x,
                   top: node.y,
                   width: node.width,
                   height: node.height,
-                  opacity:
-                    editingFileId !== null && !isFileEditing && node.type !== "text" ? 0.5 : 1,
                 }}
                 onPointerDown={(event) => startMove(event, node)}
                 onDoubleClick={() => {
                   if (node.type === "text") setEditing(node.id);
-                  if (node.type === "file") setEditingFileId(node.id);
                 }}
               >
                 {node.type === "text" &&
@@ -936,10 +865,8 @@ export function CanvasView({
                 {node.type === "file" && (
                   <FileNodeCard
                     file={node.file}
-                    isEditing={isFileEditing}
                     isVisible={isVisible}
                     onOpen={() => onOpenFile?.(node.file)}
-                    onExitEdit={() => setEditingFileId(null)}
                     subscribeToFileChange={subscribeToFileChange}
                   />
                 )}

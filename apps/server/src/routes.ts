@@ -1,10 +1,6 @@
 import type { CommandBus, RequestContext } from "@notes/core";
 import type { FastifyInstance } from "fastify";
-import {
-  listTomeThemes,
-  getThemeCSS,
-  importDefaultThemes,
-} from "./commands/theme-commands";
+import { listTomeThemes, getThemeCSS, importDefaultThemes } from "./commands/theme-commands";
 
 interface PathQuery {
   path?: string;
@@ -48,7 +44,11 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
 
   app.get("/api/file", async (request) => {
     const { path = "" } = request.query as PathQuery;
-    return bus.dispatch("file.read", { path }, ctx);
+    const file = (await bus.dispatch("file.read", { path }, ctx)) as {
+      path: string;
+      contentBase64: string;
+    };
+    return { ...file, type: contentTypeForPath(path) };
   });
 
   app.put("/api/file", async (request) => bus.dispatch("file.write", request.body, ctx));
@@ -69,9 +69,7 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
     return reply.type(contentTypeForPath(path)).send(bytes);
   });
 
-  app.post("/api/file/rename", async (request) =>
-    bus.dispatch("file.rename", request.body, ctx),
-  );
+  app.post("/api/file/rename", async (request) => bus.dispatch("file.rename", request.body, ctx));
 
   app.post("/api/file/move", async (request) => bus.dispatch("file.move", request.body, ctx));
 
@@ -150,13 +148,9 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
     return bus.dispatch("card.get", { boardPath, cardId }, ctx);
   });
 
-  app.post("/api/card/create", async (request) =>
-    bus.dispatch("card.create", request.body, ctx),
-  );
+  app.post("/api/card/create", async (request) => bus.dispatch("card.create", request.body, ctx));
 
-  app.post("/api/card/update", async (request) =>
-    bus.dispatch("card.update", request.body, ctx),
-  );
+  app.post("/api/card/update", async (request) => bus.dispatch("card.update", request.body, ctx));
 
   app.delete("/api/card", async (request) => {
     const { boardPath = "", cardId = "" } = request.query as {
@@ -166,9 +160,7 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
     return bus.dispatch("card.delete", { boardPath, cardId }, ctx);
   });
 
-  app.post("/api/card/move", async (request) =>
-    bus.dispatch("card.move", request.body, ctx),
-  );
+  app.post("/api/card/move", async (request) => bus.dispatch("card.move", request.body, ctx));
 
   // Event CRUD (calendar rich entries)
   app.get("/api/events", async (request) => {
@@ -184,13 +176,9 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
     return bus.dispatch("event.get", { calendarPath, eventId }, ctx);
   });
 
-  app.post("/api/event/create", async (request) =>
-    bus.dispatch("event.create", request.body, ctx),
-  );
+  app.post("/api/event/create", async (request) => bus.dispatch("event.create", request.body, ctx));
 
-  app.post("/api/event/update", async (request) =>
-    bus.dispatch("event.update", request.body, ctx),
-  );
+  app.post("/api/event/update", async (request) => bus.dispatch("event.update", request.body, ctx));
 
   app.delete("/api/event", async (request) => {
     const { calendarPath = "", eventId = "" } = request.query as {

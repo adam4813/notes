@@ -1,4 +1,10 @@
-import { MarkdownEditor, NoteToolbar, EDITOR_MODES, type EditorCallbacks, type EditorMode } from "@notes/editor";
+import {
+  MarkdownEditor,
+  NoteToolbar,
+  EDITOR_MODES,
+  type EditorCallbacks,
+  type EditorMode,
+} from "@notes/editor";
 import { CanvasView } from "@notes/note-canvas";
 import { BoardView } from "@notes/note-boards";
 import { CalendarView } from "@notes/note-calendar";
@@ -53,12 +59,20 @@ const SAVE_LABEL: Record<SaveState, string> = {
   offline: "Saved offline",
 };
 
-export function NoteEditor({ path }: { path: string }) {
+export function NoteEditor({
+  path,
+  defaultMode = "rendered",
+  disableModeToggle,
+}: {
+  path: string;
+  defaultMode?: EditorMode;
+  disableModeToggle?: boolean;
+}) {
   const { dispatch } = useWorkspace();
   const { markModified, setActiveDocument, settings } = useAppServices();
   const { notify } = useToasts();
   const [content, setContent] = useState("");
-  const [mode, setMode] = useState<EditorMode>("rendered");
+  const [mode, setMode] = useState<EditorMode>(defaultMode);
   const [saveState, setSaveState] = useState<SaveState>("loading");
   const [findOpen, setFindOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
@@ -230,8 +244,8 @@ export function NoteEditor({ path }: { path: string }) {
     const type = isImage
       ? "image"
       : path.toLowerCase().endsWith(".canvas")
-      ? "canvas"
-      : (getFrontmatterType(content) ?? "markdown");
+        ? "canvas"
+        : (getFrontmatterType(content) ?? "markdown");
     setActiveDocument({ path, content, type });
     return () => setActiveDocument(null);
   }, [path, content, saveState, setActiveDocument, isImage]);
@@ -243,8 +257,9 @@ export function NoteEditor({ path }: { path: string }) {
   const isMermaid = frontType === "mermaid";
   const isCalendar = frontType === "calendar";
   const isGrid = frontType === "grid";
-  const canFind = !isImage && !isCanvas && !isBoard && !isTable && !isMermaid && !isCalendar && !isGrid;
-  const canToggleMode = canFind;
+  const canFind =
+    !isImage && !isCanvas && !isBoard && !isTable && !isMermaid && !isCalendar && !isGrid;
+  const canToggleMode = canFind && !disableModeToggle;
 
   useEffect(() => {
     if (!canFind && findOpen) {
@@ -377,7 +392,12 @@ export function NoteEditor({ path }: { path: string }) {
         ) : isTable ? (
           <TableGrid value={content} onChange={handleChange} />
         ) : isMermaid ? (
-          <MermaidView value={content} onChange={handleChange} />
+          <MermaidView
+            value={content}
+            onChange={handleChange}
+            modes={!canToggleMode ? [] : undefined}
+            defaultMode={mode === "rendered" ? "preview" : "split"}
+          />
         ) : isCalendar ? (
           <CalendarView value={content} onChange={handleChange} path={path} />
         ) : isGrid ? (

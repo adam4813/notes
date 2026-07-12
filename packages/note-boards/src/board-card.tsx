@@ -112,7 +112,7 @@ export function BoardCard({
                 aria-label={`${card.title} menu`}
                 aria-haspopup="menu"
                 aria-expanded={menuIsOpen}
-                onClick={() => setMenuIsOpen(true)}
+                onClick={() => setMenuIsOpen((open) => !open)}
               >
                 ...
               </button>
