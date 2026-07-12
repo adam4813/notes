@@ -202,11 +202,6 @@
 }
 
 /* ── Titlebar (Electron) ──────────────────────────────────── */
-:root[data-theme="win98"] .title-bar {
-  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
-  border-bottom: 2px solid #808080;
-}
-
 :root[data-theme="win98"] .title-bar-menu-btn {
   color: initial;
   font-family: var(--win98-font);
@@ -216,10 +211,6 @@
 :root[data-theme="win98"] .title-bar-menu-btn:hover,
 :root[data-theme="win98"] .title-bar-menu-btn--open {
   background: #000080;
-  color: #ffffff;
-}
-
-:root[data-theme="win98"] .title-bar-name {
   color: #ffffff;
 }
 
@@ -245,7 +236,7 @@
 }
 
 /* ── Menus / popups ──────────────────────────────────────── */
-:root[data-theme="win98"] .title-bar-menu-popup,
+:root[data-theme="win98"] .popup-menu,
 :root[data-theme="win98"] .context-menu,
 :root[data-theme="win98"] .new-menu,
 :root[data-theme="win98"] .split-menu,
@@ -257,7 +248,7 @@
   box-shadow: 2px 2px 0 #000000;
 }
 
-:root[data-theme="win98"] .title-bar-menu-item,
+:root[data-theme="win98"] .popup-menu > button,
 :root[data-theme="win98"] .context-item,
 :root[data-theme="win98"] .new-menu-item,
 :root[data-theme="win98"] .split-menu-item,
@@ -268,7 +259,7 @@
   color: #000000;
 }
 
-:root[data-theme="win98"] .title-bar-menu-item:hover:not(:disabled),
+:root[data-theme="win98"] .popup-menu > button:hover:not(:disabled),
 :root[data-theme="win98"] .context-item:hover,
 :root[data-theme="win98"] .new-menu-item:hover,
 :root[data-theme="win98"] .split-menu-item:hover,

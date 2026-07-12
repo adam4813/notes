@@ -228,38 +228,11 @@ button {
   color: #fff;
 }
 
-/* Electron custom titlebar */
-.title-bar {
-  display: flex;
-  align-items: center;
-  height: var(--titlebar-height, 0px);
-  flex-shrink: 0;
-  background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border);
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.title-bar[data-platform="mac"] {
-  --titlebar-height: 28px;
-  padding-left: 72px; /* safe zone for macOS traffic lights */
-}
-
-.title-bar[data-platform="win"],
-.title-bar[data-platform="linux"] {
-  --titlebar-height: 32px;
-}
-
 /* Titlebar inline menus (File, Edit) */
 .title-bar-menus {
   display: flex;
   height: 100%;
   -webkit-app-region: no-drag;
-}
-
-.title-bar-menu {
-  position: relative;
-  height: 100%;
 }
 
 .title-bar-menu-btn {
@@ -279,60 +252,10 @@ button {
   color: var(--fg);
 }
 
-.title-bar-menu-popup {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  min-width: 180px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 9999;
-  padding: 3px 0;
-}
-
-.title-bar-menu-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 5px 14px;
-  border: none;
-  background: transparent;
-  color: var(--fg);
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.title-bar-menu-item:hover:not(:disabled) {
-  background: var(--hover);
-}
-
-.title-bar-menu-item:disabled {
-  color: var(--fg-muted);
-  cursor: default;
-}
-
 .title-bar-menu-sep {
   height: 1px;
   background: var(--border);
   margin: 3px 0;
-}
-
-.title-bar-drag {
-  flex: 1;
-  height: 100%;
-  -webkit-app-region: drag;
-}
-
-.title-bar-name {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--fg-muted);
-  pointer-events: none;
-  padding: 0 8px;
-  letter-spacing: 0.03em;
 }
 
 .title-bar-controls:before {
@@ -418,8 +341,7 @@ button {
 }
 
 .ribbon--desktop .title-bar-menu-btn,
-.ribbon--desktop .title-bar-menu-popup,
-.ribbon--desktop .title-bar-menu-item,
+.ribbon--desktop .popup-menu,
 .ribbon--desktop .title-bar-controls,
 .ribbon--desktop .title-bar-btn,
 .ribbon--desktop .btn-ghost,
@@ -1370,38 +1292,6 @@ button {
   color: inherit;
   line-height: 1;
   padding: 3px 8px;
-}
-
-.status-menu-wrap {
-  position: relative;
-}
-
-.status-menu-popup {
-  position: fixed;
-  left: 4px;
-  bottom: 28px;
-  min-width: 180px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
-  padding: 4px;
-  z-index: 70;
-}
-
-.status-menu-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  color: var(--fg);
-  padding: 6px 8px;
-}
-
-.status-menu-item:hover {
-  background: var(--active);
 }
 
 .status-message {
@@ -3085,6 +2975,7 @@ button {
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
+  justify-content: space-between;
 }
 
 .grid-head-name {
@@ -3107,11 +2998,11 @@ button {
   background: var(--hover);
 }
 
-.grid-col-menu {
+.popup-menu {
   position: absolute;
   top: 100%;
   right: 0;
-  z-index: 5;
+  z-index: 9999;
   min-width: 160px;
   padding: 4px;
   background: var(--bg-elevated);
@@ -3122,7 +3013,7 @@ button {
   flex-direction: column;
 }
 
-.grid-col-menu button {
+.popup-menu button {
   text-align: left;
   background: transparent;
   border: none;
@@ -3131,8 +3022,13 @@ button {
   color: var(--fg);
 }
 
-.grid-col-menu button:hover {
+.popup-menu button:hover:not(:disabled) {
   background: var(--active);
+}
+
+.popup-menu button:disabled {
+  color: var(--fg-muted);
+  cursor: default;
 }
 
 .grid-menu-label {

@@ -5,6 +5,7 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
+import { PopupMenu } from "@notes/ui";
 import { NoteToolbar, usePromptDialog } from "@notes/editor";
 import {
   COLUMN_TYPES,
@@ -389,37 +390,44 @@ export function TableGrid({ value, onChange }: TableGridProps) {
                       <span className="grid-head-name" title={`${column.name} (${column.type})`}>
                         {column.name}
                       </span>
-                      <button
-                        className="grid-head-menu"
-                        aria-label={`Options for ${column.name}`}
-                        onClick={() => setMenuCol((prev) => (prev === c ? null : c))}
+                      <PopupMenu
+                        open={menuCol === c}
+                        onClose={() => setMenuCol(null)}
+                        menu={
+                          <>
+                            <button onClick={() => void renameColumn(c)}>Rename…</button>
+                            <button onClick={() => sortByColumn(c, "asc")}>Sort ascending</button>
+                            <button onClick={() => sortByColumn(c, "desc")}>Sort descending</button>
+                            <div className="grid-menu-label">Type</div>
+                            {COLUMN_TYPES.map((type) => (
+                              <button
+                                key={type}
+                                className={type === column.type ? "grid-menu-active" : ""}
+                                onClick={() => void setColumnType(c, type)}
+                              >
+                                {type}
+                              </button>
+                            ))}
+                            {column.type === "select" && (
+                              <button onClick={() => void editColumnOptions(c)}>
+                                Edit options…
+                              </button>
+                            )}
+                            <button className="grid-menu-danger" onClick={() => deleteColumn(c)}>
+                              Delete column
+                            </button>
+                          </>
+                        }
                       >
-                        ▾
-                      </button>
-                    </div>
-                    {menuCol === c && (
-                      <div className="grid-col-menu" role="menu">
-                        <button onClick={() => void renameColumn(c)}>Rename…</button>
-                        <button onClick={() => sortByColumn(c, "asc")}>Sort ascending</button>
-                        <button onClick={() => sortByColumn(c, "desc")}>Sort descending</button>
-                        <div className="grid-menu-label">Type</div>
-                        {COLUMN_TYPES.map((type) => (
-                          <button
-                            key={type}
-                            className={type === column.type ? "grid-menu-active" : ""}
-                            onClick={() => void setColumnType(c, type)}
-                          >
-                            {type}
-                          </button>
-                        ))}
-                        {column.type === "select" && (
-                          <button onClick={() => void editColumnOptions(c)}>Edit options…</button>
-                        )}
-                        <button className="grid-menu-danger" onClick={() => deleteColumn(c)}>
-                          Delete column
+                        <button
+                          className="grid-head-menu"
+                          aria-label={`Options for ${column.name}`}
+                          onClick={() => setMenuCol((prev) => (prev === c ? null : c))}
+                        >
+                          ▾
                         </button>
-                      </div>
-                    )}
+                      </PopupMenu>
+                    </div>
                   </th>
                 ))}
               </tr>

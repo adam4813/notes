@@ -106,16 +106,6 @@
 }
 
 /* ── Titlebar (Electron) ──────────────────────────────────── */
-:root[data-theme="vim"] .title-bar {
-  background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border);
-}
-
-:root[data-theme="vim"] .title-bar-name {
-  color: var(--fg-muted);
-  font-family: var(--vim-font);
-}
-
 :root[data-theme="vim"] .title-bar-btn {
   color: var(--fg-muted);
 }
@@ -146,7 +136,7 @@
 }
 
 /* ── Menus / popups ───────────────────────────────────────── */
-:root[data-theme="vim"] .title-bar-menu-popup,
+:root[data-theme="vim"] .popup-menu,
 :root[data-theme="vim"] .context-menu,
 :root[data-theme="vim"] .new-menu,
 :root[data-theme="vim"] .split-menu,
@@ -168,7 +158,7 @@
 }
 
 :root[data-theme="vim"] .palette-item,
-:root[data-theme="vim"] .title-bar-menu-item,
+:root[data-theme="vim"] .popup-menu > button,
 :root[data-theme="vim"] .context-item,
 :root[data-theme="vim"] .new-menu-item,
 :root[data-theme="vim"] .split-menu-item {
@@ -178,7 +168,7 @@
 
 :root[data-theme="vim"] .palette-item:hover,
 :root[data-theme="vim"] .palette-item--active,
-:root[data-theme="vim"] .title-bar-menu-item:hover:not(:disabled),
+:root[data-theme="vim"] .popup-menu > button:hover:not(:disabled),
 :root[data-theme="vim"] .context-item:hover,
 :root[data-theme="vim"] .new-menu-item:hover,
 :root[data-theme="vim"] .split-menu-item:hover {

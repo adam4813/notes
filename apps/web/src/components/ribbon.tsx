@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { PopupMenu } from "@notes/ui";
+import { useCallback, useEffect, useState } from "react";
 
 interface RibbonProps {
   newActions: Array<{ id: string; label: string; run: () => void }>;
@@ -17,37 +18,41 @@ function TopBarMenu({
   id: string;
   label: string;
   items: Array<
-    | { type: "separator" }
-    | { type: "item"; label: string; onClick: () => void; disabled?: boolean }
+    { type: "separator" } | { type: "item"; label: string; onClick: () => void; disabled?: boolean }
   >;
   open: boolean;
   onToggle: () => void;
   onClose: () => void;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handlePointerDown = (event: MouseEvent) => {
-      if (!ref.current?.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    };
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open, onClose]);
-
   return (
-    <div className="title-bar-menu" ref={ref}>
+    <PopupMenu
+      open={open}
+      onClose={onClose}
+      style={{ left: 0, right: "unset" }}
+      menu={
+        <>
+          {items.map((item, index) =>
+            item.type === "separator" ? (
+              <div key={index} className="title-bar-menu-sep" />
+            ) : (
+              <button
+                key={index}
+                disabled={item.disabled}
+                style={{
+                  fontSize: "12px",
+                }}
+                onClick={() => {
+                  onClose();
+                  item.onClick();
+                }}
+              >
+                {item.label}
+              </button>
+            ),
+          )}
+        </>
+      }
+    >
       <button
         className={`title-bar-menu-btn ${open ? "title-bar-menu-btn--open" : ""}`}
         aria-expanded={open}
@@ -59,28 +64,7 @@ function TopBarMenu({
       >
         {label}
       </button>
-      {open && (
-        <div id={`ribbon-menu-${id}`} className="title-bar-menu-popup" onMouseDown={(event) => event.stopPropagation()}>
-          {items.map((item, index) =>
-            item.type === "separator" ? (
-              <div key={index} className="title-bar-menu-sep" />
-            ) : (
-              <button
-                key={index}
-                className="title-bar-menu-item"
-                disabled={item.disabled}
-                onClick={() => {
-                  onClose();
-                  item.onClick();
-                }}
-              >
-                {item.label}
-              </button>
-            ),
-          )}
-        </div>
-      )}
-    </div>
+    </PopupMenu>
   );
 }
 
@@ -133,7 +117,12 @@ export function Ribbon({ newActions, onCommand, onSearch }: RibbonProps) {
             onToggle={() => setOpenMenu((current) => (current === "edit" ? null : "edit"))}
             onClose={() => setOpenMenu((current) => (current === "edit" ? null : current))}
             items={[
-              { type: "item", label: "Undo", onClick: () => document.execCommand("undo") },
+              {
+                type: "item",
+                label: "Undo",
+                onClick: () => document.execCommand("undo"),
+                disabled: true,
+              },
               { type: "item", label: "Redo", onClick: () => document.execCommand("redo") },
               { type: "separator" },
               { type: "item", label: "Cut", onClick: () => document.execCommand("cut") },
@@ -201,12 +190,36 @@ export function Ribbon({ newActions, onCommand, onSearch }: RibbonProps) {
             >
               {maximized ? (
                 <svg width="10" height="10" viewBox="0 0 10 10">
-                  <rect x="2" y="0" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="1" />
-                  <rect x="0" y="2" width="8" height="8" fill="var(--bg)" stroke="currentColor" strokeWidth="1" />
+                  <rect
+                    x="2"
+                    y="0"
+                    width="8"
+                    height="8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1"
+                  />
+                  <rect
+                    x="0"
+                    y="2"
+                    width="8"
+                    height="8"
+                    fill="var(--bg)"
+                    stroke="currentColor"
+                    strokeWidth="1"
+                  />
                 </svg>
               ) : (
                 <svg width="10" height="10" viewBox="0 0 10 10">
-                  <rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="1" />
+                  <rect
+                    x="0.5"
+                    y="0.5"
+                    width="9"
+                    height="9"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1"
+                  />
                 </svg>
               )}
             </button>

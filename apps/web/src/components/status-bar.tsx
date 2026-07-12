@@ -1,6 +1,7 @@
 import type { StatusBarItem } from "@notes/plugin-host";
 import type { ThemeMeta } from "@notes/shared";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { PopupMenu } from "@notes/ui";
 import { useWorkspace } from "../state/app-context";
 import { flattenFiles } from "../state/selectors";
 import { PluginStatusItems } from "./plugin-status-items";
@@ -39,7 +40,6 @@ export function StatusBar({
 }) {
   const { state } = useWorkspace();
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
-  const themeMenuRef = useRef<HTMLDivElement>(null);
   const noteCount = flattenFiles(state.tree).length;
   const activePane = state.panes.find((pane) => pane.id === state.activePaneId);
   const activeTab = activePane?.tabs.find((tab) => tab.id === activePane.activeTabId);
@@ -47,71 +47,67 @@ export function StatusBar({
   const canToggleMode = selectedTheme === "default";
   const modeIcon = theme === "dark" ? "🌙" : theme === "light" ? "☀️" : "🖥️";
 
-  useEffect(() => {
-    if (!themeMenuOpen) {
-      return;
-    }
-    const onPointerDown = (event: PointerEvent) => {
-      if (themeMenuRef.current && !themeMenuRef.current.contains(event.target as Node)) {
-        setThemeMenuOpen(false);
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setThemeMenuOpen(false);
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [themeMenuOpen]);
-
   const themeOptions: { value: string; label: string }[] = [
     { value: "default", label: "Default" },
     { value: "solarized", label: "Solarized" },
     { value: "contrast", label: "High contrast" },
     ...externalThemes.map((themeMeta) => ({ value: themeMeta.id, label: themeMeta.name })),
   ];
-  const selectedThemeLabel = themeOptions.find((option) => option.value === selectedTheme)?.label ?? "Default";
+  const selectedThemeLabel =
+    themeOptions.find((option) => option.value === selectedTheme)?.label ?? "Default";
 
   return (
     <footer className="status-bar">
       <span className="status-controls">
-        <button className="status-action-btn" title="Settings" aria-label="Settings" onClick={onOpenSettings}>
+        <button
+          className="status-action-btn"
+          title="Settings"
+          aria-label="Settings"
+          onClick={onOpenSettings}
+        >
           ⚙
         </button>
-        <div className="status-menu-wrap" ref={themeMenuRef}>
-          <button
-            className="status-action-btn"
-            title={`Theme: ${selectedThemeLabel}`}
-            aria-label={`Theme: ${selectedThemeLabel}`}
-            aria-haspopup="menu"
-            aria-expanded={themeMenuOpen}
-            onClick={() => setThemeMenuOpen((open) => !open)}
+        <div>
+          <PopupMenu
+            open={themeMenuOpen}
+            onClose={() => setThemeMenuOpen(false)}
+            style={{
+              position: "fixed",
+              left: 4,
+              bottom: 28,
+              top: "unset",
+              right: "unset",
+            }}
+            menu={
+              <>
+                {themeOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    role="menuitemradio"
+                    aria-checked={selectedTheme === option.value}
+                    onClick={() => {
+                      onThemeChange(resolveThemeSelection(option.value, theme));
+                      setThemeMenuOpen(false);
+                    }}
+                  >
+                    {selectedTheme === option.value ? "✓ " : ""}
+                    {option.label}
+                  </button>
+                ))}
+              </>
+            }
           >
-            {selectedThemeLabel} ▴
-          </button>
-          {themeMenuOpen && (
-            <div className="status-menu-popup" role="menu">
-              {themeOptions.map((option) => (
-                <button
-                  key={option.value}
-                  role="menuitemradio"
-                  aria-checked={selectedTheme === option.value}
-                  className="status-menu-item"
-                  onClick={() => {
-                    onThemeChange(resolveThemeSelection(option.value, theme));
-                    setThemeMenuOpen(false);
-                  }}
-                >
-                  {selectedTheme === option.value ? "✓ " : ""}{option.label}
-                </button>
-              ))}
-            </div>
-          )}
+            <button
+              className="status-action-btn"
+              title={`Theme: ${selectedThemeLabel}`}
+              aria-label={`Theme: ${selectedThemeLabel}`}
+              aria-haspopup="menu"
+              aria-expanded={themeMenuOpen}
+              onClick={() => setThemeMenuOpen((open) => !open)}
+            >
+              {selectedThemeLabel} ▴
+            </button>
+          </PopupMenu>
         </div>
         {canToggleMode && (
           <button
