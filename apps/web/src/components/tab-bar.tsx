@@ -42,12 +42,10 @@ function buildSplitMenu(pane: Pane, paneCount: number): SplitMenuItem[] {
 export function TabBar({ pane }: { pane: Pane }) {
   const { state, dispatch } = useWorkspace();
   const services = useAppServices();
-  const [menuOpen, setMenuOpen] = useState(false);
   const [overflowMenuOpen, setOverflowMenuOpen] = useState(false);
   const [tabMenu, setTabMenu] = useState<{ x: number; y: number; tab: Tab } | null>(null);
   const [overflowTabs, setOverflowTabs] = useState<Tab[]>([]);
   const [hiddenTabIds, setHiddenTabIds] = useState<Set<string>>(new Set());
-  const menuRef = useRef<HTMLDivElement>(null);
   const overflowMenuRef = useRef<HTMLDivElement>(null);
   const tabListRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -98,28 +96,6 @@ export function TabBar({ pane }: { pane: Pane }) {
     setHiddenTabIds(new Set());
     window.requestAnimationFrame(recalcOverflowTabs);
   };
-
-  useEffect(() => {
-    if (!menuOpen) {
-      return;
-    }
-    const onPointerDown = (event: PointerEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [menuOpen]);
 
   useEffect(() => {
     if (!overflowMenuOpen) {
@@ -188,6 +164,8 @@ export function TabBar({ pane }: { pane: Pane }) {
     setTabMenu({ x: event.clientX, y: event.clientY, tab });
   };
 
+  const splitMenuItems = buildSplitMenu(pane, state.panes.length);
+
   const tabMenuItems = (tab: Tab): { label: string; run: () => void; danger?: boolean }[] => {
     const index = pane.tabs.findIndex((candidate) => candidate.id === tab.id);
     const items: { label: string; run: () => void; danger?: boolean }[] = [
@@ -215,6 +193,9 @@ export function TabBar({ pane }: { pane: Pane }) {
       label: "Close all",
       run: () => dispatch({ type: "closeAllTabs", paneId: pane.id }),
     });
+    splitMenuItems.forEach((item) =>
+      items.push({ label: item.label, run: () => dispatch(item.action) }),
+    );
     if (!tab.path.startsWith("notes://")) {
       items.push(
         { label: "Rename…", run: () => void services.renamePath(tab.path) },
@@ -223,8 +204,6 @@ export function TabBar({ pane }: { pane: Pane }) {
     }
     return items;
   };
-
-  const items = buildSplitMenu(pane, state.panes.length);
 
   return (
     <div className="tab-bar">
@@ -249,10 +228,12 @@ export function TabBar({ pane }: { pane: Pane }) {
               onContextMenu={(event) => openTabMenu(event, tab)}
             >
               <span className="tab-title">{tab.title}</span>
-              {fileName && fileName !== tab.title && (
-                <span className="tab-file">{fileName}</span>
-              )}
-              <button className="tab-close" aria-label="Close tab" onClick={(event) => close(event, tab.id)}>
+              {fileName && fileName !== tab.title && <span className="tab-file">{fileName}</span>}
+              <button
+                className="tab-close"
+                aria-label="Close tab"
+                onClick={(event) => close(event, tab.id)}
+              >
                 ×
               </button>
             </div>
@@ -292,37 +273,6 @@ export function TabBar({ pane }: { pane: Pane }) {
           )}
         </div>
       )}
-
-      <div className="split-wrap" ref={menuRef}>
-        <button
-          className="tab-split"
-          title="Split options"
-          aria-label="Split options"
-          aria-haspopup="menu"
-          aria-expanded={menuOpen}
-          disabled={items.length === 0}
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          ⫿
-        </button>
-        {menuOpen && items.length > 0 && (
-          <div className="split-menu" role="menu">
-            {items.map((item) => (
-              <button
-                key={item.label}
-                role="menuitem"
-                className="split-menu-item"
-                onClick={() => {
-                  dispatch(item.action);
-                  setMenuOpen(false);
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
 
       {tabMenu && (
         <div
