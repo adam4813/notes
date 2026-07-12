@@ -47,7 +47,7 @@ export interface StartServerResult {
  */
 export async function startServer(overrides?: Partial<ServerConfig>): Promise<StartServerResult> {
   const config = { ...loadConfig(), ...overrides };
-  const app = Fastify({ logger: true });
+  const app = Fastify({ logger: true, bodyLimit: 10485760 });
   registerErrorHandler(app);
 
   const events = new EventBus<TomeEventMap>();
