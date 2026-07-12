@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { createNewNote } from "./test-helpers";
 
 test("embed: a markdown note embeds another note's widget and round-trips", async ({ page }) => {
   await page.goto("/");
@@ -21,7 +22,7 @@ test("embed: a markdown note embeds another note's widget and round-trips", asyn
     .not.toBeNull();
 
   // Create a markdown note and embed the table via ![[...]].
-  await page.getByRole("button", { name: "＋ New note" }).click();
+  await createNewNote(page);
   const rendered = page.locator(".ProseMirror").first();
   await rendered.click();
   await page.keyboard.press("Control+End");

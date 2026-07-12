@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { createNewNote } from "./test-helpers";
 
 test("a markdown note can wikilink to a canvas and navigate to it", async ({ page }) => {
   await page.goto("/");
@@ -25,7 +26,7 @@ test("a markdown note can wikilink to a canvas and navigate to it", async ({ pag
     .toBe(true);
 
   // Create a markdown note and insert a wikilink to the canvas via autocomplete.
-  await page.getByRole("button", { name: "＋ New note" }).click();
+  await createNewNote(page);
   const rendered = page.locator(".ProseMirror").first();
   await rendered.click();
   await page.keyboard.press("Control+End");

@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { createNewNote } from "./test-helpers";
 
 test("offline: edits are buffered locally and synced on reconnect", async ({ page, context }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "＋ New note" }).click();
+  await createNewNote(page);
   const rendered = page.locator(".ProseMirror").first();
   await rendered.click();
   const notePath = (await page.locator(".status-path").textContent())?.trim() ?? "";

@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { createNewNote } from "./test-helpers";
 
 test("tags: the tag pane lists a tag and filters search by it", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "＋ New note" }).click();
+  await createNewNote(page);
 
   const rendered = page.locator(".ProseMirror").first();
   await rendered.click();

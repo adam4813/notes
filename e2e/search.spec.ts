@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { createNewNote } from "./test-helpers";
 
 test("search: find a note by content and open it from the search pane", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "＋ New note" }).click();
+  await createNewNote(page);
 
   const rendered = page.locator(".ProseMirror").first();
   await rendered.click();
@@ -21,7 +22,7 @@ test("search: find a note by content and open it from the search pane", async ({
     )
     .toBeGreaterThan(0);
 
-  await page.getByTestId("sidebar-view-search").click();
+  await page.locator(".ribbon-search-input").fill("zephyrsearchword");
   await page.getByTestId("search-input").fill("zephyrsearchword");
 
   const result = page.locator(".search-result").first();

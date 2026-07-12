@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { createNewNote } from "./test-helpers";
 
 test("find: in-note find counts matches and replace-all rewrites them", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "＋ New note" }).click();
+  await createNewNote(page);
 
   // Use the source (Edit) mode for deterministic text.
   await page.getByRole("tab", { name: "Edit", exact: true }).click();

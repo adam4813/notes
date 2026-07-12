@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { createNewNote } from "./test-helpers";
 
 test("tome replace: find and replace a token across the Tome", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "＋ New note" }).click();
+  await createNewNote(page);
   const rendered = page.locator(".ProseMirror").first();
   await rendered.click();
   await page.keyboard.press("Control+End");

@@ -1,10 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { createNewNote } from "./test-helpers";
 
 test("plugins: enable and disable the Word Count sample from settings", async ({ page }) => {
   await page.goto("/");
 
   // Open a note so the Word Count status item has content to report.
-  await page.getByRole("button", { name: "＋ New note" }).click();
+  await createNewNote(page);
   await expect(page.locator(".ProseMirror")).toBeVisible();
 
   // Open Settings and enable the Word Count plugin.

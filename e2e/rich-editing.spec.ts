@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { createNewNote } from "./test-helpers";
 
 test("toolbar applies bold formatting in the rendered editor", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "＋ New note" }).click();
+  await createNewNote(page);
 
   const rendered = page.locator(".ProseMirror").first();
   await expect(rendered).toBeVisible();
@@ -14,7 +15,7 @@ test("toolbar applies bold formatting in the rendered editor", async ({ page }) 
 
 test("note editor context menu is available in rendered and edit modes", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "＋ New note" }).click();
+  await createNewNote(page);
 
   const rendered = page.locator(".ProseMirror").first();
   await expect(rendered).toBeVisible();
@@ -38,7 +39,7 @@ test("note editor context menu is available in rendered and edit modes", async (
 
 test("manually authored img tag renders in rendered mode", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "＋ New note" }).click();
+  await createNewNote(page);
   await page.getByRole("tab", { name: "Edit", exact: true }).click();
 
   const source = page.locator(".cm-content");
@@ -57,7 +58,7 @@ test("manually authored img tag renders in rendered mode", async ({ page }) => {
 
 test("undo in rendered mode does not clear content after switching modes", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "＋ New note" }).click();
+  await createNewNote(page);
 
   const rendered = page.locator(".ProseMirror").first();
   await expect(rendered).toBeVisible();
@@ -75,7 +76,7 @@ test("undo in rendered mode does not clear content after switching modes", async
 
 test("wikilink autocomplete inserts a link from the index", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "＋ New note" }).click();
+  await createNewNote(page);
 
   // Wait until the index has picked up at least one note.
   await expect
@@ -103,7 +104,7 @@ test("wikilink autocomplete inserts a link from the index", async ({ page }) => 
 
 test("tab indents a list item into a nested list", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "＋ New note" }).click();
+  await createNewNote(page);
 
   const rendered = page.locator(".ProseMirror").first();
   await rendered.click();

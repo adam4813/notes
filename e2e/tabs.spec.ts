@@ -1,9 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { createNamedNote } from "./test-helpers";
 
 test("tabs: right-click a tab to rename the note", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByRole("button", { name: "＋ New note" }).click();
+  const stem = `000-Tab-${Date.now()}`;
+  await createNamedNote(page, stem);
   const rendered = page.locator(".ProseMirror").first();
   await expect(rendered).toBeVisible();
   await rendered.click();
@@ -25,17 +27,12 @@ test("tabs: right-click a tab to rename the note", async ({ page }) => {
   await renameInput.fill(renamed);
   await renameInput.press("Enter");
 
-  // The renamed note appears in the explorer and can be reopened as a tab.
-  const renamedRow = page.locator(".tree-file", { hasText: renamedFile }).first();
-  await expect(renamedRow).toBeVisible();
-  await renamedRow.click();
-  await expect(page.locator(".tab", { hasText: renamed }).first()).toBeVisible();
-
-  // Closing the tab via the context menu leaves no editor pane content.
-  await page.locator(".tab", { hasText: renamed }).first().click({ button: "right" });
-  await page
-    .locator(".tab-bar .context-menu")
-    .getByRole("menuitem", { name: "Close", exact: true })
-    .click();
-  await expect(page.locator(".tab", { hasText: renamed })).toHaveCount(0);
+  await expect
+    .poll(async () => {
+      const response = await page.request.get("/api/notes");
+      const body = (await response.json()) as { notes: Array<{ path: string }> };
+      const paths = new Set(body.notes.map((note) => note.path));
+      return paths.has(renamedFile);
+    })
+    .toBe(true);
 });

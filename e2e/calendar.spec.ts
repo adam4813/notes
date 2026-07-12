@@ -11,11 +11,12 @@ test("calendar note: create, switch views, and add an event", async ({ page }) =
   await expect(page.getByTestId("calendar-grid")).toBeVisible();
   await expect(page.getByTestId("calendar-title")).toBeVisible();
 
-  // Add an event to the first in-month day cell via the inline form.
+  // Add an event to the first in-month day cell via the event panel.
   await page.locator(".calendar-cell:not(.calendar-cell--muted)").first().click();
-  await page.getByTestId("calendar-compose-title").fill("Zephyr Standup");
-  await page.getByTestId("calendar-compose-time").fill("09:30");
-  await page.getByTestId("calendar-compose-add").click();
+  const panel = page.locator(".calendar-event-panel");
+  await expect(panel).toBeVisible();
+  await panel.getByLabel("Title").fill("Zephyr Standup");
+  await panel.getByLabel("Time").fill("09:30");
 
   // The event appears in the agenda view with its time.
   await page.getByRole("tab", { name: "Agenda" }).click();

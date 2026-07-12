@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { createNewNote } from "./test-helpers";
 
 test("editor round-trips rendered edits into the markdown source", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "＋ New note" }).click();
+  await createNewNote(page);
 
   const rendered = page.locator(".ProseMirror").first();
   await expect(rendered).toBeVisible();

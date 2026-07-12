@@ -3,6 +3,13 @@ import { expect, test } from "@playwright/test";
 test("theming: accent color and theme apply from settings", async ({ page }) => {
   await page.goto("/");
 
+  // Default mode cycles system → light → dark.
+  await page.getByRole("button", { name: "Cycle mode (Light/Dark/System)" }).click();
+  await page.getByRole("button", { name: "Cycle mode (Light/Dark/System)" }).click();
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.dataset.theme ?? ""))
+    .toBe("dark");
+
   await page.getByRole("button", { name: "Settings" }).click();
 
   // Pick the blue accent preset and confirm the token updates.
@@ -15,13 +22,7 @@ test("theming: accent color and theme apply from settings", async ({ page }) => 
     )
     .toBe("#2563eb");
 
-  // Switch to the dark theme via the segmented control.
-  await page.getByRole("radio", { name: "Dark", exact: true }).click();
-  await expect
-    .poll(() => page.evaluate(() => document.documentElement.dataset.theme ?? ""))
-    .toBe("dark");
-
-  // A built-in named theme also applies.
+  // A built-in named theme applies.
   await page.getByRole("radio", { name: "Solarized", exact: true }).click();
   await expect
     .poll(() => page.evaluate(() => document.documentElement.dataset.theme ?? ""))

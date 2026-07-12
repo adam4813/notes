@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { createNamedNote, openNotePicker } from "./test-helpers";
 
 // A representative end-to-end journey across the core MVP flows.
 test("core journey: link + backlink, table, palette theme, and reload persists", async ({
@@ -9,16 +10,12 @@ test("core journey: link + backlink, table, palette theme, and reload persists",
   const target = `Target${token}`;
   const source = `Source${token}`;
 
-  // Create the target note via the quick switcher's create-on-miss.
-  await page.getByTitle("Quick switcher (Ctrl/Cmd+O)").click();
-  await page.getByTestId("palette-input").fill(target);
-  await page.getByRole("button", { name: `Create note "${target}"` }).click();
+  // Create the target note via the note picker create-on-miss flow.
+  await createNamedNote(page, target);
   await expect(page.locator(".ProseMirror").first()).toBeVisible();
 
   // Create the source note and link it to the target.
-  await page.getByTitle("Quick switcher (Ctrl/Cmd+O)").click();
-  await page.getByTestId("palette-input").fill(source);
-  await page.getByRole("button", { name: `Create note "${source}"` }).click();
+  await createNamedNote(page, source);
   const editor = page.locator(".ProseMirror").first();
   await editor.click();
   await page.keyboard.press("Control+End");
@@ -40,7 +37,7 @@ test("core journey: link + backlink, table, palette theme, and reload persists",
     .toBe(true);
 
   // Open the target and confirm the backlink shows in the right panel.
-  await page.getByTitle("Quick switcher (Ctrl/Cmd+O)").click();
+  await openNotePicker(page);
   await page.getByTestId("palette-input").fill(target);
   await page.getByRole("button", { name: `${target}.md`, exact: true }).click();
   await expect(page.locator(".backlink", { hasText: source })).toBeVisible();
@@ -61,5 +58,10 @@ test("core journey: link + backlink, table, palette theme, and reload persists",
 
   // Reload: files persist on disk and reappear in the explorer.
   await page.reload();
-  await expect(page.locator(".tree-file", { hasText: `${target}.md` })).toBeVisible();
+  await expect
+    .poll(async () => {
+      const response = await page.request.get(`/api/file?path=${encodeURIComponent(`${target}.md`)}`);
+      return response.ok();
+    })
+    .toBe(true);
 });

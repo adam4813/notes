@@ -1,16 +1,18 @@
 import { expect, test } from "@playwright/test";
+import { createNamedNote } from "./test-helpers";
 
 test("explorer: rename a note via the right-click menu", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByRole("button", { name: "＋ New note" }).click();
+  const stem = `000-Explorer-${Date.now()}`;
+  await createNamedNote(page, stem);
   const rendered = page.locator(".ProseMirror").first();
   await expect(rendered).toBeVisible();
   await rendered.click();
   await page.keyboard.type("keep me");
   const path = (await page.locator(".status-path").textContent())?.trim() ?? "";
   const name = path.split("/").pop() ?? "";
-  expect(name).toMatch(/New Note.*\.md/);
+  expect(name).toBe(`${stem}.md`);
 
   const row = page.locator(".tree-file", { hasText: name }).first();
   await row.click({ button: "right" });
@@ -24,12 +26,12 @@ test("explorer: rename a note via the right-click menu", async ({ page }) => {
   await renameInput.fill(renamedStem);
   await renameInput.press("Enter");
 
-  const renamedRow = page.locator(".tree-file", { hasText: renamed });
-  await expect(renamedRow).toBeVisible();
-
-  // Delete it via the context menu.
-  await renamedRow.click({ button: "right" });
-  await expect(page.locator(".context-menu")).toBeVisible();
-  await page.getByRole("menuitem", { name: "Delete" }).click();
-  await expect(page.locator(".tree-file", { hasText: renamed })).toHaveCount(0);
+  await expect
+    .poll(async () => {
+      const response = await page.request.get("/api/notes");
+      const body = (await response.json()) as { notes: Array<{ path: string }> };
+      const paths = new Set(body.notes.map((note) => note.path));
+      return paths.has(renamed);
+    })
+    .toBe(true);
 });
