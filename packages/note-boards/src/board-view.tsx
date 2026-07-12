@@ -225,61 +225,63 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
 
   return (
     <div className="board-note">
-      <div className="board-scroll">
-        {columns.map((column) => (
-          <section
-            key={column.name}
-            className="board-column"
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => onDropCard(e, column.name, null)}
-          >
-            <header className="board-column-head">
-              <span
-                className="board-column-name"
-                onDoubleClick={() => void renameColumn(column.name)}
-              >
-                {column.name}
-              </span>
-              <span className="board-column-count">{column.cards.length}</span>
-              <button
-                className="board-column-del"
-                aria-label={`Delete column ${column.name}`}
-                onClick={() => deleteColumn(column.name)}
-              >
-                ×
-              </button>
-            </header>
+      <div style={{ paddingBottom: "2px", height: "100%", background: "var(--bg-island)" }}>
+        <div className="board-scroll">
+          {columns.map((column) => (
+            <section
+              key={column.name}
+              className="board-column"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => onDropCard(e, column.name, null)}
+            >
+              <header className="board-column-head">
+                <span
+                  className="board-column-name"
+                  onDoubleClick={() => void renameColumn(column.name)}
+                >
+                  {column.name}
+                </span>
+                <span className="board-column-count">{column.cards.length}</span>
+                <button
+                  className="board-column-del"
+                  aria-label={`Delete column ${column.name}`}
+                  onClick={() => deleteColumn(column.name)}
+                >
+                  ×
+                </button>
+              </header>
 
-            <div className="board-cards">
-              {column.cards.map((cardId) => {
-                const card = cards.get(cardId);
-                if (!card) return null;
-                return (
-                  <BoardCard
-                    key={cardId}
-                    card={card}
-                    onDragStart={onDragStart}
-                    onDropCard={onDropCard}
-                    updateCardState={updateCardState}
-                    handleDeleteCard={handleDeleteCard}
-                    onOpenWikilink={onOpenWikilink}
-                    column={column}
-                  />
-                );
-              })}
-            </div>
+              <div className="board-cards">
+                {column.cards.map((cardId) => {
+                  const card = cards.get(cardId);
+                  if (!card) return null;
+                  return (
+                    <BoardCard
+                      key={cardId}
+                      card={card}
+                      onDragStart={onDragStart}
+                      onDropCard={onDropCard}
+                      updateCardState={updateCardState}
+                      handleDeleteCard={handleDeleteCard}
+                      onOpenWikilink={onOpenWikilink}
+                      column={column}
+                    />
+                  );
+                })}
+              </div>
 
-            {addingCol === column.name ? null : (
-              <button className="board-add-card" onClick={() => void handleAddCard(column.name)}>
-                ＋ Add card
-              </button>
-            )}
-          </section>
-        ))}
+              {addingCol === column.name ? null : (
+                <button className="board-add-card" onClick={() => void handleAddCard(column.name)}>
+                  ＋ Add card
+                </button>
+              )}
+            </section>
+          ))}
 
-        <button className="board-add-column" onClick={() => void addColumn()}>
-          ＋ Add column
-        </button>
+          <button className="board-add-column" onClick={() => void addColumn()}>
+            ＋ Add column
+          </button>
+        </div>
       </div>
       {promptDialog}
     </div>

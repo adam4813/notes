@@ -40,7 +40,6 @@
 .image-note-body {
   flex: 1;
   min-height: 0;
-  margin: 8px;
   overflow: auto;
   display: grid;
   place-items: center;
@@ -111,6 +110,8 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--bg-island);
 }
 
 html,
@@ -481,11 +482,6 @@ button {
   min-height: 0;
 }
 
-.right-panel {
-  padding: 6px;
-  overflow: auto;
-}
-
 .panel-header {
   font-size: 11px;
   text-transform: uppercase;
@@ -495,7 +491,6 @@ button {
 
 .sidebar-scroll {
   overflow: auto;
-  padding: 8px 6px;
   flex: 1;
 }
 
@@ -893,6 +888,7 @@ button {
 .explorer {
   height: 100%;
   overflow: auto;
+  padding: 4px;
   position: relative;
 }
 
@@ -2401,6 +2397,7 @@ button {
   min-height: 0;
   display: flex;
   overflow: hidden;
+  padding-bottom: 2px;
 }
 
 .grid-canvas {
@@ -2936,6 +2933,7 @@ button {
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  padding-bottom: 2px;
 }
 
 .table-meta {
@@ -3147,6 +3145,7 @@ tr:hover .grid-row-delete {
   height: 100%;
   overflow-x: auto;
   padding: 12px;
+  background: var(--bg);
 }
 
 .board-column {
@@ -3197,6 +3196,7 @@ tr:hover .grid-row-delete {
   gap: 6px;
   overflow-y: auto;
   min-height: 8px;
+  padding: 2px;
 }
 
 .board-card {

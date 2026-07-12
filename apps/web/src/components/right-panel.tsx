@@ -132,101 +132,103 @@ export function RightPanel() {
 
   return (
     <aside className="right-panel">
-      {!isNote && <div className="panel-empty">Open a note.</div>}
+      <div style={{ padding: "4px", overflow: "auto" }}>
+        {!isNote && <div className="panel-empty">Open a note.</div>}
 
-      {isNote && (
-        <Section title="Properties">
-          {isCanvas ? (
-            <div className="panel-empty">Properties aren’t available for canvas notes.</div>
-          ) : (
-            <>
-              {typeValue && (
-                <div className="property-row property-row--readonly">
-                  <span className="property-key">type</span>
-                  <span className="property-value">{typeValue}</span>
-                  <span className="property-lock" title="Managed by the note type">
-                    🔒
-                  </span>
-                </div>
-              )}
-              <ul className="property-list">
-                {props.map((prop, index) => (
-                  <li key={index} className="property-row property-row--edit">
-                    <input
-                      className="property-input property-input--key"
-                      aria-label="Property name"
-                      placeholder="key"
-                      value={prop.key}
-                      onChange={(event) => updateProp(index, { key: event.target.value })}
-                      onBlur={() => void commitProps(props)}
-                    />
-                    <input
-                      className="property-input"
-                      aria-label={`Value for ${prop.key || "property"}`}
-                      placeholder="value"
-                      value={prop.value}
-                      onChange={(event) => updateProp(index, { value: event.target.value })}
-                      onBlur={() => void commitProps(props)}
-                    />
-                    <button
-                      className="property-remove"
-                      aria-label={`Remove ${prop.key || "property"}`}
-                      onClick={() => removeProp(index)}
-                    >
-                      ×
+        {isNote && (
+          <Section title="Properties">
+            {isCanvas ? (
+              <div className="panel-empty">Properties aren’t available for canvas notes.</div>
+            ) : (
+              <>
+                {typeValue && (
+                  <div className="property-row property-row--readonly">
+                    <span className="property-key">type</span>
+                    <span className="property-value">{typeValue}</span>
+                    <span className="property-lock" title="Managed by the note type">
+                      🔒
+                    </span>
+                  </div>
+                )}
+                <ul className="property-list">
+                  {props.map((prop, index) => (
+                    <li key={index} className="property-row property-row--edit">
+                      <input
+                        className="property-input property-input--key"
+                        aria-label="Property name"
+                        placeholder="key"
+                        value={prop.key}
+                        onChange={(event) => updateProp(index, { key: event.target.value })}
+                        onBlur={() => void commitProps(props)}
+                      />
+                      <input
+                        className="property-input"
+                        aria-label={`Value for ${prop.key || "property"}`}
+                        placeholder="value"
+                        value={prop.value}
+                        onChange={(event) => updateProp(index, { value: event.target.value })}
+                        onBlur={() => void commitProps(props)}
+                      />
+                      <button
+                        className="property-remove"
+                        aria-label={`Remove ${prop.key || "property"}`}
+                        onClick={() => removeProp(index)}
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {props.length === 0 && <div className="panel-empty">No properties.</div>}
+                <button className="property-add" onClick={addProp}>
+                  ＋ Add property
+                </button>
+              </>
+            )}
+          </Section>
+        )}
+
+        {isNote && (
+          <Section title="Outline">
+            {headings.length === 0 ? (
+              <div className="panel-empty">No headings.</div>
+            ) : (
+              <ul className="outline-list">
+                {headings.map((heading) => (
+                  <li key={heading.key} style={{ paddingLeft: `${(heading.level - 1) * 10}px` }}>
+                    <button className="outline-item" onClick={() => scrollToHeading(heading.text)}>
+                      {heading.text}
                     </button>
                   </li>
                 ))}
               </ul>
-              {props.length === 0 && <div className="panel-empty">No properties.</div>}
-              <button className="property-add" onClick={addProp}>
-                ＋ Add property
-              </button>
-            </>
-          )}
-        </Section>
-      )}
+            )}
+          </Section>
+        )}
 
-      {isNote && (
-        <Section title="Outline">
-          {headings.length === 0 ? (
-            <div className="panel-empty">No headings.</div>
-          ) : (
-            <ul className="outline-list">
-              {headings.map((heading) => (
-                <li key={heading.key} style={{ paddingLeft: `${(heading.level - 1) * 10}px` }}>
-                  <button className="outline-item" onClick={() => scrollToHeading(heading.text)}>
-                    {heading.text}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Section>
-      )}
-
-      {isNote && (
-        <Section title="Backlinks">
-          {backlinks.length === 0 ? (
-            <div className="panel-empty">No backlinks yet.</div>
-          ) : (
-            <ul className="backlink-list">
-              {backlinks.map((backlink) => (
-                <li key={backlink.path}>
-                  <button
-                    className="backlink"
-                    onClick={() =>
-                      dispatch({ type: "openFile", path: backlink.path, title: backlink.title })
-                    }
-                  >
-                    {backlink.title}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Section>
-      )}
+        {isNote && (
+          <Section title="Backlinks">
+            {backlinks.length === 0 ? (
+              <div className="panel-empty">No backlinks yet.</div>
+            ) : (
+              <ul className="backlink-list">
+                {backlinks.map((backlink) => (
+                  <li key={backlink.path}>
+                    <button
+                      className="backlink"
+                      onClick={() =>
+                        dispatch({ type: "openFile", path: backlink.path, title: backlink.title })
+                      }
+                    >
+                      {backlink.title}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
+        )}
+      </div>
     </aside>
   );
 }
