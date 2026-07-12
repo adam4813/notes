@@ -426,7 +426,6 @@ button {
 /* Shared surface for all floating popup menus */
 .new-menu,
 .context-menu,
-.split-menu,
 .suggest-popup {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
@@ -447,8 +446,7 @@ button {
 
 .new-menu-item,
 .context-item,
-.suggest-item,
-.split-menu-item {
+.suggest-item {
   text-align: left;
   background: transparent;
   border: none;
@@ -1043,7 +1041,9 @@ button {
 .tab-bar {
   display: flex;
   align-items: center;
-  min-height: 34px
+  min-height: 34px;
+  padding: 6px;
+  gap: 2px;
 }
 
 .tab-list {
@@ -1051,7 +1051,6 @@ button {
   overflow: hidden;
   flex: 1;
   gap: 2px;
-  padding: 6px;
 }
 
 .tab {
@@ -1116,45 +1115,21 @@ button {
   background: var(--hover);
 }
 
-.tab-split {
+.tab-button {
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 6px 10px;
+  border-radius: 4px;
   color: var(--fg-muted);
 }
 
-.tab-split:hover:not(:disabled) {
+.tab-button:hover:not(:disabled) {
   background: var(--hover);
   color: var(--fg);
 }
 
-.tab-split:disabled {
+.tab-button:disabled {
   opacity: 0.35;
   cursor: default;
-}
-
-.split-wrap {
-  position: relative;
-}
-
-.split-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  z-index: 40;
-  min-width: 200px;
-}
-
-.split-menu-item {
-  display: block;
-  width: 100%;
-  padding: 8px 10px;
-  white-space: nowrap;
-}
-
-.split-menu-item:hover {
-  background: var(--active);
 }
 
 .pane-body {

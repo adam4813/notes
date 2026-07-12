@@ -239,7 +239,6 @@
 :root[data-theme="win98"] .popup-menu,
 :root[data-theme="win98"] .context-menu,
 :root[data-theme="win98"] .new-menu,
-:root[data-theme="win98"] .split-menu,
 :root[data-theme="win98"] .palette {
   background: var(--bg);
   border: 2px solid;
@@ -251,7 +250,6 @@
 :root[data-theme="win98"] .popup-menu > button,
 :root[data-theme="win98"] .context-item,
 :root[data-theme="win98"] .new-menu-item,
-:root[data-theme="win98"] .split-menu-item,
 :root[data-theme="win98"] .palette-item {
   font-family: var(--win98-font);
   font-size: 11px;
@@ -262,7 +260,6 @@
 :root[data-theme="win98"] .popup-menu > button:hover:not(:disabled),
 :root[data-theme="win98"] .context-item:hover,
 :root[data-theme="win98"] .new-menu-item:hover,
-:root[data-theme="win98"] .split-menu-item:hover,
 :root[data-theme="win98"] .palette-item:hover,
 :root[data-theme="win98"] .palette-item--active {
   background: #000080;

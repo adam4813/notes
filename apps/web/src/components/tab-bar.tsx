@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { PopupMenu } from "@notes/ui";
 import { fitMenuToViewport } from "../lib/context-menu";
 import { useAppServices } from "../state/app-services";
 import { useWorkspace } from "../state/app-context";
@@ -46,7 +47,6 @@ export function TabBar({ pane }: { pane: Pane }) {
   const [tabMenu, setTabMenu] = useState<{ x: number; y: number; tab: Tab } | null>(null);
   const [overflowTabs, setOverflowTabs] = useState<Tab[]>([]);
   const [hiddenTabIds, setHiddenTabIds] = useState<Set<string>>(new Set());
-  const overflowMenuRef = useRef<HTMLDivElement>(null);
   const tabListRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const tabMenuRef = useRef<HTMLDivElement>(null);
@@ -96,28 +96,6 @@ export function TabBar({ pane }: { pane: Pane }) {
     setHiddenTabIds(new Set());
     window.requestAnimationFrame(recalcOverflowTabs);
   };
-
-  useEffect(() => {
-    if (!overflowMenuOpen) {
-      return;
-    }
-    const onPointerDown = (event: PointerEvent) => {
-      if (overflowMenuRef.current && !overflowMenuRef.current.contains(event.target as Node)) {
-        setOverflowMenuOpen(false);
-      }
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOverflowMenuOpen(false);
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [overflowMenuOpen]);
 
   useEffect(() => {
     if (!tabMenu) {
@@ -242,24 +220,15 @@ export function TabBar({ pane }: { pane: Pane }) {
       </div>
 
       {overflowTabs.length > 0 && (
-        <div className="split-wrap" ref={overflowMenuRef}>
-          <button
-            className="tab-split"
-            title="Overflow tabs"
-            aria-label="Overflow tabs"
-            aria-haspopup="menu"
-            aria-expanded={overflowMenuOpen}
-            onClick={() => setOverflowMenuOpen((open) => !open)}
-          >
-            ▼
-          </button>
-          {overflowMenuOpen && (
-            <div className="split-menu" role="menu">
+        <PopupMenu
+          open={overflowMenuOpen}
+          onClose={() => setOverflowMenuOpen((open) => !open)}
+          menu={
+            <>
               {overflowTabs.map((tab) => (
                 <button
                   key={tab.id}
                   role="menuitem"
-                  className="split-menu-item"
                   title={tab.path}
                   onClick={() => {
                     dispatch({ type: "activateTab", paneId: pane.id, tabId: tab.id });
@@ -269,9 +238,20 @@ export function TabBar({ pane }: { pane: Pane }) {
                   {tab.title}
                 </button>
               ))}
-            </div>
-          )}
-        </div>
+            </>
+          }
+        >
+          <button
+            className="tab-button"
+            title="Overflow tabs"
+            aria-label="Overflow tabs"
+            aria-haspopup="menu"
+            aria-expanded={overflowMenuOpen}
+            onClick={() => setOverflowMenuOpen((open) => !open)}
+          >
+            ▼
+          </button>
+        </PopupMenu>
       )}
 
       {tabMenu && (
