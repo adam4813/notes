@@ -52,6 +52,8 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+const OUTLINE_LEVELS = ["🗄️", "📁", "📂", "📄"];
+
 export function RightPanel() {
   const { state, dispatch } = useWorkspace();
   const { notify } = useToasts();
@@ -197,7 +199,7 @@ export function RightPanel() {
                 {headings.map((heading) => (
                   <li key={heading.key} style={{ paddingLeft: `${(heading.level - 1) * 10}px` }}>
                     <button className="outline-item" onClick={() => scrollToHeading(heading.text)}>
-                      {heading.text}
+                      {OUTLINE_LEVELS[heading.level - 1]} {heading.text}
                     </button>
                   </li>
                 ))}

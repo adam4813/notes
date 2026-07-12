@@ -397,7 +397,7 @@
 
 /* ── Panel sections ─────────────────────────────────────── */
 :root[data-theme="win98"] .panel-section {
-  background: var(--bg);
+  background: var(--bg-sunken);
   border: 2px solid;
   border-color: #808080 #ffffff #ffffff #808080;
   border-radius: 0;
@@ -409,6 +409,17 @@
   letter-spacing: 0;
   font-weight: bold;
   font-size: 11px;
+}
+
+:root[data-theme="win98"] .panel-body {
+  padding: 2px;
+}
+
+/* Outline panel */
+:root[data-theme="win98"] .outline-item {
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 /* ── Editor ─────────────────────────────────────────────── */
