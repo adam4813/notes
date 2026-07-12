@@ -27,7 +27,6 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
   const { openPrompt, promptDialog } = usePromptDialog();
   const [columns, setColumns] = useState<BoardColumn[]>(() => parseBoard(value).model.columns);
   const [cards, setCards] = useState<Map<string, RichCard>>(new Map());
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [addingCol, setAddingCol] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const lastValue = useRef(value);
@@ -113,7 +112,6 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
       prev.map((col) => (col.name === colName ? { ...col, cards: [...col.cards, card.id] } : col)),
     );
     setAddingCol(null);
-    setExpandedId(card.id);
   };
 
   const handleDeleteCard = async (cardId: string) => {
@@ -131,7 +129,6 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
     setColumns((prev) =>
       prev.map((col) => ({ ...col, cards: col.cards.filter((id) => id !== cardId) })),
     );
-    if (expandedId === cardId) setExpandedId(null);
   };
 
   const handleMoveCard = async (drag: CardDrag, toColumn: string, toIndex: number) => {
@@ -261,8 +258,6 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
                   <BoardCard
                     key={cardId}
                     card={card}
-                    expandedId={expandedId}
-                    setExpandedId={setExpandedId}
                     onDragStart={onDragStart}
                     onDropCard={onDropCard}
                     updateCardState={updateCardState}

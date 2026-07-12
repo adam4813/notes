@@ -14,7 +14,8 @@
   },
   "dependencies": {
     "@notes/core": "*",
-    "@notes/editor": "*"
+    "@notes/editor": "*",
+    "@notes/ui": "*"
   },
   "peerDependencies": {
     "react": "^18",

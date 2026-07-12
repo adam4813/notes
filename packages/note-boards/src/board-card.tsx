@@ -1,13 +1,12 @@
-﻿import type { DragEvent } from "react";
+﻿import { DragEvent, useState } from "react";
 import { MarkdownEditor } from "@notes/editor";
 import type { BoardColumn, RichCard } from "./board-format";
+import { PopupMenu } from "@notes/ui";
 
 const LABEL_COLORS = ["#e2f0fb", "#fde8d8", "#d9f2e8", "#f5e6fb", "#fef9c3"];
 
 export function BoardCard({
   card,
-  expandedId,
-  setExpandedId,
   onDragStart,
   onDropCard,
   handleDeleteCard,
@@ -16,8 +15,6 @@ export function BoardCard({
   column,
 }: {
   card: RichCard;
-  expandedId: string | null;
-  setExpandedId: (id: string | null) => void;
   onDragStart: (e: DragEvent, cardId: string, columnName: string) => void;
   onDropCard: (e: DragEvent, columnName: string, cardId: string) => void;
   handleDeleteCard: (cardId: string) => void;
@@ -25,7 +22,9 @@ export function BoardCard({
   updateCardState: (card: RichCard) => void;
   column: BoardColumn;
 }) {
-  const expanded = expandedId === card.id;
+  const [expanded, setExpanded] = useState(false);
+  const [menuIsOpen, setMenuIsOpen] = useState(false);
+
   return (
     <div
       className={`board-card ${card.done ? "board-card--done" : ""} ${expanded ? "board-card--expanded" : ""}`}
@@ -33,7 +32,7 @@ export function BoardCard({
       onDragStart={(e) => onDragStart(e, card.id, column.name)}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => onDropCard(e, column.name, card.id)}
-      onClick={() => !expanded && setExpandedId(card.id)}
+      onClick={() => !expanded && setExpanded(true)}
     >
       {/* Collapsed view */}
       {!expanded && (
@@ -88,17 +87,36 @@ export function BoardCard({
             <button
               className="board-card-collapse"
               aria-label="Collapse card"
-              onClick={() => setExpandedId(null)}
+              onClick={() => setExpanded(false)}
             >
               ↑
             </button>
-            <button
-              className="board-card-del board-card-del--visible"
-              aria-label="Delete card"
-              onClick={() => void handleDeleteCard(card.id)}
+            <PopupMenu
+              open={menuIsOpen}
+              onClose={() => setMenuIsOpen(false)}
+              menu={
+                <>
+                  <button
+                    className="board-card-del"
+                    aria-label="Delete card"
+                    onClick={() => void handleDeleteCard(card.id)}
+                  >
+                    🗑 Delete
+                  </button>
+                </>
+              }
             >
-              🗑
-            </button>
+              <button
+                className="board-card-collapse"
+                title={`${card.title} menu`}
+                aria-label={`${card.title} menu`}
+                aria-haspopup="menu"
+                aria-expanded={menuIsOpen}
+                onClick={() => setMenuIsOpen(true)}
+              >
+                ...
+              </button>
+            </PopupMenu>
           </div>
 
           <div className="board-card-meta">

@@ -3233,8 +3233,7 @@ tr:hover .grid-row-delete {
 .board-card-del {
   background: transparent;
   border: none;
-  color: var(--fg-muted);
-  opacity: 0;
+  color: var(--status-offline) !important;
   border-radius: 4px;
 }
 
@@ -3253,14 +3252,6 @@ tr:hover .grid-row-delete {
 .board-card:hover .board-card-due {
   opacity: 1;
   width: auto;
-}
-
-.board-card:hover .board-card-del {
-  opacity: 1;
-}
-
-.board-card-del:hover {
-  color: var(--status-offline);
 }
 
 .board-card--expanded {
@@ -3327,18 +3318,15 @@ tr:hover .grid-row-delete {
   padding: 2px 0;
 }
 
-.board-card-collapse,
-.board-card-del--visible {
+.board-card-collapse {
   background: transparent;
   border: none;
   color: var(--fg-muted);
   border-radius: 4px;
   padding: 2px 4px;
-  cursor: pointer;
 }
 
 .board-card-collapse:hover { background: var(--hover); }
-.board-card-del--visible:hover { color: var(--status-offline); background: var(--hover); }
 
 .board-card-meta {
   display: flex;
