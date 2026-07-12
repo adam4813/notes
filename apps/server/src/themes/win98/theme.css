@@ -498,8 +498,8 @@
 
 /* ── Backlinks ──────────────────────────────────────────── */
 :root[data-theme="win98"] .backlink {
-  border: 1px solid #808080;
   border-radius: 0;
+  margin-bottom: 0;
 }
 
 :root[data-theme="win98"] .backlink:hover {
