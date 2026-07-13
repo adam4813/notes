@@ -9,6 +9,20 @@ export interface WikiSuggestion {
   path: string;
 }
 
+export interface CursorRequest {
+  token: number;
+  position: number;
+}
+
+export interface ScrollRequest {
+  token: number;
+  ratio: number;
+}
+
+export interface FocusRequest {
+  token: number;
+}
+
 /** MIME type used by the explorer when dragging notes. */
 export const NOTES_PATH_MIME = "application/x-notes-path";
 

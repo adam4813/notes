@@ -23,7 +23,13 @@ import { StyledTextMark } from "./styled-text-mark";
 import { SuggestionPopup } from "./suggestion-popup";
 import { droppedPathInsertion, NOTES_PATH_MIME } from "./types";
 import { EditorToolbar } from "./toolbar";
-import type { EditorCallbacks, WikiSuggestion } from "./types";
+import type {
+  CursorRequest,
+  EditorCallbacks,
+  FocusRequest,
+  ScrollRequest,
+  WikiSuggestion,
+} from "./types";
 import { WikilinkDecorator } from "./wikilink-decorator";
 
 interface MarkdownStorage {
@@ -60,6 +66,12 @@ interface RenderedEditorProps {
   callbacks?: EditorCallbacks;
   toolbarTrailing?: ReactNode;
   toolbarDisabled?: boolean;
+  cursorRequest?: CursorRequest;
+  scrollRequest?: ScrollRequest;
+  onCursorChange?: (position: number) => void;
+  onScrollChange?: (ratio: number) => void;
+  onFocus?: () => void;
+  focusRequest?: FocusRequest;
 }
 
 /** WYSIWYG editor (TipTap/ProseMirror): toolbar, clickable wikilinks, and autocomplete. */
@@ -69,13 +81,37 @@ export function RenderedEditor({
   callbacks,
   toolbarTrailing,
   toolbarDisabled = false,
+  cursorRequest,
+  scrollRequest,
+  onCursorChange,
+  onScrollChange,
+  onFocus,
+  focusRequest,
 }: RenderedEditorProps) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const callbacksRef = useRef(callbacks);
   callbacksRef.current = callbacks;
+  const onCursorChangeRef = useRef(onCursorChange);
+  const onScrollChangeRef = useRef(onScrollChange);
+  const onFocusRef = useRef(onFocus);
+  const suppressScrollRef = useRef(false);
+  const didInitialValueSyncRef = useRef(false);
+  const pendingCursorRestoreRef = useRef<{
+    active: boolean;
+    desiredPosition: number;
+    attempts: number;
+  }>({
+    active: false,
+    desiredPosition: 1,
+    attempts: 0,
+  });
+  onCursorChangeRef.current = onCursorChange;
+  onScrollChangeRef.current = onScrollChange;
+  onFocusRef.current = onFocus;
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollHostRef = useRef<HTMLDivElement>(null);
   const [suggest, setSuggest] = useState<SuggestState | null>(null);
   const suggestRef = useRef<SuggestState | null>(null);
   suggestRef.current = suggest;
@@ -145,6 +181,10 @@ export function RenderedEditor({
 
   useEffect(() => {
     if (!editor) {
+      return;
+    }
+    if (!didInitialValueSyncRef.current) {
+      didInitialValueSyncRef.current = true;
       return;
     }
     // Don't clobber the document (and reset the selection) while the user is
@@ -263,13 +303,102 @@ export function RenderedEditor({
       return;
     }
     const handler = () => computeSuggest();
+    const cursorHandler = () => onCursorChangeRef.current?.(editor.state.selection.from);
+    const focusHandler = () => onFocusRef.current?.();
     editor.on("selectionUpdate", handler);
+    editor.on("selectionUpdate", cursorHandler);
     editor.on("update", handler);
+    editor.on("focus", focusHandler);
     return () => {
       editor.off("selectionUpdate", handler);
+      editor.off("selectionUpdate", cursorHandler);
       editor.off("update", handler);
+      editor.off("focus", focusHandler);
     };
   }, [editor, computeSuggest]);
+
+  useEffect(() => {
+    if (!cursorRequest) {
+      return;
+    }
+    pendingCursorRestoreRef.current = {
+      active: true,
+      desiredPosition: Math.max(1, cursorRequest.position),
+      attempts: 0,
+    };
+  }, [cursorRequest?.token]);
+
+  const tryRestorePendingCursor = useCallback(() => {
+    if (!editor) {
+      return;
+    }
+    const pending = pendingCursorRestoreRef.current;
+    if (!pending.active) {
+      return;
+    }
+    // Wait until the editor document reflects the external value before
+    // restoring selection; this avoids restoring against the initial empty doc.
+    const hydrated =
+      value.length === 0 ||
+      readMarkdown(editor) === value ||
+      editor.state.doc.content.size > 1 ||
+      pending.attempts > 4;
+    if (!hydrated) {
+      pending.attempts += 1;
+      return;
+    }
+    const size = Math.max(1, editor.state.doc.content.size);
+    const position = Math.max(1, Math.min(size, pending.desiredPosition));
+    editor.commands.focus(position, { scrollIntoView: true });
+    pendingCursorRestoreRef.current.active = false;
+  }, [editor, value]);
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+    tryRestorePendingCursor();
+    const timer = window.setTimeout(() => tryRestorePendingCursor(), 0);
+    return () => window.clearTimeout(timer);
+  }, [editor, value, tryRestorePendingCursor]);
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+    const onUpdate = () => tryRestorePendingCursor();
+    editor.on("update", onUpdate);
+    return () => {
+      editor.off("update", onUpdate);
+    };
+  }, [editor, tryRestorePendingCursor]);
+
+  useEffect(() => {
+    const host = scrollHostRef.current;
+    if (!host || !scrollRequest) {
+      return;
+    }
+    const max = Math.max(0, host.scrollHeight - host.clientHeight);
+    suppressScrollRef.current = true;
+    host.scrollTop = max * Math.max(0, Math.min(1, scrollRequest.ratio));
+    window.requestAnimationFrame(() => {
+      suppressScrollRef.current = false;
+    });
+  }, [scrollRequest?.token]);
+
+  useEffect(() => {
+    if (!editor || !focusRequest) {
+      return;
+    }
+    const pending = pendingCursorRestoreRef.current;
+    if (pending.active) {
+      const size = Math.max(1, editor.state.doc.content.size);
+      const position = Math.max(1, Math.min(size, pending.desiredPosition));
+      editor.commands.focus(position, { scrollIntoView: true });
+      return;
+    }
+    editor.commands.focus();
+  }, [editor, focusRequest?.token]);
 
   const applySuggest = useCallback(
     (pickIndex?: number) => {
@@ -386,7 +515,17 @@ export function RenderedEditor({
     <div className="rendered-editor" ref={containerRef}>
       <EditorToolbar editor={editor} disabled={toolbarDisabled} trailing={toolbarTrailing} />
       <div
+        ref={scrollHostRef}
         className="rendered-scroll"
+        onScroll={() => {
+          const host = scrollHostRef.current;
+          if (!host || suppressScrollRef.current) {
+            return;
+          }
+          const max = Math.max(0, host.scrollHeight - host.clientHeight);
+          const ratio = max === 0 ? 0 : host.scrollTop / max;
+          onScrollChangeRef.current?.(ratio);
+        }}
         onClick={handleClick}
         onPaste={handlePaste}
         onDragOver={(event) => {

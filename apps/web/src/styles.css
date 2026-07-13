@@ -1834,6 +1834,7 @@ button {
 }
 
 .mode-float .mode-switch,
+.mode-float .mode-sync-toggle,
 .mode-float .save-status {
   pointer-events: auto;
 }
@@ -1849,6 +1850,21 @@ button {
   border: 1px solid var(--border);
   border-radius: 7px;
   padding: 3px 8px;
+}
+
+.mode-sync-toggle {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--bg-elevated) 84%, transparent);
+  color: var(--fg-muted);
+  font-size: 12px;
+  padding: 3px 8px;
+}
+
+.mode-sync-toggle--on {
+  color: var(--fg);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 18%, var(--bg-elevated));
 }
 
 /* Note embeds (transclusion) */

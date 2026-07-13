@@ -1,5 +1,7 @@
 import {
+  DEFAULT_MARKDOWN_VIEW_STATE,
   MarkdownEditor,
+  type MarkdownViewState,
   NoteToolbar,
   EDITOR_MODES,
   type EditorCallbacks,
@@ -59,6 +61,17 @@ const SAVE_LABEL: Record<SaveState, string> = {
   offline: "Saved offline",
 };
 
+interface PersistedEditorSession {
+  mode: EditorMode;
+  viewState: MarkdownViewState;
+}
+
+const markdownSessionByPath = new Map<string, PersistedEditorSession>();
+
+function editorStateKey(path: string): string {
+  return path.replaceAll("\\", "/").toLowerCase();
+}
+
 export function NoteEditor({
   path,
   defaultMode = "rendered",
@@ -71,10 +84,17 @@ export function NoteEditor({
   const { dispatch } = useWorkspace();
   const { markModified, setActiveDocument, settings } = useAppServices();
   const { notify } = useToasts();
+  const stateKey = editorStateKey(path);
+  const initialSession = markdownSessionByPath.get(stateKey) ?? {
+    mode: defaultMode,
+    viewState: { ...DEFAULT_MARKDOWN_VIEW_STATE },
+  };
+  const markdownViewStateRef = useRef<MarkdownViewState>(initialSession.viewState);
   const [content, setContent] = useState("");
-  const [mode, setMode] = useState<EditorMode>(defaultMode);
+  const [mode, setMode] = useState<EditorMode>(initialSession.mode);
   const [saveState, setSaveState] = useState<SaveState>("loading");
   const [findOpen, setFindOpen] = useState(false);
+  const [splitScrollSync, setSplitScrollSync] = useState(initialSession.viewState.splitScrollSync);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const contextMenuTargetRef = useRef<HTMLElement | null>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
@@ -87,6 +107,17 @@ export function NoteEditor({
   const pathRef = useRef(path);
   pathRef.current = path;
   const isImage = isImagePath(path);
+
+  const persistSession = useCallback(
+    (nextMode: EditorMode, nextViewState: MarkdownViewState) => {
+      markdownSessionByPath.set(stateKey, { mode: nextMode, viewState: nextViewState });
+    },
+    [stateKey],
+  );
+
+  useEffect(() => {
+    persistSession(mode, markdownViewStateRef.current);
+  }, [mode, persistSession]);
 
   // Flush any unsaved edit when the component unmounts (tab switch / close).
   useEffect(() => {
@@ -342,12 +373,36 @@ export function NoteEditor({
                   role="tab"
                   aria-selected={candidate === mode}
                   className={`mode-btn ${candidate === mode ? "mode-btn--active" : ""}`}
-                  onClick={() => setMode(candidate)}
+                  onClick={() => {
+                    setMode(candidate);
+                    persistSession(candidate, markdownViewStateRef.current);
+                  }}
                 >
                   {MODE_LABEL[candidate]}
                 </button>
               ))}
             </div>
+            {mode === "split" && (
+              <button
+                type="button"
+                className={`mode-sync-toggle ${splitScrollSync ? "mode-sync-toggle--on" : ""}`}
+                onClick={() =>
+                  setSplitScrollSync((prev) => {
+                    const next = !prev;
+                    markdownViewStateRef.current = {
+                      ...markdownViewStateRef.current,
+                      splitScrollSync: next,
+                    };
+                    persistSession(mode, markdownViewStateRef.current);
+                    return next;
+                  })
+                }
+                title="Sync scroll positions between source and rendered panes"
+                aria-pressed={splitScrollSync}
+              >
+                Sync scroll
+              </button>
+            )}
             <span className={`save-status save-status--${saveState}`}>{SAVE_LABEL[saveState]}</span>
           </div>
         )}
@@ -408,6 +463,12 @@ export function NoteEditor({
             mode={mode}
             onChange={handleChange}
             callbacks={callbacks}
+            viewState={markdownViewStateRef.current}
+            syncSplitScroll={splitScrollSync}
+            onViewStateChange={(patch) => {
+              markdownViewStateRef.current = { ...markdownViewStateRef.current, ...patch };
+              persistSession(mode, markdownViewStateRef.current);
+            }}
             disableToolbarInEdit
             toolbarTrailing={
               canFind ? (
