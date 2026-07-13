@@ -2704,6 +2704,24 @@ button {
   height: auto;
 }
 
+.tiptap-host .ProseMirror table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.tiptap-host .ProseMirror th,
+.tiptap-host .ProseMirror td {
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.6rem;
+  vertical-align: top;
+}
+
+.tiptap-host .ProseMirror th {
+  background: var(--bg-elevated);
+  text-align: left;
+}
+
 .tiptap-host .ProseMirror ul[data-type="taskList"] {
   list-style: none;
   padding-left: 0.5rem;

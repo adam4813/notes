@@ -284,12 +284,14 @@ export function EditorToolbar({ editor, disabled = false, trailing }: EditorTool
           )}
           <span className="tb-sep" />
           {button("ul", "• List", "Bullet list", active.bullet, () =>
-            chain().toggleBulletList().run(),
+            chain().toggleList("bulletList", "listItem").run(),
           )}
           {button("ol", "1. List", "Ordered list", active.ordered, () =>
-            chain().toggleOrderedList().run(),
+            chain().toggleList("orderedList", "listItem").run(),
           )}
-          {button("task", "☑ Task", "Task list", active.task, () => chain().toggleTaskList().run())}
+          {button("task", "☑ Task", "Task list", active.task, () =>
+            chain().toggleList("taskList", "taskItem").run(),
+          )}
           <span className="tb-sep" />
           {button("quote", "❝", "Blockquote", active.quote, () => chain().toggleBlockquote().run())}
           {button("codeblock", "{ }", "Code block", active.codeBlock, () =>
