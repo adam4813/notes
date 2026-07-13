@@ -30,6 +30,7 @@ import { useWorkspace } from "../state/app-context";
 import { useToasts } from "../state/toast";
 import { EmbedWidget } from "./embed-widget";
 import { FindBar } from "./find-bar";
+import { buildContent, parseFrontmatter } from "../lib/frontmatter";
 
 function basename(path: string): string {
   return (path.split("/").pop() ?? path).replace(/\.[^.]+$/, "");
@@ -44,6 +45,10 @@ function getFrontmatterType(content: string): string | undefined {
 }
 
 type SaveState = "loading" | "saved" | "saving" | "unsaved" | "error" | "external" | "offline";
+type RenderedWidthMode = "normal" | "wide";
+type RenderedWidthOverride = RenderedWidthMode | "unset";
+
+const RENDERED_WIDTH_FRONTMATTER_KEY = "__notes_rendered_width";
 
 const MODE_LABEL: Record<EditorMode, string> = {
   edit: "Edit",
@@ -60,6 +65,25 @@ const SAVE_LABEL: Record<SaveState, string> = {
   external: "Changed on disk",
   offline: "Saved offline",
 };
+
+function parseRenderedWidthMode(value: string | null | undefined): RenderedWidthMode | undefined {
+  return value === "normal" || value === "wide" ? value : undefined;
+}
+
+function readRenderedWidthOverride(content: string): RenderedWidthMode | undefined {
+  const parsed = parseFrontmatter(content);
+  const raw = parsed.props.find((prop) => prop.key === RENDERED_WIDTH_FRONTMATTER_KEY)?.value;
+  return parseRenderedWidthMode(raw);
+}
+
+function applyRenderedWidthOverride(content: string, override: RenderedWidthOverride): string {
+  const parsed = parseFrontmatter(content);
+  const props = parsed.props.filter((prop) => prop.key !== RENDERED_WIDTH_FRONTMATTER_KEY);
+  if (override === "normal" || override === "wide") {
+    props.push({ key: RENDERED_WIDTH_FRONTMATTER_KEY, value: override });
+  }
+  return buildContent(props, parsed.body);
+}
 
 interface PersistedEditorSession {
   mode: EditorMode;
@@ -291,6 +315,10 @@ export function NoteEditor({
   const canFind =
     !isImage && !isCanvas && !isBoard && !isTable && !isMermaid && !isCalendar && !isGrid;
   const canToggleMode = canFind && !disableModeToggle;
+  const renderedWidthOverride = canFind ? readRenderedWidthOverride(content) : undefined;
+  const defaultRenderedWidth = parseRenderedWidthMode(settings.renderedWidthDefault) ?? "normal";
+  const renderedWidth: RenderedWidthMode = renderedWidthOverride ?? defaultRenderedWidth;
+  const selectedRenderedWidthOverride: RenderedWidthOverride = renderedWidthOverride ?? "unset";
 
   useEffect(() => {
     if (!canFind && findOpen) {
@@ -343,7 +371,7 @@ export function NoteEditor({
 
   return (
     <div
-      className="note-editor"
+      className={`note-editor ${canFind ? `note-editor--render-width-${renderedWidth}` : ""}`}
       onKeyDown={(event) => {
         if (canFind && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f") {
           event.preventDefault();
@@ -472,26 +500,47 @@ export function NoteEditor({
             disableToolbarInEdit
             toolbarTrailing={
               canFind ? (
-                <div className="editor-find-wrap">
-                  <button
-                    className="editor-find-btn"
-                    title="Find in note (Ctrl/Cmd+F)"
-                    aria-label="Find in note"
-                    aria-expanded={findOpen}
-                    onClick={() => setFindOpen((open) => !open)}
-                  >
-                    🔍 Find
-                  </button>
-                  {findOpen && (
-                    <div className="editor-find-popout">
-                      <FindBar
-                        regionRef={regionRef}
-                        content={content}
-                        onReplace={applyReplace}
-                        onClose={() => setFindOpen(false)}
-                      />
-                    </div>
-                  )}
+                <div className="editor-toolbar-meta">
+                  <label className="editor-width-control">
+                    <span className="editor-width-label">Width</span>
+                    <select
+                      className="editor-width-select"
+                      aria-label="Rendered width override"
+                      value={selectedRenderedWidthOverride}
+                      onChange={(event) => {
+                        const next = event.target.value as RenderedWidthOverride;
+                        const nextContent = applyRenderedWidthOverride(content, next);
+                        if (nextContent !== content) {
+                          handleChange(nextContent);
+                        }
+                      }}
+                    >
+                      <option value="unset">Unset (use default)</option>
+                      <option value="normal">Normal</option>
+                      <option value="wide">Wide</option>
+                    </select>
+                  </label>
+                  <div className="editor-find-wrap">
+                    <button
+                      className="editor-find-btn"
+                      title="Find in note (Ctrl/Cmd+F)"
+                      aria-label="Find in note"
+                      aria-expanded={findOpen}
+                      onClick={() => setFindOpen((open) => !open)}
+                    >
+                      🔍 Find
+                    </button>
+                    {findOpen && (
+                      <div className="editor-find-popout">
+                        <FindBar
+                          regionRef={regionRef}
+                          content={content}
+                          onReplace={applyReplace}
+                          onClose={() => setFindOpen(false)}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : undefined
             }

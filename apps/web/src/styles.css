@@ -413,6 +413,33 @@ button {
   display: inline-flex;
 }
 
+.editor-toolbar-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-width-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+
+.editor-width-label {
+  white-space: nowrap;
+}
+
+.editor-width-select {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-sunken);
+  color: var(--fg);
+  font-size: 12px;
+  padding: 3px 6px;
+}
+
 .new-button-main {
   border-radius: 6px 0 0 6px;
 }
@@ -2685,6 +2712,11 @@ button {
   margin: 0 auto;
   outline: none;
   line-height: 1.65;
+}
+
+.note-editor--render-width-wide .tiptap-host .ProseMirror {
+  max-width: none;
+  margin: 0;
 }
 
 .tiptap-host .ProseMirror :first-child {

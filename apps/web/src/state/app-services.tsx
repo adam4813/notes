@@ -43,6 +43,8 @@ const defaultSettings: SettingsBodyProps = {
   onOpenInTabChange: noop,
   mediaDirectory: "media",
   onMediaDirectoryChange: noop,
+  renderedWidthDefault: "normal",
+  onRenderedWidthDefaultChange: noop,
   externalThemes: [],
   onImportDefaultThemes: async () => {},
   hotkeys: {

@@ -35,6 +35,12 @@ import type { SettingsBodyProps } from "./components/settings-view";
 import { normalizeMediaDirectory } from "./lib/images";
 
 type PaletteMode = "files" | "commands" | null;
+type RenderedWidthSetting = "normal" | "wide";
+const RENDERED_WIDTH_SETTING_KEY = "notes.settings.renderedWidthDefault";
+
+function normalizeRenderedWidthSetting(value: string | null | undefined): RenderedWidthSetting {
+  return value === "wide" ? "wide" : "normal";
+}
 
 function baseNoExt(path: string): string {
   return (path.split("/").pop() ?? path).replace(/\.[^.]+$/, "");
@@ -69,6 +75,9 @@ export function App() {
   );
   const [mediaDirectory, setMediaDirectoryState] = useState(() =>
     normalizeMediaDirectory(globalThis.localStorage?.getItem("notes.settings.mediaDirectory") ?? "media"),
+  );
+  const [renderedWidthDefault, setRenderedWidthDefaultState] = useState<RenderedWidthSetting>(() =>
+    normalizeRenderedWidthSetting(globalThis.localStorage?.getItem(RENDERED_WIDTH_SETTING_KEY)),
   );
   const [accent, setAccentState] = useState(() => loadAccent());
   const [fontSizes, setFontSizes] = useState(() => loadFontSizes());
@@ -265,6 +274,11 @@ export function App() {
     const normalized = normalizeMediaDirectory(value);
     setMediaDirectoryState(normalized);
     globalThis.localStorage?.setItem("notes.settings.mediaDirectory", normalized);
+  }, []);
+
+  const setRenderedWidthDefault = useCallback((value: RenderedWidthSetting) => {
+    setRenderedWidthDefaultState(value);
+    globalThis.localStorage?.setItem(RENDERED_WIDTH_SETTING_KEY, value);
   }, []);
 
   const seededRef = useRef(false);
@@ -520,6 +534,8 @@ export function App() {
       onOpenInTabChange: setOpenSettingsInTab,
       mediaDirectory,
       onMediaDirectoryChange: setMediaDirectory,
+      renderedWidthDefault,
+      onRenderedWidthDefaultChange: setRenderedWidthDefault,
       externalThemes,
       onImportDefaultThemes: importDefaultThemes,
       hotkeys: {
@@ -550,6 +566,8 @@ export function App() {
       setOpenSettingsInTab,
       mediaDirectory,
       setMediaDirectory,
+      renderedWidthDefault,
+      setRenderedWidthDefault,
       externalThemes,
       importDefaultThemes,
       commands,

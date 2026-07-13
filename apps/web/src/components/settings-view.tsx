@@ -47,6 +47,8 @@ export interface SettingsBodyProps {
   onOpenInTabChange: (openInTab: boolean) => void;
   mediaDirectory: string;
   onMediaDirectoryChange: (value: string) => void;
+  renderedWidthDefault: "normal" | "wide";
+  onRenderedWidthDefaultChange: (value: "normal" | "wide") => void;
   hotkeys: HotkeySettings;
   /** Externally installed themes loaded from the Tome's `.notes/themes/`. */
   externalThemes: ThemeMeta[];
@@ -94,6 +96,8 @@ export function SettingsBody(props: SettingsBodyProps) {
     onOpenInTabChange,
     mediaDirectory,
     onMediaDirectoryChange,
+    renderedWidthDefault,
+    onRenderedWidthDefaultChange,
     hotkeys,
     externalThemes,
     onImportDefaultThemes,
@@ -225,6 +229,27 @@ export function SettingsBody(props: SettingsBodyProps) {
             onChange={(event) => onEditorFontSizeChange(Number(event.target.value))}
           />
           <span className="settings-value">{editorFontSize}px</span>
+        </div>
+        <div className="settings-field">
+          <span className="settings-label">Rendered note width</span>
+          <div className="segmented" role="radiogroup" aria-label="Default rendered note width">
+            <button
+              role="radio"
+              aria-checked={renderedWidthDefault === "normal"}
+              className={`segmented-btn ${renderedWidthDefault === "normal" ? "segmented-btn--active" : ""}`}
+              onClick={() => onRenderedWidthDefaultChange("normal")}
+            >
+              Normal
+            </button>
+            <button
+              role="radio"
+              aria-checked={renderedWidthDefault === "wide"}
+              className={`segmented-btn ${renderedWidthDefault === "wide" ? "segmented-btn--active" : ""}`}
+              onClick={() => onRenderedWidthDefaultChange("wide")}
+            >
+              Wide
+            </button>
+          </div>
         </div>
       </section>
 

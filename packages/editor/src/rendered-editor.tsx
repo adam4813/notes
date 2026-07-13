@@ -46,6 +46,25 @@ function readMarkdown(instance: Editor): string {
   return markdown.replace(/\\([[\]])/g, "$1").replace(/\\#(?=[\p{L}\p{N}])/gu, "#");
 }
 
+interface FrontmatterParts {
+  frontmatter: string;
+  body: string;
+}
+
+const FRONTMATTER_RE = /^(---\n[\s\S]*?\n---\n*)([\s\S]*)$/;
+
+function splitFrontmatter(value: string): FrontmatterParts {
+  const match = FRONTMATTER_RE.exec(value);
+  if (!match) {
+    return { frontmatter: "", body: value };
+  }
+  return { frontmatter: match[1], body: match[2] };
+}
+
+function mergeFrontmatter(frontmatter: string, body: string): string {
+  return frontmatter ? `${frontmatter}${body}` : body;
+}
+
 type SuggestKind = "wikilink" | "tag";
 
 interface SuggestState {
@@ -88,6 +107,10 @@ export function RenderedEditor({
   onFocus,
   focusRequest,
 }: RenderedEditorProps) {
+  const currentParts = splitFrontmatter(value);
+  const frontmatterRef = useRef(currentParts.frontmatter);
+  frontmatterRef.current = currentParts.frontmatter;
+  const renderedValue = currentParts.body;
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const callbacksRef = useRef(callbacks);
@@ -128,7 +151,7 @@ export function RenderedEditor({
 
   const editor = useEditor({
     immediatelyRender: false,
-    content: value,
+    content: renderedValue,
     extensions: [
       StarterKit,
       TaskList,
@@ -175,7 +198,7 @@ export function RenderedEditor({
       },
     },
     onUpdate: ({ editor: instance }) => {
-      onChangeRef.current(readMarkdown(instance));
+      onChangeRef.current(mergeFrontmatter(frontmatterRef.current, readMarkdown(instance)));
     },
   });
 
@@ -192,19 +215,19 @@ export function RenderedEditor({
     if (editor.isFocused) {
       return;
     }
-    if (value !== readMarkdown(editor)) {
+    if (renderedValue !== readMarkdown(editor)) {
       const handle = window.setTimeout(() => {
-        if (!editor.isFocused && value !== readMarkdown(editor)) {
+        if (!editor.isFocused && renderedValue !== readMarkdown(editor)) {
           editor
             .chain()
             .setMeta("addToHistory", false)
-            .setContent(value, { emitUpdate: false })
+            .setContent(renderedValue, { emitUpdate: false })
             .run();
         }
       }, 0);
       return () => window.clearTimeout(handle);
     }
-  }, [value, editor]);
+  }, [renderedValue, editor]);
 
   // Prefetch suggestion sources so the first trigger has data.
   useEffect(() => {
@@ -339,8 +362,8 @@ export function RenderedEditor({
     // Wait until the editor document reflects the external value before
     // restoring selection; this avoids restoring against the initial empty doc.
     const hydrated =
-      value.length === 0 ||
-      readMarkdown(editor) === value ||
+      renderedValue.length === 0 ||
+      readMarkdown(editor) === renderedValue ||
       editor.state.doc.content.size > 1 ||
       pending.attempts > 4;
     if (!hydrated) {
@@ -351,7 +374,7 @@ export function RenderedEditor({
     const position = Math.max(1, Math.min(size, pending.desiredPosition));
     editor.commands.focus(position, { scrollIntoView: true });
     pendingCursorRestoreRef.current.active = false;
-  }, [editor, value]);
+  }, [editor, renderedValue]);
 
   useEffect(() => {
     if (!editor) {
@@ -360,7 +383,7 @@ export function RenderedEditor({
     tryRestorePendingCursor();
     const timer = window.setTimeout(() => tryRestorePendingCursor(), 0);
     return () => window.clearTimeout(timer);
-  }, [editor, value, tryRestorePendingCursor]);
+  }, [editor, renderedValue, tryRestorePendingCursor]);
 
   useEffect(() => {
     if (!editor) {

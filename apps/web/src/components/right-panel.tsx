@@ -4,6 +4,8 @@ import { useWorkspace } from "../state/app-context";
 import { useToasts } from "../state/toast";
 import { applyProperties, parseFrontmatter, type FrontmatterProp } from "../lib/frontmatter";
 
+const HIDDEN_FRONTMATTER_KEYS = new Set(["type", "__notes_rendered_width"]);
+
 interface Heading {
   level: number;
   text: string;
@@ -66,6 +68,7 @@ export function RightPanel() {
   const [headings, setHeadings] = useState<Heading[]>([]);
   const [content, setContent] = useState("");
   const [props, setProps] = useState<FrontmatterProp[]>([]);
+  const [hiddenProps, setHiddenProps] = useState<FrontmatterProp[]>([]);
   // The structural `type` key is preserved but not user-editable.
   const [typeValue, setTypeValue] = useState<string | undefined>(undefined);
 
@@ -75,6 +78,7 @@ export function RightPanel() {
       setHeadings([]);
       setContent("");
       setProps([]);
+      setHiddenProps([]);
       return;
     }
     let cancelled = false;
@@ -89,8 +93,10 @@ export function RightPanel() {
           setContent(result.content);
           setHeadings(extractHeadings(result.content));
           const parsed = parseFrontmatter(result.content).props;
-          setTypeValue(parsed.find((prop) => prop.key === "type")?.value);
-          setProps(parsed.filter((prop) => prop.key !== "type"));
+          const hidden = parsed.filter((prop) => HIDDEN_FRONTMATTER_KEYS.has(prop.key));
+          setTypeValue(hidden.find((prop) => prop.key === "type")?.value);
+          setHiddenProps(hidden);
+          setProps(parsed.filter((prop) => !HIDDEN_FRONTMATTER_KEYS.has(prop.key)));
         }
       })
       .catch(() => {
@@ -98,6 +104,7 @@ export function RightPanel() {
           setContent("");
           setHeadings([]);
           setProps([]);
+          setHiddenProps([]);
           setTypeValue(undefined);
         }
       });
@@ -110,10 +117,22 @@ export function RightPanel() {
     if (!path) {
       return;
     }
-    // Re-inject the protected `type` key so it survives edits.
-    const full = typeValue ? [{ key: "type", value: typeValue }, ...next] : next;
-    const newContent = applyProperties(content, full);
+    let baseContent = content;
+    let preservedHidden = hiddenProps;
+    try {
+      const latest = (await api.read(path)).content;
+      baseContent = latest;
+      const latestProps = parseFrontmatter(latest).props;
+      preservedHidden = latestProps.filter((prop) => HIDDEN_FRONTMATTER_KEYS.has(prop.key));
+      setHiddenProps(preservedHidden);
+      setTypeValue(preservedHidden.find((prop) => prop.key === "type")?.value);
+    } catch {
+      // Keep the in-memory snapshot when a refresh read fails.
+    }
+    const visible = next.filter((prop) => !HIDDEN_FRONTMATTER_KEYS.has(prop.key));
+    const newContent = applyProperties(baseContent, [...preservedHidden, ...visible]);
     setContent(newContent);
+    setProps(visible);
     try {
       await api.write(path, newContent);
     } catch {
