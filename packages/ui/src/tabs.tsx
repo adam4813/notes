@@ -105,6 +105,7 @@ interface TabProps {
   onActivate?: () => void;
   onClose?: (event: MouseEvent) => void;
   onContextMenu?: (event: MouseEvent) => void;
+  style?: React.CSSProperties;
 }
 
 export function Tab({
@@ -116,6 +117,7 @@ export function Tab({
   onActivate,
   onClose,
   onContextMenu,
+  style,
 }: TabProps) {
   const { registerTabRef, hiddenTabIds } = useContext(TabStripContext);
   const hidden = hiddenTabIds.has(id);
@@ -129,6 +131,7 @@ export function Tab({
       title={tooltip}
       onClick={onActivate}
       onContextMenu={onContextMenu}
+      style={style}
     >
       <span className="tab__title">{title}</span>
       {subtitle && <span className="tab__subtitle">{subtitle}</span>}
