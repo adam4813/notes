@@ -12,7 +12,7 @@ and [`plan/`](plan/) for per-phase specs.
 
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/73a7f351-7fde-4cdc-a6c9-a55a7112ab6b" />
 
-
+<img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/bdcb7a7d-d54a-46d5-877d-f44c5b4520e7" />
 
 ## Container model
 
