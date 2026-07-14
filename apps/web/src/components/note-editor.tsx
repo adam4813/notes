@@ -462,7 +462,7 @@ export function NoteEditor({
           <MermaidView
             value={content}
             onChange={handleChange}
-            modes={!canToggleMode ? [] : undefined}
+            modes={disableModeToggle ? [] : undefined}
             defaultMode={mode === "rendered" ? "preview" : "split"}
           />
         ) : isCalendar ? (
