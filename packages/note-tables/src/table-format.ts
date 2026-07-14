@@ -30,7 +30,9 @@ function normalizeRow(row: string[], width: number): string[] {
 
 function sanitizeColumn(raw: unknown, index: number): TableColumn {
   const value = (raw ?? {}) as Partial<TableColumn>;
-  const type = COLUMN_TYPES.includes(value.type as ColumnType) ? (value.type as ColumnType) : "text";
+  const type = COLUMN_TYPES.includes(value.type as ColumnType)
+    ? (value.type as ColumnType)
+    : "text";
   const column: TableColumn = {
     name: typeof value.name === "string" && value.name.trim() ? value.name : `Column ${index + 1}`,
     type,

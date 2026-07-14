@@ -56,14 +56,18 @@ describe("importedFilePath", () => {
 
 describe("markdownForImportedFile", () => {
   it("creates image markdown for image files", () => {
-    expect(markdownForImportedFile("media/pic.png", "image/png", "/api/file/raw?path=media%2Fpic.png")).toBe(
-      '<img src="/api/file/raw?path=media%2Fpic.png" alt="pic.png">',
-    );
+    expect(
+      markdownForImportedFile("media/pic.png", "image/png", "/api/file/raw?path=media%2Fpic.png"),
+    ).toBe('<img src="/api/file/raw?path=media%2Fpic.png" alt="pic.png">');
   });
 
   it("creates audio embed html for audio files", () => {
-    expect(markdownForImportedFile("media/sound.mp3", "audio/mpeg", "/api/file/raw?path=media%2Fsound.mp3")).toBe(
-      '<audio controls src="/api/file/raw?path=media%2Fsound.mp3"></audio>',
-    );
+    expect(
+      markdownForImportedFile(
+        "media/sound.mp3",
+        "audio/mpeg",
+        "/api/file/raw?path=media%2Fsound.mp3",
+      ),
+    ).toBe('<audio controls src="/api/file/raw?path=media%2Fsound.mp3"></audio>');
   });
 });

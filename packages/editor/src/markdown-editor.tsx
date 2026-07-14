@@ -2,7 +2,13 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { EditorToolbar } from "./toolbar";
 import { RenderedEditor } from "./rendered-editor";
 import { SourceEditor } from "./source-editor";
-import type { CursorRequest, EditorCallbacks, EditorMode, FocusRequest, ScrollRequest } from "./types";
+import type {
+  CursorRequest,
+  EditorCallbacks,
+  EditorMode,
+  FocusRequest,
+  ScrollRequest,
+} from "./types";
 
 export type MarkdownPane = "source" | "rendered";
 
@@ -52,7 +58,9 @@ export function MarkdownEditor({
   onViewStateChange,
   syncSplitScroll = true,
 }: MarkdownEditorProps) {
-  const sourceCursorRef = useRef(viewState?.sourceCursor ?? DEFAULT_MARKDOWN_VIEW_STATE.sourceCursor);
+  const sourceCursorRef = useRef(
+    viewState?.sourceCursor ?? DEFAULT_MARKDOWN_VIEW_STATE.sourceCursor,
+  );
   const renderedCursorRef = useRef(
     viewState?.renderedCursor ?? DEFAULT_MARKDOWN_VIEW_STATE.renderedCursor,
   );
@@ -106,18 +114,15 @@ export function MarkdownEditor({
     [setSourceFocusRequest, setRenderedFocusRequest],
   );
 
-  const preferredPaneForMode = useCallback(
-    (nextMode: EditorMode): MarkdownPane => {
-      if (nextMode === "edit") {
-        return "source";
-      }
-      if (nextMode === "rendered") {
-        return "rendered";
-      }
-      return activePaneRef.current;
-    },
-    [],
-  );
+  const preferredPaneForMode = useCallback((nextMode: EditorMode): MarkdownPane => {
+    if (nextMode === "edit") {
+      return "source";
+    }
+    if (nextMode === "rendered") {
+      return "rendered";
+    }
+    return activePaneRef.current;
+  }, []);
 
   useEffect(() => {
     requestPaneFocus(preferredPaneForMode(mode));

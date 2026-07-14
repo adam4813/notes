@@ -80,7 +80,11 @@ export function SearchPane({
   }, [query, filters, tag, type, folder]);
 
   const open = (result: SearchResult) =>
-    dispatch({ type: "openFile", path: result.path, title: result.title || baseNoExt(result.path) });
+    dispatch({
+      type: "openFile",
+      path: result.path,
+      title: result.title || baseNoExt(result.path),
+    });
 
   return (
     <div className="search-pane">

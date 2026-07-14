@@ -5,9 +5,7 @@ const STYLE_ATTR = "data-theme-id";
 
 /** Injects (or replaces) a `<style>` tag for a dynamically loaded theme. */
 function injectThemeStyle(id: string, css: string): void {
-  const existing = document.head.querySelector<HTMLStyleElement>(
-    `style[${STYLE_ATTR}="${id}"]`,
-  );
+  const existing = document.head.querySelector<HTMLStyleElement>(`style[${STYLE_ATTR}="${id}"]`);
   if (existing) {
     existing.textContent = css;
     return;

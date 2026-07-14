@@ -3,7 +3,9 @@ import { extractTags, extractWikilinks, parseNote } from "./parse";
 
 describe("extractWikilinks", () => {
   it("parses plain, aliased, and heading links", () => {
-    const links = extractWikilinks("[[Alpha]] and [[Beta|the beta]] and [[Gamma#Intro]] and [[Delta#Sec|d]]");
+    const links = extractWikilinks(
+      "[[Alpha]] and [[Beta|the beta]] and [[Gamma#Intro]] and [[Delta#Sec|d]]",
+    );
     expect(links).toEqual([
       { target: "Alpha" },
       { target: "Beta", alias: "the beta" },

@@ -94,9 +94,8 @@ export class NoteIndex {
 
   private readVersion(): number | undefined {
     try {
-      const row = this.db
-        .prepare("SELECT value FROM meta WHERE key = 'schema_version'")
-        .get() as { value: string } | undefined;
+      const row = this.db.prepare("SELECT value FROM meta WHERE key = 'schema_version'").get() as
+        { value: string } | undefined;
       return row ? Number(row.value) : undefined;
     } catch {
       return undefined;
@@ -114,8 +113,7 @@ export class NoteIndex {
   upsert(file: IndexInputFile): void {
     const hash = contentHash(file.content);
     const existing = this.db.prepare("SELECT hash FROM notes WHERE path = ?").get(file.path) as
-      | { hash: string }
-      | undefined;
+      { hash: string } | undefined;
     if (existing?.hash === hash) {
       return;
     }
@@ -124,8 +122,17 @@ export class NoteIndex {
     const run = this.db.transaction(() => {
       this.removeRows(file.path);
       this.db
-        .prepare("INSERT INTO notes(path, title, type, mtime, hash, linkable) VALUES(?, ?, ?, ?, ?, ?)")
-        .run(file.path, parsed.title, parsed.type, file.mtimeMs, hash, file.linkable === false ? 0 : 1);
+        .prepare(
+          "INSERT INTO notes(path, title, type, mtime, hash, linkable) VALUES(?, ?, ?, ?, ?, ?)",
+        )
+        .run(
+          file.path,
+          parsed.title,
+          parsed.type,
+          file.mtimeMs,
+          hash,
+          file.linkable === false ? 0 : 1,
+        );
 
       const linkStmt = this.db.prepare(
         "INSERT INTO links(src, target, alias, heading) VALUES(?, ?, ?, ?)",
@@ -172,14 +179,20 @@ export class NoteIndex {
   }
 
   allNotes(): { path: string; title: string; type: string }[] {
-    return this.db.prepare("SELECT path, title, type FROM notes WHERE linkable = 1 ORDER BY title").all() as {
+    return this.db
+      .prepare("SELECT path, title, type FROM notes WHERE linkable = 1 ORDER BY title")
+      .all() as {
       path: string;
       title: string;
       type: string;
     }[];
   }
 
-  search(query: string, limitOrFilters?: number | SearchFilters, maybeFilters?: SearchFilters): SearchResult[] {
+  search(
+    query: string,
+    limitOrFilters?: number | SearchFilters,
+    maybeFilters?: SearchFilters,
+  ): SearchResult[] {
     const limit = typeof limitOrFilters === "number" ? limitOrFilters : 50;
     const filters = (typeof limitOrFilters === "number" ? maybeFilters : limitOrFilters) ?? {};
     const match = toFtsMatch(query);
@@ -285,10 +298,13 @@ export class NoteIndex {
     if (!target) {
       return undefined;
     }
-    const rows = this.db.prepare("SELECT path FROM notes WHERE linkable = 1").all() as { path: string }[];
+    const rows = this.db.prepare("SELECT path FROM notes WHERE linkable = 1").all() as {
+      path: string;
+    }[];
     const exact = rows.find(
       (row) =>
-        row.path.toLowerCase() === target || pathWithoutExtension(row.path).toLowerCase() === target,
+        row.path.toLowerCase() === target ||
+        pathWithoutExtension(row.path).toLowerCase() === target,
     );
     if (exact) {
       return exact.path;

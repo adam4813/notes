@@ -50,7 +50,8 @@ const query = (params: Record<string, string>): string => new URLSearchParams(pa
 
 export const api = {
   files: () => request<{ entries: FileEntry[] }>("/api/files"),
-  read: (path: string) => request<{ path: string; content: string }>(`/api/file?${query({ path })}`),
+  read: (path: string) =>
+    request<{ path: string; content: string }>(`/api/file?${query({ path })}`),
   write: (path: string, content: string) =>
     request<{ path: string }>("/api/file", {
       method: "PUT",
@@ -90,8 +91,7 @@ export const api = {
   backlinks: (path: string) =>
     request<{ backlinks: Backlink[] }>(`/api/backlinks?${query({ path })}`),
   tags: () => request<{ tags: TagCount[] }>("/api/tags"),
-  notes: () =>
-    request<{ notes: { path: string; title: string; type: string }[] }>("/api/notes"),
+  notes: () => request<{ notes: { path: string; title: string; type: string }[] }>("/api/notes"),
   resolve: (text: string) => request<{ path: string | null }>(`/api/resolve?${query({ text })}`),
   reindex: () => request<{ rebuilt: boolean; notes: number }>("/api/reindex", { method: "POST" }),
   tome: () => request<{ id: string }>("/api/tome"),

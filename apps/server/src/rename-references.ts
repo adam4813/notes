@@ -49,19 +49,22 @@ export function rewriteMarkdownReferences(
     return `${bang}[[${nextTarget}${heading}${alias}]]`;
   });
 
-  const withMarkdownRaw = withWikilinks.replace(RAW_IMAGE_RE, (match, alt: string, encodedPath: string) => {
-    let decodedPath: string;
-    try {
-      decodedPath = decodeURIComponent(encodedPath);
-    } catch {
-      decodedPath = encodedPath;
-    }
-    const nextTarget = rewriteTarget(decodedPath, fromPath, toPath);
-    if (!nextTarget) {
-      return match;
-    }
-    return `![${alt}](/api/file/raw?path=${encodeURIComponent(nextTarget)})`;
-  });
+  const withMarkdownRaw = withWikilinks.replace(
+    RAW_IMAGE_RE,
+    (match, alt: string, encodedPath: string) => {
+      let decodedPath: string;
+      try {
+        decodedPath = decodeURIComponent(encodedPath);
+      } catch {
+        decodedPath = encodedPath;
+      }
+      const nextTarget = rewriteTarget(decodedPath, fromPath, toPath);
+      if (!nextTarget) {
+        return match;
+      }
+      return `![${alt}](/api/file/raw?path=${encodeURIComponent(nextTarget)})`;
+    },
+  );
 
   return withMarkdownRaw.replace(
     RAW_IMG_TAG_RE,

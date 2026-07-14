@@ -30,7 +30,10 @@ function notesDropExtension(callbacksRef: MutableRefObject<EditorCallbacks | und
         const text = droppedPathInsertion(path, event.altKey);
         const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
         if (pos != null) {
-          view.dispatch({ changes: { from: pos, insert: text }, selection: { anchor: pos + text.length } });
+          view.dispatch({
+            changes: { from: pos, insert: text },
+            selection: { anchor: pos + text.length },
+          });
         }
         return true;
       }
@@ -40,7 +43,8 @@ function notesDropExtension(callbacksRef: MutableRefObject<EditorCallbacks | und
         return false;
       }
       event.preventDefault();
-      const insertAt = view.posAtCoords({ x: event.clientX, y: event.clientY }) ?? view.state.selection.main.from;
+      const insertAt =
+        view.posAtCoords({ x: event.clientX, y: event.clientY }) ?? view.state.selection.main.from;
       void onImportFile(file).then((insert) => {
         if (!insert) {
           return;

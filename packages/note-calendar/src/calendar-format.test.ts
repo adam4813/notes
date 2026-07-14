@@ -28,8 +28,7 @@ describe("calendar-format — new format", () => {
 });
 
 describe("calendar-format — old format migration", () => {
-  const OLD_CAL =
-    "---\ntype: calendar\n---\n\n- 2026-02-01 Launch\n- 2026-02-03 14:00 Review\n";
+  const OLD_CAL = "---\ntype: calendar\n---\n\n- 2026-02-01 Launch\n- 2026-02-03 14:00 Review\n";
 
   it("detects old format and returns migratedEvents", () => {
     const { model, migratedEvents } = parseCalendar(OLD_CAL);

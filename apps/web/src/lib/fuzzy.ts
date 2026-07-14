@@ -64,7 +64,11 @@ export interface FuzzyRanked<T> {
  * Filters and ranks `items` by fuzzy-matching `key(item)` against `query`,
  * best first. With an empty query the original order is preserved.
  */
-export function fuzzyRank<T>(query: string, items: T[], key: (item: T) => string): FuzzyRanked<T>[] {
+export function fuzzyRank<T>(
+  query: string,
+  items: T[],
+  key: (item: T) => string,
+): FuzzyRanked<T>[] {
   const ranked: FuzzyRanked<T>[] = [];
   items.forEach((item, order) => {
     const match = fuzzyMatch(query, key(item));

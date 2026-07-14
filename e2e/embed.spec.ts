@@ -12,13 +12,16 @@ test("embed: a markdown note embeds another note's widget and round-trips", asyn
 
   // Wait for the index to resolve the target by name.
   await expect
-    .poll(async () => {
-      const response = await page.request.get(
-        `/api/resolve?text=${encodeURIComponent("New Table")}`,
-      );
-      const body = (await response.json()) as { path: string | null };
-      return body.path;
-    }, { timeout: 15_000 })
+    .poll(
+      async () => {
+        const response = await page.request.get(
+          `/api/resolve?text=${encodeURIComponent("New Table")}`,
+        );
+        const body = (await response.json()) as { path: string | null };
+        return body.path;
+      },
+      { timeout: 15_000 },
+    )
     .not.toBeNull();
 
   // Create a markdown note and embed the table via ![[...]].
@@ -37,10 +40,13 @@ test("embed: a markdown note embeds another note's widget and round-trips", asyn
   // The markdown source round-trips to ![[New Table]].
   const notePath = (await page.locator(".status-path").textContent())?.trim() ?? "";
   await expect
-    .poll(async () => {
-      const response = await page.request.get(`/api/file?path=${encodeURIComponent(notePath)}`);
-      const body = (await response.json()) as { content: string };
-      return body.content;
-    }, { timeout: 15_000 })
+    .poll(
+      async () => {
+        const response = await page.request.get(`/api/file?path=${encodeURIComponent(notePath)}`);
+        const body = (await response.json()) as { content: string };
+        return body.content;
+      },
+      { timeout: 15_000 },
+    )
     .toContain("![[New Table]]");
 });

@@ -23,10 +23,7 @@ const icoPath = join(resourcesDir, "icon.ico");
 const icnsPath = join(resourcesDir, "icon.icns");
 
 // 1. SVG → PNG (512×512)
-const pngBuffer = await sharp(readFileSync(svgPath))
-  .resize(512, 512)
-  .png()
-  .toBuffer();
+const pngBuffer = await sharp(readFileSync(svgPath)).resize(512, 512).png().toBuffer();
 writeFileSync(pngPath, pngBuffer);
 console.log(`✓ icon.png (512×512)`);
 

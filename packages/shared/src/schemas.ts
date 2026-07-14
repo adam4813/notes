@@ -3,7 +3,10 @@ import { z } from "zod";
 /** Zod schemas for command payloads, used by the server validation middleware. */
 
 export const filePathPayload = z.object({ path: z.string().min(1) });
-export const fileWritePayload = z.object({ path: z.string().min(1), content: z.string().default("") });
+export const fileWritePayload = z.object({
+  path: z.string().min(1),
+  content: z.string().default(""),
+});
 export const fileBinaryPayload = z.object({
   path: z.string().min(1),
   contentBase64: z.string().min(1),

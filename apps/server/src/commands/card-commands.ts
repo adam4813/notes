@@ -2,12 +2,7 @@ import type { CommandBus } from "@notes/core";
 import type { RichCard } from "@notes/note-boards";
 import { parseBoard, serializeBoard } from "@notes/note-boards";
 import type { Tome } from "@notes/tome";
-import {
-  deleteCard,
-  listCards,
-  readCard,
-  writeCard,
-} from "./card-store";
+import { deleteCard, listCards, readCard, writeCard } from "./card-store";
 
 interface GetTome {
   (): Tome;

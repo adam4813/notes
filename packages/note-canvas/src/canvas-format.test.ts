@@ -47,10 +47,7 @@ describe("canvas-format", () => {
 
     expect(rewriteCanvasFileNodePaths(data, "notes/ideas.md", "archive/ideas.md")).toEqual({
       ...data,
-      nodes: [
-        { ...data.nodes[0], file: "archive/ideas.md" },
-        data.nodes[1],
-      ],
+      nodes: [{ ...data.nodes[0], file: "archive/ideas.md" }, data.nodes[1]],
     });
 
     expect(rewriteCanvasFileNodePaths(data, "notes", "archive")).toEqual({

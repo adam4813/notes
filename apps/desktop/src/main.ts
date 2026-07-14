@@ -175,7 +175,9 @@ async function main(): Promise<void> {
     const serverPath = path.join(__dirname, "../dist-server/main.js");
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { startServer } = require(serverPath) as {
-      startServer: (overrides?: { tomePath?: string }) => Promise<{ port: number; address: string }>;
+      startServer: (overrides?: {
+        tomePath?: string;
+      }) => Promise<{ port: number; address: string }>;
     };
     const { port } = await startServer({ tomePath });
     await win.loadURL(`http://127.0.0.1:${port}`);

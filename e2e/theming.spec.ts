@@ -16,9 +16,7 @@ test("theming: accent color and theme apply from settings", async ({ page }) => 
   await page.getByTestId("accent-blue").click();
   await expect
     .poll(() =>
-      page.evaluate(() =>
-        document.documentElement.style.getPropertyValue("--accent").trim(),
-      ),
+      page.evaluate(() => document.documentElement.style.getPropertyValue("--accent").trim()),
     )
     .toBe("#2563eb");
 

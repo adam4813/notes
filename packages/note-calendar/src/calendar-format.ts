@@ -76,9 +76,10 @@ function parseCalendarFrontmatter(yaml: string): CalendarModel | null {
  * Parses a calendar file. If the file used the old line-item format,
  * `migratedEvents` is populated with stub RichEvents for the server to persist.
  */
-export function parseCalendar(
-  markdown: string,
-): { model: CalendarModel; migratedEvents?: RichEvent[] } {
+export function parseCalendar(markdown: string): {
+  model: CalendarModel;
+  migratedEvents?: RichEvent[];
+} {
   const fm = FRONTMATTER_RE.exec(markdown);
   const yamlText = fm ? fm[1] : "";
   const body = fm ? markdown.slice(fm[0].length) : markdown;

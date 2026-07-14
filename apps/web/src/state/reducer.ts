@@ -10,7 +10,10 @@ function updatePane(
   paneId: string,
   updater: (pane: Pane) => Pane,
 ): WorkspaceState {
-  return { ...state, panes: state.panes.map((pane) => (pane.id === paneId ? updater(pane) : pane)) };
+  return {
+    ...state,
+    panes: state.panes.map((pane) => (pane.id === paneId ? updater(pane) : pane)),
+  };
 }
 
 export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): WorkspaceState {

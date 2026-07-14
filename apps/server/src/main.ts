@@ -111,9 +111,6 @@ export async function startServer(overrides?: Partial<ServerConfig>): Promise<St
 }
 
 // Only auto-start when this file is run directly (not imported by Electron).
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   void startServer();
 }

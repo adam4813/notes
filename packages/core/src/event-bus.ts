@@ -17,10 +17,7 @@ export class EventBus<TEventMap extends Record<string, unknown>> {
     return () => this.off(type, listener);
   }
 
-  off<TKey extends keyof TEventMap>(
-    type: TKey,
-    listener: EventListener<TEventMap[TKey]>,
-  ): void {
+  off<TKey extends keyof TEventMap>(type: TKey, listener: EventListener<TEventMap[TKey]>): void {
     this.listeners.get(type)?.delete(listener as EventListener<unknown>);
   }
 

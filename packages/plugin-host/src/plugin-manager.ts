@@ -1,10 +1,4 @@
-import type {
-  Disposer,
-  NotesPlugin,
-  PluginContext,
-  PluginHost,
-  PluginSettings,
-} from "./context";
+import type { Disposer, NotesPlugin, PluginContext, PluginHost, PluginSettings } from "./context";
 import { validateManifest, type PluginManifest } from "./manifest";
 
 const ENABLED_KEY = "notes.plugins.enabled";

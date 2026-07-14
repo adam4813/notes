@@ -72,7 +72,10 @@ export function registerFileCommands(bus: CommandBus, getTome: () => Tome): void
             stack.push(...(entry.children ?? []));
             continue;
           }
-          if (!entry.path.toLowerCase().endsWith(".md") && !entry.path.toLowerCase().endsWith(".canvas")) {
+          if (
+            !entry.path.toLowerCase().endsWith(".md") &&
+            !entry.path.toLowerCase().endsWith(".canvas")
+          ) {
             continue;
           }
           const content = await tome.read(entry.path);

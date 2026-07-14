@@ -9,13 +9,14 @@ interface IslandProps {
   onFocus?: () => void;
 }
 
-export function Island({ children, active = false, grow = false, className, onFocus }: IslandProps) {
-  const cls = [
-    "island",
-    active && "island--active",
-    grow && "island--grow",
-    className,
-  ]
+export function Island({
+  children,
+  active = false,
+  grow = false,
+  className,
+  onFocus,
+}: IslandProps) {
+  const cls = ["island", active && "island--active", grow && "island--grow", className]
     .filter(Boolean)
     .join(" ");
 
@@ -32,25 +33,13 @@ interface SlotProps {
 }
 
 export function IslandHeader({ children, className }: SlotProps) {
-  return (
-    <div className={["island-header", className].filter(Boolean).join(" ")}>
-      {children}
-    </div>
-  );
+  return <div className={["island-header", className].filter(Boolean).join(" ")}>{children}</div>;
 }
 
 export function IslandBody({ children, className }: SlotProps) {
-  return (
-    <div className={["island-body", className].filter(Boolean).join(" ")}>
-      {children}
-    </div>
-  );
+  return <div className={["island-body", className].filter(Boolean).join(" ")}>{children}</div>;
 }
 
 export function IslandFooter({ children, className }: SlotProps) {
-  return (
-    <div className={["island-footer", className].filter(Boolean).join(" ")}>
-      {children}
-    </div>
-  );
+  return <div className={["island-footer", className].filter(Boolean).join(" ")}>{children}</div>;
 }

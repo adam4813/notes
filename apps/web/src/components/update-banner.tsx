@@ -27,10 +27,7 @@ function UpdateBannerInner() {
   return (
     <div className="update-banner" role="status" aria-live="polite">
       <span className="update-banner-msg">A new version of Notes is ready.</span>
-      <button
-        className="update-banner-btn"
-        onClick={() => api.installUpdate()}
-      >
+      <button className="update-banner-btn" onClick={() => api.installUpdate()}>
         Restart to update
       </button>
       <button

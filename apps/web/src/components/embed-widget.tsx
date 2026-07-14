@@ -191,10 +191,7 @@ export function EmbedWidget({ target }: { target: string }) {
       <div className="embed-header">
         <span className="embed-type">{TYPE_LABEL[type] ?? type}</span>
         <span className="embed-title">{title}</span>
-        <button
-          className="embed-open"
-          onClick={() => dispatch({ type: "openFile", path, title })}
-        >
+        <button className="embed-open" onClick={() => dispatch({ type: "openFile", path, title })}>
           Open ↗
         </button>
       </div>

@@ -93,8 +93,7 @@ export function useHotkeys(commands: AppCommand[]): HotkeysApi {
       // Don't hijack plain typing inside editable fields; require a modifier there.
       const target = event.target as HTMLElement | null;
       const editable = Boolean(
-        target &&
-          (target.isContentEditable || /^(input|textarea|select)$/i.test(target.tagName)),
+        target && (target.isContentEditable || /^(input|textarea|select)$/i.test(target.tagName)),
       );
       const hasModifier = event.ctrlKey || event.metaKey || event.altKey;
       if (editable && !hasModifier) {

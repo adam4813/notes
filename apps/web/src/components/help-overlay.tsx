@@ -37,7 +37,9 @@ export function HelpOverlay({ commands, hotkeyFor, onClose }: HelpOverlayProps) 
           <ul className="help-list">
             {withKeys.map(({ command, keys }) => (
               <li key={command.id} className="help-row">
-                <span>{command.category ? `${command.category}: ${command.title}` : command.title}</span>
+                <span>
+                  {command.category ? `${command.category}: ${command.title}` : command.title}
+                </span>
                 <kbd className="help-keys">{keys}</kbd>
               </li>
             ))}

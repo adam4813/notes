@@ -62,9 +62,7 @@ export function HotkeyRow({
         <span className="hotkey-title">
           {command.category ? `${command.category}: ${command.title}` : command.title}
         </span>
-        {conflictWith && (
-          <span className="hotkey-conflict">Conflicts with {conflictWith}</span>
-        )}
+        {conflictWith && <span className="hotkey-conflict">Conflicts with {conflictWith}</span>}
       </div>
       <div className="hotkey-controls">
         <button

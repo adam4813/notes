@@ -4,11 +4,7 @@ import { useState, type ReactNode } from "react";
 
 /** Scrollable container that holds one or more PanelSection elements. */
 export function PanelGroup({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={["panel-group", className].filter(Boolean).join(" ")}>
-      {children}
-    </div>
-  );
+  return <div className={["panel-group", className].filter(Boolean).join(" ")}>{children}</div>;
 }
 
 /* ─── PanelSection ──────────────────────────────────────────────────────── */
@@ -24,13 +20,19 @@ export function PanelSection({ title, children, defaultOpen = true }: PanelSecti
   const [collapsed, setCollapsed] = useState(!defaultOpen);
 
   return (
-    <div className={["panel-section", collapsed && "panel-section--collapsed"].filter(Boolean).join(" ")}>
+    <div
+      className={["panel-section", collapsed && "panel-section--collapsed"]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <button
         className="panel-header"
         aria-expanded={!collapsed}
         onClick={() => setCollapsed((c) => !c)}
       >
-        <span className="panel-caret" aria-hidden>{collapsed ? "▸" : "▾"}</span>
+        <span className="panel-caret" aria-hidden>
+          {collapsed ? "▸" : "▾"}
+        </span>
         {title}
       </button>
       {!collapsed && <div className="panel-body">{children}</div>}
@@ -42,20 +44,12 @@ export function PanelSection({ title, children, defaultOpen = true }: PanelSecti
 
 /** Standalone header bar (use when building a custom section layout). */
 export function PanelHeader({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={["panel-header", className].filter(Boolean).join(" ")}>
-      {children}
-    </div>
-  );
+  return <div className={["panel-header", className].filter(Boolean).join(" ")}>{children}</div>;
 }
 
 /** Content body (use alongside PanelHeader for a custom section layout). */
 export function PanelBody({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={["panel-body", className].filter(Boolean).join(" ")}>
-      {children}
-    </div>
-  );
+  return <div className={["panel-body", className].filter(Boolean).join(" ")}>{children}</div>;
 }
 
 /* ─── PanelEmpty ────────────────────────────────────────────────────────── */

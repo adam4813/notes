@@ -29,9 +29,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <div className="crash-card">
             <h1>Something went wrong</h1>
             <p className="crash-message">{this.state.error.message}</p>
-            <p className="crash-hint">
-              Your notes are safe on disk. Try again, or reload the app.
-            </p>
+            <p className="crash-hint">Your notes are safe on disk. Try again, or reload the app.</p>
             <div className="crash-actions">
               <button className="crash-btn" onClick={this.reset}>
                 Try again

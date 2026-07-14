@@ -58,7 +58,10 @@ export const Embed = Node.create<EmbedOptions>({
   addStorage() {
     return {
       markdown: {
-        serialize(state: { write: (text: string) => void; closeBlock: (node: unknown) => void }, node: { attrs: { target: string } }) {
+        serialize(
+          state: { write: (text: string) => void; closeBlock: (node: unknown) => void },
+          node: { attrs: { target: string } },
+        ) {
           state.write(`![[${node.attrs.target}]]`);
           state.closeBlock(node);
         },

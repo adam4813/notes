@@ -52,8 +52,8 @@ describe("rename-references", () => {
   it("rewrites canvas file nodes on rename", () => {
     const canvas =
       '{\n  "nodes": [\n    { "id": "1", "type": "file", "x": 0, "y": 0, "width": 100, "height": 80, "file": "notes/ideas.md" }\n  ],\n  "edges": []\n}\n';
-    expect(rewriteEmbeddedReferences("board.canvas", canvas, "notes/ideas.md", "archive/ideas.md")).toContain(
-      '"file": "archive/ideas.md"',
-    );
+    expect(
+      rewriteEmbeddedReferences("board.canvas", canvas, "notes/ideas.md", "archive/ideas.md"),
+    ).toContain('"file": "archive/ideas.md"');
   });
 });

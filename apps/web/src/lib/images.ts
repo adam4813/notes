@@ -1,5 +1,14 @@
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"]);
-const TEXT_EXTENSIONS = new Set([".txt", ".md", ".markdown", ".csv", ".json", ".xml", ".yml", ".yaml"]);
+const TEXT_EXTENSIONS = new Set([
+  ".txt",
+  ".md",
+  ".markdown",
+  ".csv",
+  ".json",
+  ".xml",
+  ".yml",
+  ".yaml",
+]);
 const AUDIO_EXTENSIONS = new Set([".mp3", ".wav", ".ogg", ".m4a", ".flac", ".aac"]);
 const VIDEO_EXTENSIONS = new Set([".mp4", ".webm", ".mov", ".m4v", ".avi", ".mkv"]);
 
@@ -68,8 +77,14 @@ function normalizeNameStem(name: string): string {
   return safe || "file";
 }
 
-export function importedFilePath(file: Pick<File, "name" | "type">, mediaDirectory: string): string {
-  const stamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
+export function importedFilePath(
+  file: Pick<File, "name" | "type">,
+  mediaDirectory: string,
+): string {
+  const stamp = new Date()
+    .toISOString()
+    .replace(/[-:TZ.]/g, "")
+    .slice(0, 14);
   const ext = extensionForFile(file);
   const stem = normalizeNameStem(file.name);
   return `${normalizeMediaDirectory(mediaDirectory)}/${stem}-${stamp}-${randomSuffix()}${ext}`;

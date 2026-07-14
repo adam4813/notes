@@ -2,7 +2,10 @@ import { z } from "zod";
 
 /** Plugin manifest: identity + declared entry points and permissions. */
 export const pluginManifestSchema = z.object({
-  id: z.string().min(1).regex(/^[a-z0-9][a-z0-9-]*$/, "id must be kebab-case"),
+  id: z
+    .string()
+    .min(1)
+    .regex(/^[a-z0-9][a-z0-9-]*$/, "id must be kebab-case"),
   name: z.string().min(1),
   version: z.string().min(1),
   description: z.string().optional(),

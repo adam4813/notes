@@ -32,7 +32,13 @@ function makeHost() {
 
 function samplePlugin(overrides: Partial<NotesPlugin> = {}): NotesPlugin {
   return {
-    manifest: { id: "sample", name: "Sample", version: "1.0.0", entry: { client: true }, permissions: [] },
+    manifest: {
+      id: "sample",
+      name: "Sample",
+      version: "1.0.0",
+      entry: { client: true },
+      permissions: [],
+    },
     activate: (ctx) => {
       ctx.registerCommand({ id: "sample.hello", label: "Hello", run: () => {} });
       ctx.addStatusBarItem({ id: "sample.item", mount: () => () => {} });

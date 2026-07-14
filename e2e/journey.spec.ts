@@ -60,7 +60,9 @@ test("core journey: link + backlink, table, palette theme, and reload persists",
   await page.reload();
   await expect
     .poll(async () => {
-      const response = await page.request.get(`/api/file?path=${encodeURIComponent(`${target}.md`)}`);
+      const response = await page.request.get(
+        `/api/file?path=${encodeURIComponent(`${target}.md`)}`,
+      );
       return response.ok();
     })
     .toBe(true);

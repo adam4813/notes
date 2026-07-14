@@ -12,11 +12,14 @@ test("tome replace: find and replace a token across the Tome", async ({ page }) 
 
   // Wait for the index to see the token.
   await expect
-    .poll(async () => {
-      const response = await page.request.get("/api/search?q=zebratoken");
-      const body = (await response.json()) as { results: unknown[] };
-      return body.results.length;
-    }, { timeout: 15_000 })
+    .poll(
+      async () => {
+        const response = await page.request.get("/api/search?q=zebratoken");
+        const body = (await response.json()) as { results: unknown[] };
+        return body.results.length;
+      },
+      { timeout: 15_000 },
+    )
     .toBeGreaterThan(0);
 
   // Open Tome-wide replace via the command palette.

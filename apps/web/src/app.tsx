@@ -29,7 +29,14 @@ import { usePlugins } from "./state/use-plugins";
 import { useHotkeys } from "./state/use-hotkeys";
 import { loadRecentCommands, pushRecentCommand, type AppCommand } from "./state/commands";
 import { flattenFiles } from "./state/selectors";
-import { applyAccent, applyTheme, loadAccent, ACCENT_PRESETS, applyFontSizes, loadFontSizes } from "./theme/theme";
+import {
+  applyAccent,
+  applyTheme,
+  loadAccent,
+  ACCENT_PRESETS,
+  applyFontSizes,
+  loadFontSizes,
+} from "./theme/theme";
 import { loadExternalThemes } from "./theme/theme-loader";
 import type { SettingsBodyProps } from "./components/settings-view";
 import { normalizeMediaDirectory } from "./lib/images";
@@ -74,7 +81,9 @@ export function App() {
     () => globalThis.localStorage?.getItem("notes.settings.openInTab") === "true",
   );
   const [mediaDirectory, setMediaDirectoryState] = useState(() =>
-    normalizeMediaDirectory(globalThis.localStorage?.getItem("notes.settings.mediaDirectory") ?? "media"),
+    normalizeMediaDirectory(
+      globalThis.localStorage?.getItem("notes.settings.mediaDirectory") ?? "media",
+    ),
   );
   const [renderedWidthDefault, setRenderedWidthDefaultState] = useState<RenderedWidthSetting>(() =>
     normalizeRenderedWidthSetting(globalThis.localStorage?.getItem(RENDERED_WIDTH_SETTING_KEY)),
@@ -185,13 +194,10 @@ export function App() {
     })();
   }, [refreshTree, dispatch, notify]);
 
-  const renamePath = useCallback(
-    async (path: string) => {
-      setSidebarView("explorer");
-      setRenameRequestPath(path);
-    },
-    [],
-  );
+  const renamePath = useCallback(async (path: string) => {
+    setSidebarView("explorer");
+    setRenameRequestPath(path);
+  }, []);
 
   const deletePath = useCallback(
     async (path: string) => {
@@ -408,12 +414,23 @@ export function App() {
         defaultHotkey: "Mod+,",
         run: openSettings,
       },
-      { id: "new-note", title: "New note", category: "Create", defaultHotkey: "Mod+N", run: () => createNote() },
+      {
+        id: "new-note",
+        title: "New note",
+        category: "Create",
+        defaultHotkey: "Mod+N",
+        run: () => createNote(),
+      },
       { id: "new-table", title: "New table", category: "Create", run: () => createTable() },
       { id: "new-canvas", title: "New canvas", category: "Create", run: () => createCanvas() },
       { id: "new-board", title: "New board", category: "Create", run: () => createBoard() },
       { id: "new-mermaid", title: "New diagram", category: "Create", run: () => createMermaid() },
-      { id: "new-calendar", title: "New calendar", category: "Create", run: () => createCalendar() },
+      {
+        id: "new-calendar",
+        title: "New calendar",
+        category: "Create",
+        run: () => createCalendar(),
+      },
       { id: "new-grid", title: "New grid", category: "Create", run: () => createGrid() },
       {
         id: "split-pane",
@@ -422,10 +439,30 @@ export function App() {
         defaultHotkey: "Mod+\\",
         run: () => dispatch({ type: "splitPane", paneId: state.activePaneId, mode: "duplicate" }),
       },
-      { id: "theme-light", title: "Light", category: "Theme", run: () => dispatch({ type: "setTheme", theme: "light" }) },
-      { id: "theme-dark", title: "Dark", category: "Theme", run: () => dispatch({ type: "setTheme", theme: "dark" }) },
-      { id: "theme-system", title: "System", category: "Theme", run: () => dispatch({ type: "setTheme", theme: "system" }) },
-      { id: "reindex", title: "Rebuild search index", category: "Index", run: () => void api.reindex() },
+      {
+        id: "theme-light",
+        title: "Light",
+        category: "Theme",
+        run: () => dispatch({ type: "setTheme", theme: "light" }),
+      },
+      {
+        id: "theme-dark",
+        title: "Dark",
+        category: "Theme",
+        run: () => dispatch({ type: "setTheme", theme: "dark" }),
+      },
+      {
+        id: "theme-system",
+        title: "System",
+        category: "Theme",
+        run: () => dispatch({ type: "setTheme", theme: "system" }),
+      },
+      {
+        id: "reindex",
+        title: "Rebuild search index",
+        category: "Index",
+        run: () => void api.reindex(),
+      },
       {
         id: "replace-tome",
         title: "Find & replace in Tome",
@@ -616,57 +653,60 @@ export function App() {
       <div className="app-root">
         <UpdateBanner />
         <div className="shell">
-        <Ribbon
-          newActions={newActions}
-          onCommand={() => setPaletteMode("commands")}
-          onSearch={openSidebarSearch}
-        />
-        <div className="shell-body">
-          <Sidebar
-            view={sidebarView}
-            onViewChange={setSidebarView}
-            onOpenPicker={() => setPaletteMode("files")}
-            searchQuery={sidebarSearchQuery}
-            renameRequestPath={renameRequestPath}
-            onRenameRequestHandled={clearRenameRequest}
+          <Ribbon
+            newActions={newActions}
+            onCommand={() => setPaletteMode("commands")}
+            onSearch={openSidebarSearch}
           />
-          <Workspace />
-          <RightPanel />
-        </div>
-        <StatusBar
-          pluginItems={plugins.statusItems}
-          theme={state.theme}
-          externalThemes={externalThemes}
-          onThemeChange={(theme) => dispatch({ type: "setTheme", theme })}
-          onOpenSettings={openSettings}
-        />
-        {paletteMode && (
-          <Palette
-            mode={paletteMode}
-            files={flatFiles}
-            commands={commands}
-            recentCommandIds={recentCommandIds}
-            hotkeyFor={hotkeyFor}
-            onOpenFile={(path, title) => dispatch({ type: "openFile", path, title })}
-            onRunCommand={runCommand}
-            onCreateNote={createNamedNote}
-            onClose={() => setPaletteMode(null)}
+          <div className="shell-body">
+            <Sidebar
+              view={sidebarView}
+              onViewChange={setSidebarView}
+              onOpenPicker={() => setPaletteMode("files")}
+              searchQuery={sidebarSearchQuery}
+              renameRequestPath={renameRequestPath}
+              onRenameRequestHandled={clearRenameRequest}
+            />
+            <Workspace />
+            <RightPanel />
+          </div>
+          <StatusBar
+            pluginItems={plugins.statusItems}
+            theme={state.theme}
+            externalThemes={externalThemes}
+            onThemeChange={(theme) => dispatch({ type: "setTheme", theme })}
+            onOpenSettings={openSettings}
           />
-        )}
-        {settingsOpen && (
-          <SettingsModal {...settingsProps} onClose={() => setSettingsOpen(false)} />
-        )}
-        {helpOpen && (
-          <HelpOverlay
-            commands={settingsProps.hotkeys.commands}
-            hotkeyFor={hotkeyFor}
-            onClose={() => setHelpOpen(false)}
-          />
-        )}
-        {replaceOpen && (
-          <TomeReplace onClose={() => setReplaceOpen(false)} onChanged={() => void refreshTree()} />
-        )}
-        <Toaster />
+          {paletteMode && (
+            <Palette
+              mode={paletteMode}
+              files={flatFiles}
+              commands={commands}
+              recentCommandIds={recentCommandIds}
+              hotkeyFor={hotkeyFor}
+              onOpenFile={(path, title) => dispatch({ type: "openFile", path, title })}
+              onRunCommand={runCommand}
+              onCreateNote={createNamedNote}
+              onClose={() => setPaletteMode(null)}
+            />
+          )}
+          {settingsOpen && (
+            <SettingsModal {...settingsProps} onClose={() => setSettingsOpen(false)} />
+          )}
+          {helpOpen && (
+            <HelpOverlay
+              commands={settingsProps.hotkeys.commands}
+              hotkeyFor={hotkeyFor}
+              onClose={() => setHelpOpen(false)}
+            />
+          )}
+          {replaceOpen && (
+            <TomeReplace
+              onClose={() => setReplaceOpen(false)}
+              onChanged={() => void refreshTree()}
+            />
+          )}
+          <Toaster />
         </div>
       </div>
     </AppServicesProvider>

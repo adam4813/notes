@@ -77,7 +77,9 @@ describe("NoteIndex", () => {
 
     // Filter-only search (no text query) lists notes matching the filters.
     expect(index.search("", { tag: "project" }).map((r) => r.path)).toEqual(["welcome.md"]);
-    expect(index.search("", { pathPrefix: "notes" }).map((r) => r.path)).toEqual(["notes/ideas.md"]);
+    expect(index.search("", { pathPrefix: "notes" }).map((r) => r.path)).toEqual([
+      "notes/ideas.md",
+    ]);
     expect(index.search("")).toEqual([]);
 
     index.close();
@@ -93,10 +95,12 @@ describe("NoteIndex", () => {
 
     expect(index.notesByTag("project")).toEqual(["a.md", "b.md"]);
     expect(index.notesByTag("project/web")).toEqual(["b.md"]);
-    expect(index.search("alpha", { tag: "project" }).map((r) => r.path).sort()).toEqual([
-      "a.md",
-      "b.md",
-    ]);
+    expect(
+      index
+        .search("alpha", { tag: "project" })
+        .map((r) => r.path)
+        .sort(),
+    ).toEqual(["a.md", "b.md"]);
 
     index.close();
   });

@@ -21,8 +21,11 @@ export function serializeMermaid(model: MermaidModel): string {
 export function emptyMermaid(): string {
   return serializeMermaid({
     frontmatter: "type: mermaid",
-    source: ["flowchart TD", "  A[Start] --> B{Choice}", "  B -->|Yes| C[Do it]", "  B -->|No| D[Skip]"].join(
-      "\n",
-    ),
+    source: [
+      "flowchart TD",
+      "  A[Start] --> B{Choice}",
+      "  B -->|Yes| C[Do it]",
+      "  B -->|No| D[Skip]",
+    ].join("\n"),
   });
 }

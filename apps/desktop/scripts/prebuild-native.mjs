@@ -16,9 +16,9 @@ const desktopDir = join(__dirname, "..");
 const rootDir = join(desktopDir, "../..");
 const stagingDir = join(desktopDir, "native-staging");
 
-const electronVersion = JSON.parse(
-  (await import("node:fs")).readFileSync(join(desktopDir, "package.json"), "utf8"),
-).devDependencies?.electron ?? "31.7.7";
+const electronVersion =
+  JSON.parse((await import("node:fs")).readFileSync(join(desktopDir, "package.json"), "utf8"))
+    .devDependencies?.electron ?? "31.7.7";
 
 // Modules to copy + rebuild
 const nativeModules = ["better-sqlite3"];
