@@ -408,11 +408,6 @@ button {
   background: var(--hover);
 }
 
-.new-button {
-  position: relative;
-  display: inline-flex;
-}
-
 .editor-toolbar-meta {
   display: inline-flex;
   align-items: center;
@@ -440,70 +435,6 @@ button {
   padding: 3px 6px;
 }
 
-.new-button-main {
-  border-radius: 6px 0 0 6px;
-}
-
-.new-button-caret {
-  border-radius: 0 6px 6px 0;
-  padding: 4px 6px;
-  border-left: 1px solid var(--border);
-}
-
-/* Shared popup surface lives in @notes/ui/src/menu.css. App-specific overrides: */
-.new-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  z-index: 30;
-  min-width: 160px;
-  display: flex;
-  flex-direction: column;
-}
-
-.new-menu-item {
-  text-align: left;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  color: var(--fg);
-  padding: 6px 8px;
-}
-
-.new-menu-item:hover {
-  background: var(--active);
-}
-
-/* Sidebar view switcher — sidebar-specific (island structure handled by @notes/ui) */
-.sidebar-view-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  padding: 5px 6px;
-  color: var(--fg-muted);
-  font-size: 12px;
-}
-
-.sidebar-view-btn--active {
-  background: var(--active);
-  color: var(--fg);
-}
-
-.sidebar-view-btn:hover {
-  background: var(--hover);
-  color: initial;
-}
-
-.sidebar-view-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .sidebar-view-separator {
   width: 1px;
   align-self: stretch;
@@ -512,11 +443,12 @@ button {
 }
 
 .sidebar-view-btn--action {
-  flex: 0 0 auto;
   background: var(--accent);
-  color: var(--accent-fg);
-  border-color: color-mix(in srgb, var(--accent), #000 20%);
+  border: 1px solid color-mix(in srgb, var(--accent), #000 20%);
   min-width: 32px;
+  border-radius: 6px;
+  padding: 5px 6px;
+  font-size: 12px;
 }
 
 .sidebar-view-btn--action:hover {
@@ -563,8 +495,6 @@ button {
 .hotkey-list,
 .plugin-list,
 .property-list,
-.tree-root,
-.tree-children,
 .help-list,
 .grid-layer-list,
 .calendar-agenda,
@@ -924,48 +854,6 @@ button {
 }
 
 /* Views */
-.markdown-preview {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 24px 32px 64px;
-}
-
-.view-mode-hint {
-  font-size: 11px;
-  color: var(--fg-muted);
-  border: 1px dashed var(--border);
-  border-radius: 6px;
-  padding: 2px 8px;
-  display: inline-block;
-  margin-bottom: 16px;
-}
-
-.markdown-body {
-  line-height: 1.65;
-}
-
-.markdown-body h1,
-.markdown-body h2,
-.markdown-body h3 {
-  line-height: 1.25;
-}
-
-.markdown-body pre {
-  background: var(--bg-sunken);
-  padding: 12px;
-  border-radius: 8px;
-  overflow: auto;
-}
-
-.markdown-body code {
-  background: var(--bg-sunken);
-  padding: 1px 5px;
-  border-radius: 4px;
-}
-
-.markdown-body pre code {
-  padding: 0;
-}
 
 .wikilink {
   color: var(--accent);
@@ -975,25 +863,6 @@ button {
 
 .wikilink:hover {
   border-bottom-color: var(--accent);
-}
-
-.view-error {
-  padding: 24px;
-  color: var(--status-offline);
-}
-
-.placeholder-view {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--fg-muted);
-  gap: 6px;
-}
-
-.placeholder-icon {
-  font-size: 40px;
 }
 
 /* Backlinks */
@@ -1707,7 +1576,6 @@ button {
   color: var(--fg);
 }
 
-.embed-note-only,
 .embed-loading,
 .embed-missing {
   padding: 12px;
@@ -1743,6 +1611,7 @@ button {
   grid-template-columns: 1fr 1fr;
 }
 
+/* These are used via mermaid-body--${mode} */
 .mermaid-body--source,
 .mermaid-body--preview {
   grid-template-columns: 1fr;
@@ -1760,6 +1629,7 @@ button {
   outline: none;
 }
 
+/* This is used via mermaid-body--${mode} */
 .mermaid-body--source .mermaid-source {
   border-right: none;
 }
@@ -1819,46 +1689,6 @@ button {
   min-width: 140px;
   text-align: center;
   font-weight: 600;
-}
-
-.calendar-compose {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-elevated);
-}
-
-.calendar-compose-date {
-  font-size: 13px;
-  color: var(--fg-muted);
-  min-width: 96px;
-}
-
-.calendar-compose-title {
-  flex: 1;
-  padding: 5px 8px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--fg);
-}
-
-.calendar-compose-time {
-  padding: 4px 6px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--fg);
-}
-
-.calendar-compose-add {
-  background: var(--accent);
-  color: var(--accent-fg);
-  border: none;
-  border-radius: 6px;
-  padding: 5px 12px;
 }
 
 .calendar-grid {
@@ -2025,8 +1855,8 @@ button {
   padding: 8px;
 }
 
-.calendar-event-body .markdown-editor {
-  height: auto;
+.calendar-event-body .markdown-editor-shell {
+  height: 100%;
   min-height: 120px;
 }
 
@@ -2223,10 +2053,6 @@ button {
   margin-bottom: 6px;
 }
 
-.grid-layer-list {
-  /* list-style reset via grouped rule above */
-}
-
 .grid-layer {
   display: flex;
   align-items: center;
@@ -2363,6 +2189,7 @@ button {
   color: var(--fg-muted);
 }
 
+/* These are used via .save-status--${saveState} */
 .save-status--error {
   color: var(--status-offline);
 }
@@ -2400,6 +2227,7 @@ button {
   border-right: 1px solid var(--border);
 }
 
+/* These are used via markdown-editor--${mode} */
 .markdown-editor--edit .editor-column--source,
 .markdown-editor--rendered .editor-column--rendered {
   border-right: none;
@@ -2470,6 +2298,7 @@ button {
   line-height: 1.65;
 }
 
+/* This is used via note-editor--render-width-${renderedWidth} */
 .note-editor--render-width-wide .tiptap-host .ProseMirror {
   max-width: none;
   margin: 0;
@@ -2709,10 +2538,6 @@ button {
   color: var(--fg);
 }
 
-.panel-header--spaced {
-  margin-top: 16px;
-}
-
 /* Table note grid */
 .note-loading {
   padding: 24px;
@@ -2797,39 +2622,6 @@ button {
   background: var(--hover);
 }
 
-.popup-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  z-index: 9999;
-  min-width: 160px;
-  padding: 4px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
-}
-
-.popup-menu button {
-  text-align: left;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 8px;
-  color: var(--fg);
-}
-
-.popup-menu button:hover:not(:disabled) {
-  background: var(--active);
-}
-
-.popup-menu button:disabled {
-  color: var(--fg-muted);
-  cursor: default;
-}
-
 .grid-menu-label {
   font-size: 10px;
   text-transform: uppercase;
@@ -2896,6 +2688,7 @@ tr:hover .grid-row-delete {
   white-space: nowrap;
 }
 
+/* This is used via grid-value--${column.type} */
 .grid-value--number {
   text-align: right;
 }
@@ -3016,43 +2809,11 @@ tr:hover .grid-row-delete {
   color: var(--fg-muted);
 }
 
-.board-card-text {
-  flex: 1;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.board-card-input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  color: var(--fg);
-  font: inherit;
-  outline: none;
-}
-
 .board-card-del {
   background: transparent;
   border: none;
   color: var(--status-offline) !important;
   border-radius: 4px;
-}
-
-.board-card-due {
-  opacity: 0;
-  font-size: 10px;
-  width: 30px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--bg);
-  color: var(--fg-muted);
-  padding: 0 2px;
-}
-
-.board-card-due:focus,
-.board-card:hover .board-card-due {
-  opacity: 1;
-  width: auto;
 }
 
 .board-card--expanded {
@@ -3089,6 +2850,7 @@ tr:hover .grid-row-delete {
   white-space: nowrap;
 }
 
+/* These are used via board-card-chip--${card.priority} */
 .board-card-chip--high { background: #fee2e2; color: #991b1b; }
 .board-card-chip--medium { background: #fef9c3; color: #854d0e; }
 .board-card-chip--low { background: #dcfce7; color: #166534; }
@@ -3178,9 +2940,7 @@ tr:hover .grid-row-delete {
   font-style: italic;
 }
 
-.add-card,
-.board-add-card,
-.board-add-input {
+.board-add-card {
   margin-top: 6px;
   width: 100%;
   text-align: left;
@@ -3189,12 +2949,6 @@ tr:hover .grid-row-delete {
   color: var(--fg-muted);
   border-radius: 8px;
   padding: 6px 8px;
-}
-
-.board-add-input {
-  border-style: solid;
-  color: var(--fg);
-  outline: none;
 }
 
 .board-add-column {
@@ -3384,17 +3138,6 @@ tr:hover .grid-row-delete {
   color: var(--fg);
 }
 
-.canvas-file-body {
-  flex: 1;
-  overflow: auto;
-  padding: 8px;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--fg-muted);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
 .canvas-file-editor {
   flex: 1;
   min-height: 0;
@@ -3425,14 +3168,6 @@ tr:hover .grid-row-delete {
   overflow: visible;
   padding: 0;
 }
-
-.canvas-file-preview h1,
-.canvas-file-preview h2,
-.canvas-file-preview h3 { font-size: 1.1em; font-weight: 600; margin: 6px 0 3px; }
-.canvas-file-preview p { margin: 4px 0; }
-.canvas-file-preview ul, .canvas-file-preview ol { padding-left: 16px; margin: 4px 0; }
-.canvas-file-preview code { background: var(--bg-elevated); padding: 1px 4px; border-radius: 3px; font-size: 11px; }
-.canvas-file-preview pre { background: var(--bg-elevated); padding: 6px 8px; border-radius: 4px; overflow-x: auto; font-size: 11px; }
 
 .canvas-file-card--offscreen {
   background: var(--bg-elevated);
@@ -3470,16 +3205,6 @@ tr:hover .grid-row-delete {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--accent);
-}
-
-.canvas-open {
-  margin-left: auto;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 2px 6px;
-  font-size: 11px;
-  cursor: pointer;
 }
 
 .canvas-connect {

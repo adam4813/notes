@@ -138,7 +138,6 @@
 /* ── Menus / popups ───────────────────────────────────────── */
 :root[data-theme="vim"] .popup-menu,
 :root[data-theme="vim"] .context-menu,
-:root[data-theme="vim"] .new-menu,
 :root[data-theme="vim"] .palette,
 :root[data-theme="vim"] .suggest-popup,
 :root[data-theme="vim"] .editor-find-popout {
@@ -157,16 +156,14 @@
 }
 
 :root[data-theme="vim"] .palette-item,
-:root[data-theme="vim"] .popup-menu > button,
-:root[data-theme="vim"] .new-menu-item {
+:root[data-theme="vim"] .popup-menu > button {
   font-family: var(--vim-font);
   font-size: 12px;
 }
 
 :root[data-theme="vim"] .palette-item:hover,
 :root[data-theme="vim"] .palette-item--active,
-:root[data-theme="vim"] .popup-menu > button:hover:not(:disabled),
-:root[data-theme="vim"] .new-menu-item:hover {
+:root[data-theme="vim"] .popup-menu > button:hover:not(:disabled) {
   background: var(--vim-visual-bg);
   color: var(--fg);
 }
@@ -206,9 +203,7 @@
 :root[data-theme="vim"] .find-input,
 :root[data-theme="vim"] .search-filter,
 :root[data-theme="vim"] .property-input,
-:root[data-theme="vim"] .tree-rename-input,
-:root[data-theme="vim"] .calendar-compose-title,
-:root[data-theme="vim"] .calendar-compose-time {
+:root[data-theme="vim"] .tree-rename-input {
   background: var(--bg-sunken);
   border: 1px solid var(--border);
   color: var(--fg);
@@ -274,7 +269,6 @@
   caret-color: var(--accent);
 }
 
-:root[data-theme="vim"] .markdown-body pre,
 :root[data-theme="vim"] .tiptap-host .ProseMirror pre {
   background: var(--bg);
   border: 1px solid var(--border);

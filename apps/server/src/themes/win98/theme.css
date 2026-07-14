@@ -122,8 +122,7 @@
 :root[data-theme="win98"] .crash-btn--primary,
 :root[data-theme="win98"] .tome-replace-run,
 :root[data-theme="win98"] .explorer-seed,
-:root[data-theme="win98"] .toast-action,
-:root[data-theme="win98"] .calendar-compose-add {
+:root[data-theme="win98"] .toast-action {
   background: var(--bg);
   color: #000000;
   border-color: #ffffff #808080 #808080 #ffffff;
@@ -140,8 +139,6 @@
 :root[data-theme="win98"] .find-input,
 :root[data-theme="win98"] .property-input,
 :root[data-theme="win98"] .tree-rename-input,
-:root[data-theme="win98"] .calendar-compose-title,
-:root[data-theme="win98"] .calendar-compose-time,
 :root[data-theme="win98"] .palette-input,
 :root[data-theme="win98"] .search-filter,
 :root[data-theme="win98"] .mermaid-source,
@@ -238,7 +235,6 @@
 /* ── Menus / popups ──────────────────────────────────────── */
 :root[data-theme="win98"] .popup-menu,
 :root[data-theme="win98"] .context-menu,
-:root[data-theme="win98"] .new-menu,
 :root[data-theme="win98"] .palette {
   background: var(--bg);
   border: 2px solid;
@@ -248,7 +244,6 @@
 }
 
 :root[data-theme="win98"] .popup-menu > button,
-:root[data-theme="win98"] .new-menu-item,
 :root[data-theme="win98"] .palette-item {
   font-family: var(--win98-font);
   font-size: 11px;
@@ -257,7 +252,6 @@
 }
 
 :root[data-theme="win98"] .popup-menu > button:hover:not(:disabled),
-:root[data-theme="win98"] .new-menu-item:hover,
 :root[data-theme="win98"] .palette-item:hover,
 :root[data-theme="win98"] .palette-item--active {
   background: #000080;
@@ -424,45 +418,11 @@
   font-size: 12px;
 }
 
-:root[data-theme="win98"] .markdown-body pre {
-  background: #ffffff;
-  border: 2px solid;
-  border-color: #808080 #ffffff #ffffff #808080;
-  border-radius: 0;
-}
-
-:root[data-theme="win98"] .markdown-body code {
-  background: #ffffff;
-  border-radius: 0;
-}
-
 /* ── Focus ring ─────────────────────────────────────────── */
 :root[data-theme="win98"] :focus-visible {
   outline: 1px dotted #000000;
   outline-offset: 1px;
   border-radius: 0;
-}
-
-/* ── Sidebar view switcher tabs ─────────────────────────── */
-:root[data-theme="win98"] .sidebar-view-btn {
-  background: var(--bg);
-  border: 2px solid;
-  border-color: #ffffff #808080 #808080 #ffffff;
-  border-radius: 0;
-  font-family: var(--win98-font);
-  font-size: 11px;
-  padding: 3px 8px;
-}
-
-:root[data-theme="win98"] .sidebar-view-btn--active {
-  background: #000080;
-  color: #ffffff;
-  border-color: #808080;
-}
-
-:root[data-theme="win98"] .sidebar-view-btn:hover {
-  background: var(--hover);
-  color: initial;
 }
 
 /* ── Toasts ─────────────────────────────────────────────── */

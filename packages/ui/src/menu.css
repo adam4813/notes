@@ -29,6 +29,24 @@
   flex-direction: column;
 }
 
+.popup-menu button {
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: var(--fg);
+}
+
+.popup-menu button:hover:not(:disabled) {
+  background: var(--active);
+}
+
+.popup-menu button:disabled {
+  color: var(--fg-muted);
+  cursor: default;
+}
+
 /* Menu item */
 .context-item {
   text-align: left;
