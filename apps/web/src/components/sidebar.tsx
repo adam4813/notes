@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Island, IslandBody, IslandHeader } from "@notes/ui";
 import { Explorer } from "./explorer";
 import { SearchPane } from "./search-pane";
 import { TagPane } from "./tag-pane";
@@ -33,8 +34,8 @@ export function Sidebar({
   };
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-views" role="tablist" aria-label="Sidebar views">
+    <Island>
+      <IslandHeader>
         {VIEWS.map((entry) => (
           <button
             key={entry.id}
@@ -58,28 +59,18 @@ export function Sidebar({
         >
           <span aria-hidden>📂</span>
         </button>
-      </div>
+      </IslandHeader>
 
-      {view === "explorer" && (
-        <div className="sidebar-scroll">
+      <IslandBody>
+        {view === "explorer" && (
           <Explorer
             renameRequestPath={renameRequestPath}
             onRenameRequestHandled={onRenameRequestHandled}
           />
-        </div>
-      )}
-
-      {view === "search" && (
-        <div className="sidebar-scroll">
-          <SearchPane initialTag={pendingTag} initialQuery={searchQuery} />
-        </div>
-      )}
-
-      {view === "tags" && (
-        <div className="sidebar-scroll">
-          <TagPane onPickTag={pickTag} />
-        </div>
-      )}
-    </aside>
+        )}
+        {view === "search" && <SearchPane initialTag={pendingTag} initialQuery={searchQuery} />}
+        {view === "tags" && <TagPane onPickTag={pickTag} />}
+      </IslandBody>
+    </Island>
   );
 }

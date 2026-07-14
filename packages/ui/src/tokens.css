@@ -1,0 +1,38 @@
+/* ─── Semantic design tokens ────────────────────────────────────────────────
+   These alias the raw primitive tokens and form the contract that every
+   themed component should use. Add new primitives to :root in the app's
+   global CSS; add new aliases here.
+   ──────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Surfaces */
+  --surface-app: var(--bg-app);
+  --surface-island: var(--bg-island);
+  --surface-panel: var(--bg);
+  --surface-elevated: var(--bg-elevated);
+  --surface-sunken: var(--bg-sunken);
+
+  /* Borders */
+  --border-subtle: var(--border);
+
+  /* Radii */
+  --radius-island: 14px;
+  --radius-panel: 10px;
+  --radius-sm: 6px;
+  --radius-xs: 4px;
+
+  /* Shadows */
+  --shadow-island: var(--island-shadow);
+  --shadow-float: var(--shadow);
+
+  /* Interaction */
+  --color-hover: var(--hover);
+  --color-active: var(--active);
+
+  /* Typography */
+  --text-muted: var(--fg-muted);
+  --text-default: var(--fg);
+
+  /* Status */
+  --color-danger: var(--status-offline);
+  --color-success: var(--status-ok);
+}

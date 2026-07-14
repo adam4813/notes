@@ -19,6 +19,7 @@
     "@notes/note-tables": "*",
     "@notes/plugin-host": "*",
     "@notes/shared": "*",
+    "@notes/ui": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

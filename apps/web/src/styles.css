@@ -450,17 +450,7 @@ button {
   border-left: 1px solid var(--border);
 }
 
-/* Shared surface for all floating popup menus */
-.new-menu,
-.context-menu,
-.suggest-popup {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
-  padding: 4px;
-}
-
+/* Shared popup surface lives in @notes/ui/src/menu.css. App-specific overrides: */
 .new-menu {
   position: absolute;
   top: 100%;
@@ -471,17 +461,12 @@ button {
   flex-direction: column;
 }
 
-.new-menu-item,
-.context-item,
-.suggest-item {
+.new-menu-item {
   text-align: left;
   background: transparent;
   border: none;
   border-radius: 6px;
   color: var(--fg);
-}
-
-.new-menu-item {
   padding: 6px 8px;
 }
 
@@ -489,46 +474,7 @@ button {
   background: var(--active);
 }
 
-/* Sidebar */
-.sidebar,
-.right-panel {
-  background: var(--bg-island);
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: var(--island-shadow);
-  overflow: hidden;
-}
-
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.panel-header {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--fg-muted);
-}
-
-.sidebar-scroll {
-  overflow: auto;
-  flex: 1;
-}
-
-/* Sidebar view switcher */
-.sidebar-views {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 6px;
-  border-bottom: 1px solid var(--border);
-}
-
+/* Sidebar view switcher — sidebar-specific (island structure handled by @notes/ui) */
 .sidebar-view-btn {
   flex: 1;
   display: flex;
@@ -761,36 +707,7 @@ button {
   color: var(--accent-fg);
 }
 
-/* Panel sections (right sidebar) */
-.panel-section {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  margin-bottom: 6px;
-}
-
-.panel-section:last-child {
-  margin-bottom: 0;
-}
-
-.panel-header--toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  background: transparent;
-  border: none;
-  padding: 8px 10px;
-  text-align: left;
-}
-
-.panel-caret {
-  color: var(--fg-muted);
-}
-
-.panel-body {
-  padding: 0 10px 10px;
-}
+/* Panel section/header/body/caret styles live in @notes/ui/src/panel.css */
 
 .property-list {
   display: flex;
@@ -958,44 +875,10 @@ button {
   background: var(--active);
 }
 
-/* Context menu */
-.context-menu {
-  position: fixed;
-  z-index: 60;
-  min-width: 168px;
-  display: flex;
-  flex-direction: column;
-}
-
-.context-item {
-  padding: 6px 10px;
-}
-
-.context-item:hover {
-  background: var(--active);
-}
-
-.context-item:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.context-item:disabled:hover {
-  background: transparent;
-}
-
-.context-sep {
-  height: 1px;
-  margin: 4px;
-  background: var(--border);
-}
-
+/* Context menu styles live in @notes/ui/src/menu.css */
+/* App-specific overrides: */
 .editor-context-menu {
   min-width: 190px;
-}
-
-.context-item--danger {
-  color: var(--status-offline);
 }
 
 .tree-caret {
@@ -1019,9 +902,8 @@ button {
   font: inherit;
 }
 
-.explorer-empty,
-.panel-empty,
-.pane-empty {
+/* explorer-empty is app-specific; panel-empty/pane-empty live in @notes/ui/src/panel.css */
+.explorer-empty {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -1031,13 +913,7 @@ button {
   font-size: 13px;
 }
 
-.pane-close {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 4px 10px;
-}
-
-/* Workspace + panes */
+/* Workspace — island row layout */
 .workspace {
   display: flex;
   min-width: 0;
@@ -1045,126 +921,12 @@ button {
   gap: 10px;
 }
 
-.pane {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-island);
+/* Island/tab/panel structure lives in @notes/ui CSS files */
+
+.pane-close {
   border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: var(--island-shadow);
-  overflow: hidden;
-}
-
-.pane--active .tab-bar {
-  border-color: var(--border);
-}
-
-.pane--active {
-  border-color: var(--border);
-}
-
-.tab-bar {
-  display: flex;
-  align-items: center;
-  min-height: 34px;
-  padding: 6px;
-  gap: 2px;
-}
-
-.tab-list {
-  display: flex;
-  overflow: hidden;
-  flex: 1;
-  gap: 2px;
-}
-
-.tab {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 6px;
-  min-width: 140px;
-  max-width: 320px;
-  border: 1px solid transparent;
   border-radius: 6px;
-  white-space: nowrap;
-  overflow: hidden;
-  color: var(--fg-muted);
-  font-size: 12px;
-}
-
-.tab:hover {
-  background: var(--hover);
-}
-
-.tab--active {
-  background: var(--active);
-  border-color: var(--border);
-  color: var(--fg);
-}
-
-.tab-title,
-.tab-file {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tab-file {
-  font-size: 11px;
-  opacity: 0.55;
-}
-
-.tree-type {
-  font-size: 10px;
-  opacity: 0.5;
-  margin-left: auto;
-  padding-left: 6px;
-  white-space: nowrap;
-}
-
-.tab-close {
-  background: transparent;
-  border: none;
-  color: inherit;
-  flex: 0 0 auto;
-  opacity: 0.6;
-  border-radius: 4px;
-  padding: 0 4px;
-}
-
-.tab-close:hover {
-  opacity: 1;
-  background: var(--hover);
-}
-
-.tab-button {
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  color: var(--fg-muted);
-}
-
-.tab-button:hover:not(:disabled) {
-  background: var(--hover);
-  color: var(--fg);
-}
-
-.tab-button:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.pane-body {
-  flex: 1;
-  overflow: hidden;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
+  padding: 4px 10px;
 }
 
 /* Views */

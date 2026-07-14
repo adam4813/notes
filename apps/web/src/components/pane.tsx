@@ -1,3 +1,4 @@
+import { Island, IslandBody, IslandHeader } from "@notes/ui";
 import { useWorkspace } from "../state/app-context";
 import type { Pane as PaneModel } from "../state/types";
 import { TabBar } from "./tab-bar";
@@ -9,16 +10,15 @@ export function Pane({ pane }: { pane: PaneModel }) {
   const isActive = state.activePaneId === pane.id;
 
   return (
-    <section
-      className={`pane ${isActive ? "pane--active" : ""}`}
-      onMouseDown={() => dispatch({ type: "focusPane", paneId: pane.id })}
-    >
-      <TabBar pane={pane} />
-      <div className="pane-body">
+    <Island grow active={isActive} onFocus={() => dispatch({ type: "focusPane", paneId: pane.id })}>
+      <IslandHeader>
+        <TabBar pane={pane} />
+      </IslandHeader>
+      <IslandBody>
         {activeTab ? (
           <ViewHost key={activeTab.path} path={activeTab.path} />
         ) : (
-          <div className="pane-empty">
+          <div className="panel-empty">
             <span>Select a note to open it here.</span>
             {state.panes.length > 1 && (
               <button
@@ -30,7 +30,7 @@ export function Pane({ pane }: { pane: PaneModel }) {
             )}
           </div>
         )}
-      </div>
-    </section>
+      </IslandBody>
+    </Island>
   );
 }

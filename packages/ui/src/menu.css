@@ -1,0 +1,69 @@
+/* Shared surface — used by context menus, popup menus, suggest lists */
+.context-menu,
+.popup-menu,
+.suggest-popup {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-float);
+  padding: 4px;
+}
+
+/* Context menu — fixed-positioned right-click/long-press surface */
+.context-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 168px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Popup menu — relative-anchored dropdown (e.g. overflow, status-bar theme picker) */
+.popup-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 30;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Menu item */
+.context-item {
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs);
+  padding: 6px 10px;
+  color: var(--text-default);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.context-item:hover {
+  background: var(--color-active);
+}
+
+.context-item:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.context-item:disabled:hover {
+  background: transparent;
+}
+
+/* Danger variant (destructive actions) */
+.context-item--danger {
+  color: var(--color-danger);
+}
+
+/* Separator */
+.context-sep {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 4px;
+}

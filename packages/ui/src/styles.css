@@ -1,0 +1,7 @@
+/* @notes/ui stylesheet — import this once in apps/web/src/main.tsx (or styles.css).
+   Vite bundles it; Node/tsx never sees it because it is not imported from any .ts file. */
+@import "./tokens.css";
+@import "./island.css";
+@import "./tabs.css";
+@import "./panel.css";
+@import "./menu.css";

@@ -1,0 +1,108 @@
+/* Tab strip — sits inside an island-header */
+.tab-strip {
+  display: flex;
+  overflow: hidden;
+  flex: 1;
+  gap: 2px;
+}
+
+/* Individual tab */
+.tab {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  min-width: 140px;
+  max-width: 320px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  background: transparent;
+  /* Remove default button styling when Tab renders as <button> */
+  font-family: inherit;
+  text-align: left;
+}
+
+.tab:hover {
+  background: var(--color-hover);
+}
+
+.tab--active {
+  background: var(--color-active);
+  border-color: var(--border-subtle);
+  color: var(--text-default);
+}
+
+/* Hidden during overflow recalculation */
+.tab--hidden {
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  opacity: 0;
+}
+
+/* Primary label inside a tab */
+.tab__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Secondary label (e.g. filename when different from note title) */
+.tab__subtitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+/* Close button inside a tab */
+.tab__close {
+  background: transparent;
+  border: none;
+  color: inherit;
+  flex: 0 0 auto;
+  opacity: 0.6;
+  border-radius: var(--radius-xs);
+  padding: 0 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 1;
+}
+
+.tab__close:hover {
+  opacity: 1;
+  background: var(--color-hover);
+}
+
+/* Overflow trigger — shows "▼ N" when tabs don't fit */
+.tab-overflow {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 6px;
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.tab-overflow:hover:not(:disabled) {
+  background: var(--color-hover);
+  color: var(--text-default);
+}
+
+.tab-overflow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}

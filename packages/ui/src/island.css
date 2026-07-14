@@ -1,0 +1,49 @@
+/* Island — elevated rounded container (sidebar, editor pane, right panel) */
+.island {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--surface-island);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-island);
+  box-shadow: var(--shadow-island);
+  overflow: hidden;
+}
+
+/* Flex growth is opt-in so islands can be fixed-width sidebars too */
+.island--grow {
+  flex: 1;
+}
+
+/* Accent border when this is the focused editor island */
+.island--active {
+  border-color: var(--border-subtle);
+}
+
+/* Island header — holds the tab strip or a view-switcher toolbar */
+.island-header {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 6px;
+  gap: 2px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+/* Island body — scrollable or flex content area */
+.island-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Island footer — optional pinned region at the bottom */
+.island-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border-subtle);
+  padding: 6px;
+}

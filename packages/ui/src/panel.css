@@ -1,0 +1,72 @@
+/* Panel group — scroll container wrapping all sections */
+.panel-group {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+}
+
+/* Panel section — collapsible card inside a group */
+.panel-section {
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.panel-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Panel header — the clickable title bar of a section */
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 8px 10px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.panel-header:hover {
+  color: var(--text-default);
+}
+
+/* Collapse caret */
+.panel-caret {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.panel-section--collapsed .panel-caret {
+  transform: rotate(-90deg);
+}
+
+/* Panel body — revealed content below the header */
+.panel-body {
+  padding: 0 10px 10px;
+}
+
+/* Empty state inside any panel or pane */
+.panel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
