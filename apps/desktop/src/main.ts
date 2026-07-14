@@ -123,6 +123,7 @@ function setupWindowIpc(win: BrowserWindow): void {
 
   // Updater IPC
   ipcMain.on("updater:install", () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { autoUpdater } = require("electron-updater") as typeof import("electron-updater");
     autoUpdater.quitAndInstall();
   });

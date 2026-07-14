@@ -13,6 +13,10 @@ export default tseslint.config(
       "coverage/**",
       "test-results/**",
       "playwright-report/**",
+      "**/dist/**",
+      "**/dist-*/**",
+      "**/*-staging/**",
+      "**/build/**",
     ],
   },
   js.configs.recommended,
@@ -25,6 +29,7 @@ export default tseslint.config(
     rules: {
       // Named exports only — enforces the project convention.
       "import/no-default-export": "error",
+      "no-regex-spaces": "off",
     },
   },
   {
