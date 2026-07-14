@@ -875,12 +875,6 @@ button {
   background: var(--active);
 }
 
-/* Context menu styles live in @notes/ui/src/menu.css */
-/* App-specific overrides: */
-.editor-context-menu {
-  min-width: 190px;
-}
-
 .tree-caret {
   width: 12px;
   color: var(--fg-muted);

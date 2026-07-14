@@ -248,7 +248,6 @@
 }
 
 :root[data-theme="win98"] .popup-menu > button,
-:root[data-theme="win98"] .context-item,
 :root[data-theme="win98"] .new-menu-item,
 :root[data-theme="win98"] .palette-item {
   font-family: var(--win98-font);
@@ -258,7 +257,6 @@
 }
 
 :root[data-theme="win98"] .popup-menu > button:hover:not(:disabled),
-:root[data-theme="win98"] .context-item:hover,
 :root[data-theme="win98"] .new-menu-item:hover,
 :root[data-theme="win98"] .palette-item:hover,
 :root[data-theme="win98"] .palette-item--active {

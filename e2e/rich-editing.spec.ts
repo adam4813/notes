@@ -21,7 +21,7 @@ test("note editor context menu is available in rendered and edit modes", async (
   await expect(rendered).toBeVisible();
   await rendered.click({ button: "right" });
 
-  const menu = page.locator(".editor-context-menu");
+  const menu = page.locator(".context-menu");
   await expect(menu).toBeVisible();
   await expect(menu.getByRole("menuitem", { name: "Undo" })).toBeVisible();
   await expect(menu.getByRole("menuitem", { name: "Redo" })).toBeVisible();

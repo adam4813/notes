@@ -158,7 +158,6 @@
 
 :root[data-theme="vim"] .palette-item,
 :root[data-theme="vim"] .popup-menu > button,
-:root[data-theme="vim"] .context-item,
 :root[data-theme="vim"] .new-menu-item {
   font-family: var(--vim-font);
   font-size: 12px;
@@ -167,7 +166,6 @@
 :root[data-theme="vim"] .palette-item:hover,
 :root[data-theme="vim"] .palette-item--active,
 :root[data-theme="vim"] .popup-menu > button:hover:not(:disabled),
-:root[data-theme="vim"] .context-item:hover,
 :root[data-theme="vim"] .new-menu-item:hover {
   background: var(--vim-visual-bg);
   color: var(--fg);

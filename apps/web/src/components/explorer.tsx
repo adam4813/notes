@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { usePromptDialog } from "@notes/editor";
+import { ContextMenu, ContextMenuEntry, useContextMenu } from "@notes/ui";
 import { api, type FileEntry } from "../api/client";
-import { fitMenuToViewport } from "../lib/context-menu";
 import { useAppServices } from "../state/app-services";
 import { useWorkspace } from "../state/app-context";
 import { useToasts } from "../state/toast";
@@ -209,12 +209,6 @@ function TreeRow({
   );
 }
 
-interface ContextMenu {
-  x: number;
-  y: number;
-  node?: FileEntry;
-}
-
 export function Explorer({
   renameRequestPath,
   onRenameRequestHandled,
@@ -223,16 +217,15 @@ export function Explorer({
   onRenameRequestHandled: () => void;
 }) {
   const { openPrompt, promptDialog } = usePromptDialog();
+  const ctxMenu = useContextMenu<FileEntry | undefined>();
   const { state, dispatch } = useWorkspace();
   const services = useAppServices();
   const { notify } = useToasts();
-  const [menu, setMenu] = useState<ContextMenu | null>(null);
   const [dragOverPath, setDragOverPath] = useState<string | null>(null);
   const [openDirs, setOpenDirs] = useState<Set<string>>(new Set());
   const [renamePath, setRenamePath] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
   const [renameExt, setRenameExt] = useState("");
-  const menuRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Open all top-level directories the first time the tree loads.
@@ -273,7 +266,7 @@ export function Explorer({
   };
 
   const beginRename = (node: FileEntry) => {
-    setMenu(null);
+    ctxMenu.close();
     setRenamePath(node.path);
     const { stem, ext } =
       node.type === "file" ? splitName(node.name) : { stem: node.name, ext: "" };
@@ -370,26 +363,6 @@ export function Explorer({
 
   const virtual = useVirtual(rows.length, ROW_HEIGHT, scrollRef);
 
-  useEffect(() => {
-    if (!menu) {
-      return;
-    }
-    if (menuRef.current) {
-      const next = fitMenuToViewport(menu, menuRef.current);
-      if (next.x !== menu.x || next.y !== menu.y) {
-        setMenu((prev) => (prev ? { ...prev, ...next } : prev));
-      }
-    }
-    const close = () => setMenu(null);
-    const onKey = (event: KeyboardEvent) => event.key === "Escape" && setMenu(null);
-    document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [menu]);
-
   const refresh = async () => {
     const { entries } = await api.files();
     dispatch({ type: "setTree", tree: entries });
@@ -450,7 +423,7 @@ export function Explorer({
   const openMenu = (event: MouseEvent, node?: FileEntry) => {
     event.preventDefault();
     event.stopPropagation();
-    setMenu({ x: event.clientX, y: event.clientY, node });
+    ctxMenu.open({ x: event.clientX, y: event.clientY }, node);
   };
 
   const handlers: NodeHandlers = {
@@ -470,11 +443,13 @@ export function Explorer({
     onRenameCancel: cancelRename,
   };
 
-  const menuItems = (): { label: string; run: () => void; danger?: boolean }[] => {
-    const node = menu?.node;
+  const contextMenuItems = useMemo(() => {
+    const node = ctxMenu.menu?.data;
     const dir = node?.type === "directory" ? node.path : "";
-    if (!node || node.type === "directory") {
-      return [
+    const isDir = !node || node.type === "directory";
+    const items: ContextMenuEntry[] = [];
+    if (isDir) {
+      items.push(
         { label: "New note", run: () => services.createNote(dir) },
         { label: "New table", run: () => services.createTable(dir) },
         { label: "New canvas", run: () => services.createCanvas(dir) },
@@ -483,40 +458,38 @@ export function Explorer({
         { label: "New calendar", run: () => services.createCalendar(dir) },
         { label: "New grid", run: () => services.createGrid(dir) },
         { label: "New folder…", run: () => void newFolder(dir) },
-        ...(node
-          ? [
-              { label: "Rename…", run: () => beginRename(node) },
-              { label: "Delete", run: () => void removeNode(node), danger: true },
-            ]
-          : []),
-      ];
+      );
     }
-    const electronApi = window.electronAPI;
-    const revealInExplorer = electronApi
-      ? [
-          {
-            label: "Show in file explorer",
-            run: () => {
-              void api
-                .tome()
-                .then(({ id }) => electronApi.revealPathInTome(id, node.path))
-                .then((ok) => {
-                  if (!ok) {
-                    notify("Couldn't reveal the file in the system explorer", { kind: "error" });
-                  }
-                })
-                .catch(() => notify("Couldn't reveal the file in the system explorer", { kind: "error" }));
-            },
+    if (node) {
+      if (!isDir) {
+        items.push({ label: "Open", run: () => openNode(node) });
+      }
+      const electronApi = window.electronAPI;
+      if (electronApi) {
+        items.push({
+          label: "Show in file explorer",
+          run: () => {
+            void api
+              .tome()
+              .then(({ id }) => electronApi.revealPathInTome(id, node.path))
+              .then((ok) => {
+                if (!ok) {
+                  notify("Couldn't reveal the file in the system explorer", { kind: "error" });
+                }
+              })
+              .catch(() =>
+                notify("Couldn't reveal the file in the system explorer", { kind: "error" }),
+              );
           },
-        ]
-      : [];
-    return [
-      { label: "Open", run: () => openNode(node) },
-      ...revealInExplorer,
-      { label: "Rename…", run: () => beginRename(node) },
-      { label: "Delete", run: () => void removeNode(node), danger: true },
-    ];
-  };
+        });
+      }
+      items.push(
+        { label: "Rename…", run: () => beginRename(node) },
+        { label: "Delete", run: () => void removeNode(node), danger: true },
+      );
+    }
+    return items;
+  }, [ctxMenu.menu?.data]);
 
   return (
     <div
@@ -556,28 +529,13 @@ export function Explorer({
         </div>
       )}
 
-      {menu && (
-        <div
-          ref={menuRef}
-          className="context-menu"
-          role="menu"
-          style={{ left: menu.x, top: menu.y }}
-          onPointerDown={(event) => event.stopPropagation()}
-        >
-          {menuItems().map((item) => (
-            <button
-              key={item.label}
-              role="menuitem"
-              className={`context-item ${item.danger ? "context-item--danger" : ""}`}
-              onClick={() => {
-                item.run();
-                setMenu(null);
-              }}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+      {ctxMenu.menu && (
+        <ContextMenu
+          position={ctxMenu.menu.position}
+          items={contextMenuItems}
+          onClose={ctxMenu.close}
+          menuRef={ctxMenu.menuRef}
+        />
       )}
       {promptDialog}
     </div>
