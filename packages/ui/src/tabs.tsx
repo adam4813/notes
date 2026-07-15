@@ -49,7 +49,7 @@ export function TabStrip({
 
   return (
     <TabStripContext.Provider value={{ registerTabRef, hiddenTabIds }}>
-      <div className="tab-strip" ref={listRef}>
+      <div className="tab-strip" ref={listRef} role="tablist">
         {children}
       </div>
 
@@ -132,6 +132,7 @@ export function Tab({
       onClick={onActivate}
       onContextMenu={onContextMenu}
       style={style}
+      role="tab"
     >
       <span className="tab__title">{title}</span>
       {subtitle && <span className="tab__subtitle">{subtitle}</span>}

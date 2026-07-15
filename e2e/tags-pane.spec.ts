@@ -22,7 +22,7 @@ test("tags: the tag pane lists a tag and filters search by it", async ({ page })
     )
     .toBe(true);
 
-  await page.getByTestId("sidebar-view-tags").click();
+  await page.getByRole("tab", { name: /Tags/i }).click();
   const tag = page.getByTestId("tag-zephyrtagword");
   await expect(tag).toBeVisible();
   await tag.click();

@@ -8,14 +8,16 @@ test("app shell: create note, preview, split pane, theme, palette", async ({ pag
 
   // Create a note (self-contained, independent of existing Tome content).
   await createNewNote(page);
+  await createNewNote(page);
 
   // The note opens in a tab with the rendered (WYSIWYG) editor.
   await expect(page.locator(".ProseMirror")).toBeVisible();
 
   // Open the split dropdown and split the pane into two.
-  await page.getByRole("button", { name: "Split options" }).first().click();
-  await page.getByRole("menuitem", { name: /Split/ }).first().click();
-  await expect(page.locator(".pane")).toHaveCount(2);
+  const tab = page.locator(".workspace .tab").first();
+  await tab.click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Split & move right" }).first().click();
+  await expect(page.locator(".workspace .island")).toHaveCount(2);
 
   // Toggle the theme (cycle: system → light → dark) and confirm it applies.
   await page.getByRole("button", { name: "Cycle mode (Light/Dark/System)" }).click();

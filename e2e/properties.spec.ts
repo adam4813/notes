@@ -13,7 +13,9 @@ test("properties: add a frontmatter property from the panel and persist it", asy
   const keyInput = row.locator(".property-input--key");
   const valueInput = row.locator(".property-input").nth(1);
   await keyInput.fill("status");
+  await keyInput.blur();
   await valueInput.fill("draft");
+  await valueInput.blur();
   await expect(valueInput).toHaveValue("draft");
   await page.getByText("Properties").click();
 

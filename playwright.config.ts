@@ -5,12 +5,12 @@ const SERVER_HEALTH = "http://127.0.0.1:8787/health";
 
 export default defineConfig({
   testDir: "./e2e",
-  timeout: 30_000,
+  timeout: 5_000,
   fullyParallel: false,
   workers: 1,
   // The suite shares one Tome and exercises debounced autosave + a file watcher;
   // allow a couple of retries to absorb inherent filesystem-event timing.
-  retries: 2,
+  retries: 3,
   use: {
     baseURL: WEB_URL,
     trace: "on-first-retry",

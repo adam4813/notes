@@ -16,7 +16,7 @@ test("tabs: right-click a tab to rename the note", async ({ page }) => {
 
   const tab = page.locator(".tab", { hasText: title }).first();
   await tab.click({ button: "right" });
-  const tabMenu = page.locator(".tab-bar .context-menu");
+  const tabMenu = page.locator(".context-menu");
   await expect(tabMenu).toBeVisible();
 
   const renamed = `Tab-Renamed-${Date.now()}`;

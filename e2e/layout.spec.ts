@@ -6,7 +6,8 @@ test("layout: open tabs are restored after a reload", async ({ page }) => {
 
   await createNewNote(page);
   await expect(page.locator(".ProseMirror").first()).toBeVisible();
-  const title = (await page.locator(".tab--active .tab-title").first().textContent())?.trim() ?? "";
+  const title =
+    (await page.locator(".tab--active .tab__title").first().textContent())?.trim() ?? "";
   expect(title.length).toBeGreaterThan(0);
 
   await page.reload();

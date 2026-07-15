@@ -463,7 +463,7 @@ export function NoteEditor({
             value={content}
             onChange={handleChange}
             modes={disableModeToggle ? [] : undefined}
-            defaultMode={mode === "rendered" ? "preview" : "split"}
+            defaultMode={disableModeToggle ? "preview" : undefined}
           />
         ) : isCalendar ? (
           <CalendarView value={content} onChange={handleChange} path={path} />
