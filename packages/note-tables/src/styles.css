@@ -1,0 +1,171 @@
+/* Table note styles */
+
+.table-note {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding-bottom: 2px;
+}
+
+.table-meta {
+  color: var(--fg-muted);
+  font-size: 12px;
+}
+
+.table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  outline: none;
+  background: var(--bg);
+}
+
+.data-grid {
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-grid th,
+.data-grid td {
+  border: 1px solid var(--border);
+  padding: 0;
+}
+
+.grid-head {
+  position: sticky;
+  top: 0;
+  background: var(--bg-elevated);
+  z-index: 2;
+  min-width: 120px;
+}
+
+.grid-head-inner {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  justify-content: space-between;
+}
+
+.grid-head-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grid-head-menu {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+.grid-head-menu:hover {
+  background: var(--hover);
+}
+
+.grid-menu-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+  padding: 6px 8px 2px;
+}
+
+.grid-menu-active {
+  color: var(--accent) !important;
+  font-weight: 600;
+}
+
+.grid-menu-danger {
+  color: var(--status-offline) !important;
+}
+
+.grid-gutter {
+  position: sticky;
+  left: 0;
+  background: var(--bg-elevated);
+  min-width: 34px;
+  text-align: center;
+  color: var(--fg-muted);
+}
+
+.grid-gutter .grid-rownum {
+  font-size: 11px;
+}
+
+.grid-row-delete {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--status-offline);
+  cursor: pointer;
+}
+
+tr:hover .grid-rownum {
+  display: none;
+}
+
+tr:hover .grid-row-delete {
+  display: inline;
+}
+
+.table-grid-cell {
+  min-width: 120px;
+  height: 28px;
+  cursor: cell;
+}
+
+.grid-cell--selected {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.grid-value {
+  display: block;
+  padding: 4px 8px;
+  min-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* This is used via grid-value--${column.type} */
+.grid-value--number {
+  text-align: right;
+}
+
+.table-grid-cell input[type="checkbox"] {
+  margin: 6px 8px;
+}
+
+.grid-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  padding: 4px 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.grid-select {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  padding: 3px 6px;
+}
+
+.grid-select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}

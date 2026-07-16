@@ -1,0 +1,243 @@
+/* Board note styles */
+
+/* Kanban board note */
+.board-note {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.board-scroll {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  height: 100%;
+  overflow-x: auto;
+  padding: 12px;
+  background: var(--bg);
+}
+
+.board-column {
+  flex: 0 0 260px;
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.board-column-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 8px;
+}
+
+.board-column-name {
+  font-weight: 600;
+  cursor: text;
+}
+
+.board-column-count {
+  color: var(--fg-muted);
+  font-size: 12px;
+}
+
+.board-column-del {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  border-radius: 4px;
+  padding: 0 6px;
+}
+
+.board-column-del:hover {
+  color: var(--status-offline);
+  background: var(--hover);
+}
+
+.board-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  min-height: 8px;
+  padding: 2px;
+}
+
+.board-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  cursor: grab;
+}
+
+.board-card--done .board-card-title {
+  text-decoration: line-through;
+  color: var(--fg-muted);
+}
+
+.board-card-del {
+  background: transparent;
+  border: none;
+  color: var(--status-offline) !important;
+  border-radius: 4px;
+}
+
+.board-card--expanded {
+  flex-direction: column;
+  cursor: default;
+}
+
+.board-card-collapsed {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+}
+
+.board-card-title {
+  flex: 1;
+  word-break: break-word;
+  font-size: 13px;
+}
+
+.board-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.board-card-chip {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  color: var(--fg-muted);
+  white-space: nowrap;
+}
+
+/* These are used via board-card-chip--${card.priority} */
+.board-card-chip--high { background: #fee2e2; color: #991b1b; }
+.board-card-chip--medium { background: #fef9c3; color: #854d0e; }
+.board-card-chip--low { background: #dcfce7; color: #166534; }
+.board-card-chip--due { background: var(--bg-elevated); }
+
+.board-card-expanded {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.board-card-expand-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.board-card-title-input {
+  flex: 1;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-weight: 600;
+  outline: none;
+  padding: 2px 0;
+}
+
+.board-card-collapse {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.board-card-collapse:hover { background: var(--hover); }
+
+.board-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.board-card-meta-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+
+.board-card-meta-field span { font-weight: 600; }
+
+.board-card-meta-field input,
+.board-card-meta-field select {
+  font-size: 11px;
+  padding: 2px 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  outline: none;
+}
+
+.board-card-body-editor {
+  min-height: 80px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.board-card-body-editor .markdown-editor {
+  height: auto;
+  min-height: 80px;
+}
+
+.board-loading {
+  padding: 24px;
+  color: var(--fg-muted);
+  font-style: italic;
+}
+
+.board-add-card {
+  margin-top: 6px;
+  width: 100%;
+  text-align: left;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--fg-muted);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.board-add-column {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--fg-muted);
+  padding: 8px 14px;
+}
+
+.board-add-column:hover {
+  color: var(--fg);
+  background: var(--hover);
+}

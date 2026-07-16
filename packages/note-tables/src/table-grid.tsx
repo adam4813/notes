@@ -448,7 +448,7 @@ export function TableGrid({ value, onChange }: TableGridProps) {
                   {row.map((_cell, c) => (
                     <td
                       key={c}
-                      className={`grid-cell ${sel.r === r && sel.c === c ? "grid-cell--selected" : ""}`}
+                      className={`table-grid-cell ${sel.r === r && sel.c === c ? "grid-cell--selected" : ""}`}
                       onMouseDown={() => setSel({ r, c })}
                       onDoubleClick={() => startEdit({ r, c })}
                     >
