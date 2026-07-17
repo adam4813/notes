@@ -1,5 +1,6 @@
 import { GridView } from "@notes/note-grid";
 import { MermaidView } from "@notes/note-mermaid";
+import { TableGrid } from "@notes/note-tables";
 import { useEffect, useRef, useState } from "react";
 import { frontmatterType, stripFrontmatter } from "../lib/frontmatter";
 import { api } from "../api/client";
@@ -128,6 +129,7 @@ export function EmbedWidget({ target }: { target: string }) {
       case "grid":
         return <GridView value={content} onChange={save} />;
       case "table":
+        return <TableGrid value={content} onChange={save} />;
       case "board":
       case "calendar":
         return (

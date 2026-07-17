@@ -13,7 +13,7 @@ test("table note: create, edit a cell, add a column, and persist", async ({ page
   await expect(page.locator(".grid-head-name").first()).toHaveText("Name");
 
   // Edit the first cell.
-  await page.locator(".grid-cell").first().dblclick();
+  await page.locator(".table-grid-cell").first().dblclick();
   await page.locator(".grid-input").fill("Hello table");
   await page.keyboard.press("Enter");
   await expect(page.locator(".grid-value").first()).toHaveText("Hello table");
