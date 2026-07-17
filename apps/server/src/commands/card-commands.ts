@@ -33,14 +33,7 @@ export function registerCardCommands(bus: CommandBus, getTome: GetTome): void {
     name: "card.list",
     handler: async ({ boardPath }) => {
       const tome = getTome();
-      // Auto-migrate old format on first access
-      const { model, migratedCards } = await readBoardModel(boardPath, tome);
-      if (migratedCards?.length) {
-        for (const card of migratedCards) {
-          await writeCard(boardPath, card, tome);
-        }
-        await saveBoardModel(boardPath, model, tome);
-      }
+      const model = await readBoardModel(boardPath, tome);
       const cards = await listCards(boardPath, tome);
       // Return in column order as defined by the board model
       const orderedIds = model.columns.flatMap((c) => c.cards);
@@ -69,7 +62,7 @@ export function registerCardCommands(bus: CommandBus, getTome: GetTome): void {
     name: "card.create",
     handler: async ({ boardPath, column }) => {
       const tome = getTome();
-      const { model } = await readBoardModel(boardPath, tome);
+      const model = await readBoardModel(boardPath, tome);
       const { newCardId } = await import("@notes/note-boards");
       const id = newCardId();
       const card: RichCard = { id, title: "New card", column, done: false, body: "" };
@@ -95,7 +88,7 @@ export function registerCardCommands(bus: CommandBus, getTome: GetTome): void {
       const tome = getTome();
       await writeCard(boardPath, card, tome);
       // Update column placement if card.column changed
-      const { model } = await readBoardModel(boardPath, tome);
+      const model = await readBoardModel(boardPath, tome);
       let changed = false;
       // Remove from old column(s)
       for (const col of model.columns) {
@@ -126,7 +119,7 @@ export function registerCardCommands(bus: CommandBus, getTome: GetTome): void {
     handler: async ({ boardPath, cardId }) => {
       const tome = getTome();
       await deleteCard(boardPath, cardId, tome);
-      const { model } = await readBoardModel(boardPath, tome);
+      const model = await readBoardModel(boardPath, tome);
       for (const col of model.columns) {
         const idx = col.cards.indexOf(cardId);
         if (idx !== -1) {
@@ -148,7 +141,7 @@ export function registerCardCommands(bus: CommandBus, getTome: GetTome): void {
     name: "card.move",
     handler: async ({ boardPath, cardId, toColumn, toIndex }) => {
       const tome = getTome();
-      const { model } = await readBoardModel(boardPath, tome);
+      const model = await readBoardModel(boardPath, tome);
       // Remove from all columns
       for (const col of model.columns) {
         const idx = col.cards.indexOf(cardId);

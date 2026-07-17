@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { usePromptDialog } from "@notes/editor";
 import { BoardCard } from "./board-card";
-import { type BoardColumn, parseBoard, type RichCard, serializeBoard } from "./board-format";
+import {
+  type BoardColumn,
+  BoardModel,
+  parseBoard,
+  type RichCard,
+  serializeBoard,
+} from "./board-format";
 
 interface BoardViewProps {
   value: string;
   onChange: (markdown: string) => void;
   path: string;
-  onOpenWikilink?: (name: string) => void;
 }
 
 interface CardDrag {
@@ -23,9 +28,9 @@ function debounce<T extends (...args: Parameters<T>) => void>(fn: T, ms: number)
   }) as T;
 }
 
-export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewProps) {
+export function BoardView({ value, onChange, path }: BoardViewProps) {
   const { openPrompt, promptDialog } = usePromptDialog();
-  const [columns, setColumns] = useState<BoardColumn[]>(() => parseBoard(value).model.columns);
+  const [model, setModel] = useState<BoardModel>(() => parseBoard(value));
   const [cards, setCards] = useState<Map<string, RichCard>>(new Map());
   const [addingCol, setAddingCol] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,7 +41,7 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
   useEffect(() => {
     if (value !== lastValue.current) {
       lastValue.current = value;
-      setColumns(parseBoard(value).model.columns);
+      setModel(parseBoard(value));
     }
   }, [value]);
 
@@ -51,8 +56,8 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
       const fileRes = await fetch(`/api/file?path=${encodeURIComponent(path)}`);
       if (fileRes.ok) {
         const fileData = (await fileRes.json()) as { content: string };
-        const { model } = parseBoard(fileData.content);
-        setColumns(model.columns);
+        const parsedModel = parseBoard(fileData.content);
+        setModel(parsedModel);
         lastValue.current = fileData.content;
       }
     } catch {
@@ -69,12 +74,12 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
   // Persist column layout changes to the board file.
   const commitColumns = useCallback(
     (newColumns: BoardColumn[]) => {
-      setColumns(newColumns);
-      const md = serializeBoard({ columns: newColumns });
+      setModel((prev) => ({ ...prev, columns: newColumns }));
+      const md = serializeBoard({ ...model, columns: newColumns });
       lastValue.current = md;
       onChange(md);
     },
-    [onChange],
+    [onChange, model],
   );
 
   // Debounced card save.
@@ -108,9 +113,12 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
     if (!res.ok) return;
     const card = (await res.json()) as RichCard;
     setCards((prev) => new Map(prev).set(card.id, card));
-    setColumns((prev) =>
-      prev.map((col) => (col.name === colName ? { ...col, cards: [...col.cards, card.id] } : col)),
-    );
+    setModel((prev) => ({
+      ...prev,
+      columns: prev.columns.map((col) =>
+        col.name === colName ? { ...col, cards: [...col.cards, card.id] } : col,
+      ),
+    }));
     setAddingCol(null);
   };
 
@@ -126,9 +134,13 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
       next.delete(cardId);
       return next;
     });
-    setColumns((prev) =>
-      prev.map((col) => ({ ...col, cards: col.cards.filter((id) => id !== cardId) })),
-    );
+    setModel((prev) => ({
+      ...prev,
+      columns: prev.columns.map((col) => ({
+        ...col,
+        cards: col.cards.filter((id) => id !== cardId),
+      })),
+    }));
   };
 
   const handleMoveCard = async (drag: CardDrag, toColumn: string, toIndex: number) => {
@@ -137,18 +149,21 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ boardPath: path, cardId: drag.cardId, toColumn, toIndex }),
     });
-    setColumns((prev) => {
-      const next = prev.map((col) => ({
+    setModel((prev) => {
+      const next = prev.columns.map((col) => ({
         ...col,
         cards: col.cards.filter((id) => id !== drag.cardId),
       }));
-      return next.map((col) => {
-        if (col.name !== toColumn) return col;
-        const clampedIdx = Math.max(0, Math.min(toIndex, col.cards.length));
-        const cards = [...col.cards];
-        cards.splice(clampedIdx, 0, drag.cardId);
-        return { ...col, cards };
-      });
+      return {
+        ...prev,
+        columns: next.map((col) => {
+          if (col.name !== toColumn) return col;
+          const clampedIdx = Math.max(0, Math.min(toIndex, col.cards.length));
+          const cards = [...col.cards];
+          cards.splice(clampedIdx, 0, drag.cardId);
+          return { ...col, cards };
+        }),
+      };
     });
     // Update card column frontmatter in local state
     const card = cards.get(drag.cardId);
@@ -168,7 +183,7 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
     const drag = dragRef.current;
     dragRef.current = null;
     if (!drag || drag.cardId === beforeCardId) return;
-    const targetCol = columns.find((c) => c.name === toColumn);
+    const targetCol = model.columns.find((c) => c.name === toColumn);
     const toIndex =
       beforeCardId && targetCol
         ? targetCol.cards.indexOf(beforeCardId)
@@ -184,7 +199,7 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
     });
     const name = values?.name.trim();
     if (!name) return;
-    commitColumns([...columns, { name, cards: [] }]);
+    commitColumns([...model.columns, { name, cards: [] }]);
   };
 
   const renameColumn = async (colName: string) => {
@@ -195,11 +210,11 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
     });
     const name = values?.name.trim();
     if (!name || name === colName) return;
-    commitColumns(columns.map((c) => (c.name === colName ? { ...c, name } : c)));
+    commitColumns(model.columns.map((c) => (c.name === colName ? { ...c, name } : c)));
   };
 
   const deleteColumn = (colName: string) => {
-    const col = columns.find((c) => c.name === colName);
+    const col = model.columns.find((c) => c.name === colName);
     if (!col) return;
     if (!window.confirm(`Delete column "${colName}"${col.cards.length ? " and its cards?" : "?"}`))
       return;
@@ -212,7 +227,7 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
         },
       );
     }
-    commitColumns(columns.filter((c) => c.name !== colName));
+    commitColumns(model.columns.filter((c) => c.name !== colName));
   };
 
   if (loading) {
@@ -227,7 +242,7 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
     <div className="board-note">
       <div style={{ paddingBottom: "2px", height: "100%", background: "var(--bg-island)" }}>
         <div className="board-scroll">
-          {columns.map((column) => (
+          {model.columns.map((column) => (
             <section
               key={column.name}
               className="board-column"
@@ -263,7 +278,6 @@ export function BoardView({ value, onChange, path, onOpenWikilink }: BoardViewPr
                       onDropCard={onDropCard}
                       updateCardState={updateCardState}
                       handleDeleteCard={handleDeleteCard}
-                      onOpenWikilink={onOpenWikilink}
                       column={column}
                     />
                   );

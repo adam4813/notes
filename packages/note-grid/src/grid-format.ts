@@ -1,4 +1,4 @@
-const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---\n?/;
+import { buildContent, FrontmatterProp, parseFrontmatter } from "@notes/web/src/lib/frontmatter";
 
 export interface GridToken {
   id: string;
@@ -19,7 +19,7 @@ export interface GridLayer {
 }
 
 export interface GridModel {
-  frontmatter: string;
+  frontmatter: FrontmatterProp[];
   width: number;
   height: number;
   cellSize: number;
@@ -53,13 +53,11 @@ function defaultLayer(): GridLayer {
 
 /** Parses a grid note: `type: grid` frontmatter + a JSON body payload. */
 export function parseGrid(markdown: string): GridModel {
-  const fm = FRONTMATTER_RE.exec(markdown);
-  const frontmatter = fm ? fm[1] : "type: grid";
-  const body = fm ? markdown.slice(fm[0].length).trim() : markdown.trim();
+  const parsed = parseFrontmatter(markdown);
 
   let data: GridData = {};
   try {
-    data = body ? (JSON.parse(body) as GridData) : {};
+    data = parsed.body ? (JSON.parse(parsed.body) as GridData) : {};
   } catch {
     data = {};
   }
@@ -71,7 +69,7 @@ export function parseGrid(markdown: string): GridModel {
     : layers[0].id;
 
   return {
-    frontmatter,
+    frontmatter: parsed.props.length > 0 ? parsed.props : [{ key: "type", value: "grid" }],
     width: data.width ?? 16,
     height: data.height ?? 12,
     cellSize: data.cellSize ?? 28,
@@ -92,12 +90,15 @@ export function serializeGrid(model: GridModel): string {
     activeLayer: model.activeLayer,
     tokens: model.tokens,
   };
-  return `---\n${model.frontmatter}\n---\n\n${JSON.stringify(payload, null, 2)}\n`;
+  return buildContent(
+    [{ key: "type", value: "grid" }, ...model.frontmatter],
+    JSON.stringify(payload, null, 2),
+  );
 }
 
 export function emptyGrid(): string {
   return serializeGrid({
-    frontmatter: "type: grid",
+    frontmatter: [{ key: "type", value: "grid" }],
     width: 16,
     height: 12,
     cellSize: 28,

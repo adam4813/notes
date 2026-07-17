@@ -13,6 +13,15 @@ import "@notes/note-tables/src/styles.css";
 import "@notes/note-boards/src/styles.css";
 import "@notes/note-canvas/src/styles.css";
 
+import { Buffer } from "buffer";
+
+// Safely attach to the global execution context
+if (typeof window !== "undefined") {
+  window.Buffer = Buffer;
+} else if (typeof globalThis !== "undefined") {
+  globalThis.Buffer = Buffer;
+}
+
 const container = document.getElementById("root");
 if (!container) {
   throw new Error("Root container #root not found");

@@ -1,4 +1,15 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode, useMemo } from "react";
+import { api } from "@notes/web/src/api/client";
+import { EmbedWidget } from "@notes/web/src/components/embed-widget";
+import {
+  importedFilePath,
+  markdownForImportedFile,
+  normalizeMediaDirectory,
+  toBase64,
+} from "@notes/web/src/lib/images";
+import { useWorkspace } from "@notes/web/src/state/app-context";
+import { useAppServices } from "@notes/web/src/state/app-services";
+import { useToasts } from "@notes/web/src/state/toast";
 import { EditorToolbar } from "./toolbar";
 import { RenderedEditor } from "./rendered-editor";
 import { SourceEditor } from "./source-editor";
@@ -34,7 +45,6 @@ interface MarkdownEditorProps {
   value: string;
   mode: EditorMode;
   onChange: (markdown: string) => void;
-  callbacks?: EditorCallbacks;
   toolbarTrailing?: ReactNode;
   disableToolbarInEdit?: boolean;
   viewState?: MarkdownViewState;
@@ -51,13 +61,16 @@ export function MarkdownEditor({
   value,
   mode,
   onChange,
-  callbacks,
   toolbarTrailing,
   disableToolbarInEdit = false,
   viewState,
   onViewStateChange,
   syncSplitScroll = true,
 }: MarkdownEditorProps) {
+  const { dispatch } = useWorkspace();
+  const { settings } = useAppServices();
+  const { notify } = useToasts();
+
   const sourceCursorRef = useRef(
     viewState?.sourceCursor ?? DEFAULT_MARKDOWN_VIEW_STATE.sourceCursor,
   );
@@ -210,6 +223,39 @@ export function MarkdownEditor({
       setSourceScrollRequest({ token: nextToken(), ratio });
     },
     [emitViewState, mode, syncSplitScroll],
+  );
+
+  const callbacks = useMemo<EditorCallbacks>(
+    () => ({
+      onOpenWikilink: (name) => {
+        void (async () => {
+          const resolved = await api.resolve(name);
+          if (resolved.path) {
+            dispatch({ type: "openFile", path: resolved.path, title: name });
+            return;
+          }
+          const newPath = `${name}.md`;
+          await api.create(newPath, `# ${name}\n\n`).catch(() => undefined);
+          dispatch({ type: "openFile", path: newPath, title: name });
+        })();
+      },
+      listNotes: async () => (await api.notes()).notes,
+      listTags: async () => (await api.tags()).tags.map((tag) => tag.tag),
+      onImportFile: async (file) => {
+        const mediaPath = importedFilePath(file, normalizeMediaDirectory(settings.mediaDirectory));
+        try {
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          await api.createBinary(mediaPath, toBase64(bytes));
+          notify(`Imported file saved to ${mediaPath}`, { kind: "success" });
+          return markdownForImportedFile(mediaPath, file.type, api.fileRawUrl(mediaPath));
+        } catch {
+          notify("Couldn't import dropped file", { kind: "error" });
+          return null;
+        }
+      },
+      renderEmbed: (embedTarget) => <EmbedWidget target={embedTarget} />,
+    }),
+    [dispatch, notify, settings.mediaDirectory],
   );
 
   return (

@@ -1,9 +1,7 @@
-import { BoardView } from "@notes/note-boards";
-import { CalendarView } from "@notes/note-calendar";
 import { GridView } from "@notes/note-grid";
 import { MermaidView } from "@notes/note-mermaid";
-import { TableGrid } from "@notes/note-tables";
 import { useEffect, useRef, useState } from "react";
+import { frontmatterType, stripFrontmatter } from "../lib/frontmatter";
 import { api } from "../api/client";
 import { isImagePath } from "../lib/images";
 import { connectTomeChanges } from "../api/ws";
@@ -11,15 +9,6 @@ import { useWorkspace } from "../state/app-context";
 
 function basename(path: string): string {
   return (path.split("/").pop() ?? path).replace(/\.[^.]+$/, "");
-}
-
-function frontmatterType(content: string): string | undefined {
-  const block = /^---\n([\s\S]*?)\n---/.exec(content);
-  return block ? /^type:\s*(.+)$/m.exec(block[1])?.[1].trim() : undefined;
-}
-
-function stripFrontmatter(content: string): string {
-  return content.replace(/^---\n[\s\S]*?\n---\n?/, "").trim();
 }
 
 interface EmbedState {
@@ -130,64 +119,29 @@ export function EmbedWidget({ target }: { target: string }) {
   const { path, content = "", type = "markdown" } = state;
   const title = basename(path);
 
-  // Guard: board, calendar, and canvas notes cannot be embedded inline.
-  if (type === "board" || type === "calendar" || type === "canvas") {
-    return (
-      <div className={`embed-card embed-card--${type} embed-card--blocked`}>
-        <div className="embed-header">
-          <span className="embed-type">{TYPE_LABEL[type] ?? type}</span>
-          <span className="embed-title">{title}</span>
-          <button
-            className="embed-open"
-            onClick={() => dispatch({ type: "openFile", path, title })}
-          >
-            Open ↗
-          </button>
-        </div>
-        <div className="embed-body embed-blocked-msg">
-          {type === "canvas"
-            ? "Canvas notes cannot be embedded."
-            : `${TYPE_LABEL[type]} notes cannot be embedded inline.`}
-        </div>
-      </div>
-    );
-  }
-
   const body = () => {
     switch (type) {
       case "image":
         return <img className="embed-image" src={api.fileRawUrl(path)} alt={title} />;
       case "mermaid":
         return <MermaidView value={content} onChange={save} />;
-      case "table":
-        return <TableGrid value={content} onChange={save} />;
-      case "board":
-        return (
-          <BoardView
-            value={content}
-            onChange={save}
-            path={path}
-            onOpenWikilink={(name) => {
-              void (async () => {
-                const resolved = await api.resolve(name);
-                if (resolved.path) {
-                  dispatch({ type: "openFile", path: resolved.path, title: name });
-                }
-              })();
-            }}
-          />
-        );
-      case "calendar":
-        return <CalendarView value={content} onChange={save} path={path} />;
       case "grid":
         return <GridView value={content} onChange={save} />;
+      case "table":
+      case "board":
+      case "calendar":
+        return (
+          <div className="embed-blocked-msg">
+            {`${TYPE_LABEL[type]} notes cannot be embedded inline.`}
+          </div>
+        );
       default:
         return <div className="embed-markdown">{stripFrontmatter(content) || "(empty note)"}</div>;
     }
   };
 
   return (
-    <div className={`embed-card embed-card--${type}`}>
+    <div className="embed-card">
       <div className="embed-header">
         <span className="embed-type">{TYPE_LABEL[type] ?? type}</span>
         <span className="embed-title">{title}</span>

@@ -1,5 +1,5 @@
+import { buildContent, FrontmatterProp, parseFrontmatter } from "@notes/web/src/lib/frontmatter";
 import Papa from "papaparse";
-import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 
 export type ColumnType = "text" | "number" | "date" | "checkbox" | "select";
 
@@ -12,12 +12,12 @@ export interface TableColumn {
 }
 
 export interface TableModel {
+  frontmatter: FrontmatterProp[];
   columns: TableColumn[];
   /** Row-major cells; each row aligns to `columns`, values stored as strings. */
   rows: string[][];
 }
 
-const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---\n?/;
 const CSV_BLOCK_RE = /```csv\n([\s\S]*?)```/;
 
 function normalizeRow(row: string[], width: number): string[] {
@@ -46,16 +46,15 @@ function sanitizeColumn(raw: unknown, index: number): TableColumn {
 /** Parses a table note (frontmatter schema + embedded CSV) into a model. */
 export function parseTable(markdown: string): TableModel {
   let columns: TableColumn[] = [];
-  let body = markdown;
 
-  const frontmatter = FRONTMATTER_RE.exec(markdown);
-  if (frontmatter) {
-    const data = (parseYaml(frontmatter[1]) ?? {}) as { columns?: unknown[] };
-    if (Array.isArray(data.columns)) {
-      columns = data.columns.map((column, index) => sanitizeColumn(column, index));
-    }
-    body = markdown.slice(frontmatter[0].length);
+  const parsed = parseFrontmatter(markdown);
+  const parsedColumns = parsed.props.find((prop) => prop.key === "columns");
+  if (parsedColumns) {
+    columns = (parsedColumns.value as TableColumn[]).map((column, index) =>
+      sanitizeColumn(column, index),
+    );
   }
+  const body = parsed.body;
 
   const csv = CSV_BLOCK_RE.exec(body);
   const csvText = (csv ? csv[1] : "").trim();
@@ -66,7 +65,9 @@ export function parseTable(markdown: string): TableModel {
     const records = parsed.data;
     if (records.length > 0) {
       if (columns.length === 0) {
-        columns = records[0].map((name, index) => sanitizeColumn({ name, type: "text" }, index));
+        columns = records[0].map((name, index) =>
+          sanitizeColumn({ ...columns[index], name, type: columns[index]?.type ?? "text" }, index),
+        );
       }
       rows = records.slice(1).map((row) => normalizeRow(row, columns.length));
     }
@@ -76,20 +77,34 @@ export function parseTable(markdown: string): TableModel {
     columns = [sanitizeColumn({ name: "Column 1", type: "text" }, 0)];
   }
 
-  return { columns, rows };
+  return {
+    frontmatter:
+      parsed.props.length > 0
+        ? parsed.props.filter((prop) => prop.key !== "columns")
+        : [{ key: "type", value: "table" }],
+    columns,
+    rows,
+  };
 }
 
 /** Serializes a table model back to a table note (frontmatter + CSV block). */
 export function serializeTable(model: TableModel): string {
   const header = model.columns.map((column) => column.name);
   const csv = Papa.unparse([header, ...model.rows]);
-  const frontmatter = stringifyYaml({ type: "table", columns: model.columns }).trimEnd();
-  return `---\n${frontmatter}\n---\n\n\`\`\`csv\n${csv}\n\`\`\`\n`;
+  return buildContent(
+    [
+      { key: "type", value: "table" },
+      { key: "columns", value: model.columns },
+      ...model.frontmatter,
+    ],
+    `\`\`\`csv\n${csv}\n\`\`\`\n`,
+  );
 }
 
 /** Returns the default markdown for a brand-new table note. */
 export function emptyTableMarkdown(): string {
   return serializeTable({
+    frontmatter: [{ key: "type", value: "table" }],
     columns: [
       { name: "Name", type: "text" },
       { name: "Status", type: "select", options: ["Todo", "Doing", "Done"] },

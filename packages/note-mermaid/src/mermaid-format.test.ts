@@ -4,8 +4,11 @@ import { emptyMermaid, parseMermaid, serializeMermaid } from "./mermaid-format";
 describe("mermaid-format", () => {
   it("parses frontmatter and diagram source", () => {
     const model = parseMermaid("---\ntype: mermaid\n---\n\nflowchart TD\n  A --> B\n");
-    expect(model.frontmatter).toContain("type: mermaid");
-    expect(model.source).toBe("flowchart TD\n  A --> B");
+    expect(model.frontmatter).toContainEqual({
+      key: "type",
+      value: "mermaid",
+    });
+    expect(model.source).toBe("\nflowchart TD\n  A --> B\n");
   });
 
   it("treats bare content as source when there is no frontmatter", () => {
@@ -19,6 +22,6 @@ describe("mermaid-format", () => {
   });
 
   it("emptyMermaid produces a valid frontmatter block", () => {
-    expect(emptyMermaid()).toMatch(/^---\ntype: mermaid\n---\n\nflowchart TD/);
+    expect(emptyMermaid()).toMatch(/^---\ntype: mermaid\n---\nflowchart TD/);
   });
 });

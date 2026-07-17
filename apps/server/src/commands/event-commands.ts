@@ -33,14 +33,6 @@ export function registerEventCommands(bus: CommandBus, getTome: GetTome): void {
     name: "event.list",
     handler: async ({ calendarPath }) => {
       const tome = getTome();
-      // Auto-migrate old format on first access
-      const { model, migratedEvents } = await readCalendarModel(calendarPath, tome);
-      if (migratedEvents?.length) {
-        for (const event of migratedEvents) {
-          await writeEvent(calendarPath, event, tome);
-        }
-        await saveCalendarModel(calendarPath, model, tome);
-      }
       const events = await listEvents(calendarPath, tome);
       // Sort by date + time
       return {
@@ -68,7 +60,7 @@ export function registerEventCommands(bus: CommandBus, getTome: GetTome): void {
     name: "event.create",
     handler: async ({ calendarPath, date }) => {
       const tome = getTome();
-      const { model } = await readCalendarModel(calendarPath, tome);
+      const model = await readCalendarModel(calendarPath, tome);
       const id = newEventId();
       const event: RichEvent = { id, title: "New event", date, body: "" };
       await writeEvent(calendarPath, event, tome);
@@ -97,7 +89,7 @@ export function registerEventCommands(bus: CommandBus, getTome: GetTome): void {
     handler: async ({ calendarPath, eventId }) => {
       const tome = getTome();
       await deleteEvent(calendarPath, eventId, tome);
-      const { model } = await readCalendarModel(calendarPath, tome);
+      const model = await readCalendarModel(calendarPath, tome);
       model.events = model.events.filter((id) => id !== eventId);
       await saveCalendarModel(calendarPath, model, tome);
       return { eventId };

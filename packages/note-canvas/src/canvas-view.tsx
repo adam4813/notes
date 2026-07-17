@@ -1,3 +1,5 @@
+import { connectTomeChanges } from "@notes/web/src/api/ws";
+import { parseFrontmatter } from "@notes/web/src/lib/frontmatter";
 import {
   useCallback,
   useEffect,
@@ -21,8 +23,6 @@ interface CanvasViewProps {
   onChange: (text: string) => void;
   onOpenFile?: (path: string) => void;
   path: string;
-  /** Subscribe to a specific file path's changes; returns a disposer. */
-  subscribeToFileChange?: (filePath: string, cb: () => void) => () => void;
 }
 
 /** Note MIME type set by the explorer on drag. */
@@ -33,15 +33,13 @@ function fileBasename(p: string): string {
 }
 
 function detectNoteInfo(content: string, filePath: string): { title: string; type: string } {
-  const fmMatch = /^---\n([\s\S]*?)\n---\n?/.exec(content);
-  const yaml = fmMatch ? fmMatch[1] : "";
-  const body = fmMatch ? content.slice(fmMatch[0].length) : content;
-  const titleMatch = /^title:\s*["']?(.+?)["']?\s*$/m.exec(yaml);
-  const typeMatch = /^type:\s*(.+)$/m.exec(yaml);
-  const h1Match = /^#\s+(.+)$/m.exec(body);
-  const title = (titleMatch?.[1] || h1Match?.[1] || fileBasename(filePath)).trim();
+  const parsed = parseFrontmatter(content);
+  const titleMatch = (parsed.props.find((prop) => prop.key === "title")?.value as string) ?? "";
+  const typeMatch = (parsed.props.find((prop) => prop.key === "type")?.value as string) ?? "";
+  const h1Match = /^#\s+(.+)$/m.exec(parsed.body ?? content);
+  const title = (titleMatch || h1Match?.[1] || fileBasename(filePath)).trim();
   const type =
-    typeMatch?.[1].trim() ?? (filePath.toLowerCase().endsWith(".canvas") ? "canvas" : "markdown");
+    typeMatch.trim() ?? (filePath.toLowerCase().endsWith(".canvas") ? "canvas" : "markdown");
   return { title, type };
 }
 
@@ -66,12 +64,10 @@ function FileNodeCard({
   file,
   isVisible,
   onOpen,
-  subscribeToFileChange,
 }: {
   file: string;
   isVisible: boolean;
   onOpen?: () => void;
-  subscribeToFileChange?: (filePath: string, cb: () => void) => () => void;
 }) {
   const [content, setContent] = useState<string | null>(null);
   const [type, setType] = useState<string | null>(null);
@@ -80,6 +76,14 @@ function FileNodeCard({
   const [error, setError] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
   const contentRef = useRef("");
+
+  const subscribeToFileChange = useCallback(
+    (filePath: string, cb: () => void) =>
+      connectTomeChanges((change) => {
+        if (change.path === filePath) cb();
+      }),
+    [],
+  );
 
   const load = useCallback(async () => {
     try {
@@ -260,13 +264,7 @@ function center(node: CanvasNode): { x: number; y: number } {
   return { x: node.x + node.width / 2, y: node.y + node.height / 2 };
 }
 
-export function CanvasView({
-  value,
-  onChange,
-  onOpenFile,
-  path,
-  subscribeToFileChange,
-}: CanvasViewProps) {
+export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProps) {
   const { openPrompt, promptDialog } = usePromptDialog();
   const [data, setData] = useState<CanvasData>(() => parseCanvas(value));
   const [viewport, setViewport] = useState<Viewport>({ x: 40, y: 40, scale: 1 });
@@ -867,7 +865,6 @@ export function CanvasView({
                     file={node.file}
                     isVisible={isVisible}
                     onOpen={() => onOpenFile?.(node.file)}
-                    subscribeToFileChange={subscribeToFileChange}
                   />
                 )}
 

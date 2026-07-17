@@ -1,5 +1,5 @@
 import { basename } from "node:path";
-import matter from "gray-matter";
+import { FrontmatterProp, parseFrontmatter } from "@notes/web/src/lib/frontmatter";
 
 export interface ParsedLink {
   target: string;
@@ -11,7 +11,7 @@ export interface ParsedNote {
   path: string;
   title: string;
   type: string;
-  frontmatter: Record<string, unknown>;
+  frontmatter: FrontmatterProp[];
   tags: string[];
   links: ParsedLink[];
   bodyText: string;
@@ -44,13 +44,13 @@ export function extractWikilinks(body: string): ParsedLink[] {
   return links;
 }
 
-export function extractTags(body: string, frontmatter: Record<string, unknown>): string[] {
+export function extractTags(body: string, props: FrontmatterProp[]): string[] {
   const tags = new Set<string>();
   for (const match of body.matchAll(TAG_RE)) {
     tags.add(match[1]);
   }
 
-  const frontmatterTags = frontmatter.tags;
+  const frontmatterTags = props.find((prop) => prop.key === "tags")?.value;
   if (Array.isArray(frontmatterTags)) {
     for (const tag of frontmatterTags) {
       if (typeof tag === "string" && tag.trim()) {
@@ -68,9 +68,10 @@ export function extractTags(body: string, frontmatter: Record<string, unknown>):
   return [...tags];
 }
 
-function deriveTitle(path: string, frontmatter: Record<string, unknown>, body: string): string {
-  if (typeof frontmatter.title === "string" && frontmatter.title.trim()) {
-    return frontmatter.title.trim();
+function deriveTitle(path: string, frontmatter: FrontmatterProp[], body: string): string {
+  const titleProp = frontmatter.find((prop) => prop.key === "title")?.value;
+  if (typeof titleProp === "string" && titleProp.trim()) {
+    return titleProp.trim();
   }
   const h1 = body.match(H1_RE);
   if (h1) {
@@ -79,53 +80,28 @@ function deriveTitle(path: string, frontmatter: Record<string, unknown>, body: s
   return basename(path).replace(/\.[^.]+$/, "");
 }
 
-function parseFrontmatter(content: string): { frontmatter: Record<string, unknown>; body: string } {
-  const normalizedContent = content.replace(/^\uFEFF/, "");
-  const frontmatterMatch = normalizedContent.match(/^---\s*\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
-
-  if (!frontmatterMatch) {
-    return {
-      frontmatter: {},
-      body: content,
-    };
-  }
-
-  try {
-    const parsed = matter(content);
-    return {
-      frontmatter: (parsed.data ?? {}) as Record<string, unknown>,
-      body: parsed.content,
-    };
-  } catch {
-    return {
-      frontmatter: {},
-      body: content,
-    };
-  }
-}
-
 export function parseNote(path: string, content: string): ParsedNote {
   if (path.toLowerCase().endsWith(".canvas")) {
     return {
       path,
       title: basename(path).replace(/\.[^.]+$/, ""),
       type: "canvas",
-      frontmatter: {},
+      frontmatter: [],
       tags: [],
       links: [],
       bodyText: "",
     };
   }
 
-  const { frontmatter, body } = parseFrontmatter(content);
-  const type = typeof frontmatter.type === "string" ? frontmatter.type : "markdown";
+  const { props, body } = parseFrontmatter(content);
+  const type = (props.find((prop) => prop.key === "type")?.value as string) ?? "markdown";
 
   return {
     path,
-    title: deriveTitle(path, frontmatter, body),
+    title: deriveTitle(path, props, body),
     type,
-    frontmatter,
-    tags: extractTags(body, frontmatter),
+    frontmatter: props,
+    tags: extractTags(body, props),
     links: extractWikilinks(body),
     bodyText: body,
   };

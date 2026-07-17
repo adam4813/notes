@@ -10,7 +10,6 @@ export function BoardCard({
   onDragStart,
   onDropCard,
   handleDeleteCard,
-  onOpenWikilink,
   updateCardState,
   column,
 }: {
@@ -18,7 +17,6 @@ export function BoardCard({
   onDragStart: (e: DragEvent, cardId: string, columnName: string) => void;
   onDropCard: (e: DragEvent, columnName: string, cardId: string) => void;
   handleDeleteCard: (cardId: string) => void;
-  onOpenWikilink?: (name: string) => void;
   updateCardState: (card: RichCard) => void;
   column: BoardColumn;
 }) {
@@ -176,9 +174,6 @@ export function BoardCard({
               value={card.body}
               mode="rendered"
               onChange={(body) => updateCardState({ ...card, body })}
-              callbacks={{
-                onOpenWikilink,
-              }}
             />
           </div>
         </div>

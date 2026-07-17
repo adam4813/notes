@@ -4,7 +4,12 @@ import { cellKey, emptyGrid, parseGrid, serializeGrid } from "./grid-format";
 describe("grid-format", () => {
   it("parses a JSON grid body with layers and tokens", () => {
     const md = serializeGrid({
-      frontmatter: "type: grid",
+      frontmatter: [
+        {
+          key: "type",
+          value: "grid",
+        },
+      ],
       width: 4,
       height: 3,
       cellSize: 20,

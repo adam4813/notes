@@ -3,9 +3,14 @@ import { Island, IslandBody, PanelEmpty, PanelGroup, PanelSection } from "@notes
 import { api, type Backlink } from "../api/client";
 import { useWorkspace } from "../state/app-context";
 import { useToasts } from "../state/toast";
-import { applyProperties, parseFrontmatter, type FrontmatterProp } from "../lib/frontmatter";
+import {
+  applyProperties,
+  parseFrontmatter,
+  type FrontmatterProp,
+  stripFrontmatter,
+} from "../lib/frontmatter";
 
-const HIDDEN_FRONTMATTER_KEYS = new Set(["type", "__notes_rendered_width"]);
+const HIDDEN_FRONTMATTER_KEYS = new Set(["type", "__notes_rendered_width", "columns", "events"]);
 
 interface Heading {
   level: number;
@@ -14,7 +19,7 @@ interface Heading {
 }
 
 function extractHeadings(markdown: string): Heading[] {
-  const body = markdown.replace(/^---\n[\s\S]*?\n---\n?/, "");
+  const body = stripFrontmatter(markdown);
   const headings: Heading[] = [];
   const re = /^(#{1,6})\s+(.+?)\s*$/gm;
   let match: RegExpExecArray | null;
@@ -78,7 +83,7 @@ export function RightPanel() {
           setHeadings(extractHeadings(result.content));
           const parsed = parseFrontmatter(result.content).props;
           const hidden = parsed.filter((prop) => HIDDEN_FRONTMATTER_KEYS.has(prop.key));
-          setTypeValue(hidden.find((prop) => prop.key === "type")?.value);
+          setTypeValue(hidden.find((prop) => prop.key === "type")?.value as string | undefined);
           setHiddenProps(hidden);
           setProps(parsed.filter((prop) => !HIDDEN_FRONTMATTER_KEYS.has(prop.key)));
         }
@@ -109,7 +114,9 @@ export function RightPanel() {
       const latestProps = parseFrontmatter(latest).props;
       preservedHidden = latestProps.filter((prop) => HIDDEN_FRONTMATTER_KEYS.has(prop.key));
       setHiddenProps(preservedHidden);
-      setTypeValue(preservedHidden.find((prop) => prop.key === "type")?.value);
+      setTypeValue(
+        preservedHidden.find((prop) => prop.key === "type")?.value as string | undefined,
+      );
     } catch {
       // Keep the in-memory snapshot when a refresh read fails.
     }
@@ -171,7 +178,7 @@ export function RightPanel() {
                           className="property-input"
                           aria-label={`Value for ${prop.key || "property"}`}
                           placeholder="value"
-                          value={prop.value}
+                          value={prop.value as string | number | undefined}
                           onChange={(event) => updateProp(index, { value: event.target.value })}
                           onBlur={() => void commitProps(props)}
                         />

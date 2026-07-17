@@ -124,7 +124,7 @@ export function TableGrid({ value, onChange }: TableGridProps) {
       { name: `Column ${columnCount + 1}`, type: "text" as ColumnType },
     ];
     const rows = model.rows.map((row) => [...row, ""]);
-    commit({ columns, rows });
+    commit({ ...model, columns, rows });
   }, [commit, model, columnCount]);
 
   const deleteRow = useCallback(
@@ -143,7 +143,7 @@ export function TableGrid({ value, onChange }: TableGridProps) {
       }
       const columns = model.columns.filter((_, index) => index !== c);
       const rows = model.rows.map((row) => row.filter((_, index) => index !== c));
-      commit({ columns, rows });
+      commit({ ...model, columns, rows });
       setMenuCol(null);
     },
     [commit, model, columnCount],

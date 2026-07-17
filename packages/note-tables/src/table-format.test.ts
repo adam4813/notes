@@ -4,6 +4,12 @@ import { emptyTableMarkdown, parseTable, serializeTable, type TableModel } from 
 describe("table-format", () => {
   it("round-trips a model through serialize → parse", () => {
     const model: TableModel = {
+      frontmatter: [
+        {
+          key: "type",
+          value: "table",
+        },
+      ],
       columns: [
         { name: "Task", type: "text" },
         { name: "Priority", type: "select", options: ["Low", "High"] },
@@ -19,6 +25,7 @@ describe("table-format", () => {
 
   it("preserves quoted commas in CSV cells", () => {
     const markdown = serializeTable({
+      frontmatter: [],
       columns: [
         { name: "A", type: "text" },
         { name: "B", type: "text" },

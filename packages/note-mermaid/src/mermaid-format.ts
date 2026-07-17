@@ -1,26 +1,27 @@
-const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---\n?/;
+import { buildContent, FrontmatterProp, parseFrontmatter } from "@notes/web/src/lib/frontmatter";
 
 export interface MermaidModel {
-  frontmatter: string;
+  frontmatter: FrontmatterProp[];
   /** The Mermaid diagram source (everything after the frontmatter). */
   source: string;
 }
 
 /** Parses a markdown-backed Mermaid note (frontmatter + diagram source body). */
 export function parseMermaid(markdown: string): MermaidModel {
-  const fm = FRONTMATTER_RE.exec(markdown);
-  const body = fm ? markdown.slice(fm[0].length) : markdown;
-  const source = body.replace(/^\n+/, "").replace(/\s+$/, "");
-  return { frontmatter: fm ? fm[1] : "type: mermaid", source };
+  const parsed = parseFrontmatter(markdown);
+  return {
+    frontmatter: parsed.props.length ? parsed.props : [{ key: "type", value: "mermaid" }],
+    source: parsed.body,
+  };
 }
 
 export function serializeMermaid(model: MermaidModel): string {
-  return `---\n${model.frontmatter}\n---\n\n${model.source.replace(/\s+$/, "")}\n`;
+  return buildContent(model.frontmatter, model.source);
 }
 
 export function emptyMermaid(): string {
   return serializeMermaid({
-    frontmatter: "type: mermaid",
+    frontmatter: [{ key: "type", value: "mermaid" }],
     source: [
       "flowchart TD",
       "  A[Start] --> B{Choice}",

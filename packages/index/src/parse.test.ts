@@ -17,7 +17,9 @@ describe("extractWikilinks", () => {
 
 describe("extractTags", () => {
   it("collects body and frontmatter tags without duplicates", () => {
-    const tags = extractTags("Body with #inbox and #project/alpha", { tags: ["inbox", "later"] });
+    const tags = extractTags("Body with #inbox and #project/alpha", [
+      { key: "tags", value: ["inbox", "later"] },
+    ]);
     expect(new Set(tags)).toEqual(new Set(["inbox", "project/alpha", "later"]));
   });
 });
@@ -33,7 +35,7 @@ describe("parseNote", () => {
     const parsed = parseNote("bad.md", "---\n## title: Broken\n\n# Heading\n");
     expect(parsed.title).toBe("Heading");
     expect(parsed.type).toBe("markdown");
-    expect(parsed.frontmatter).toEqual({});
+    expect(parsed.frontmatter).toEqual([]);
     expect(parsed.bodyText).toContain("# Heading");
   });
 

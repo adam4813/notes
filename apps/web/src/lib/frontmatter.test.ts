@@ -3,7 +3,7 @@ import { applyProperties, buildContent, parseFrontmatter } from "./frontmatter";
 
 describe("parseFrontmatter", () => {
   it("parses a frontmatter block and body", () => {
-    const parsed = parseFrontmatter("---\ntitle: Hi\ntags: a\n---\n\n# Body\n");
+    const parsed = parseFrontmatter("---\ntitle: Hi\ntags: a\n---\n# Body\n");
     expect(parsed.hasBlock).toBe(true);
     expect(parsed.props).toEqual([
       { key: "title", value: "Hi" },
@@ -23,7 +23,7 @@ describe("parseFrontmatter", () => {
 describe("buildContent", () => {
   it("writes a block before the body", () => {
     expect(buildContent([{ key: "type", value: "board" }], "# B\n")).toBe(
-      "---\ntype: board\n---\n\n# B\n",
+      "---\ntype: board\n---\n# B\n",
     );
   });
 
@@ -34,15 +34,15 @@ describe("buildContent", () => {
 
 describe("applyProperties", () => {
   it("round-trips and updates properties while preserving the body", () => {
-    const original = "---\ntitle: Old\n---\n\n# Body\n";
+    const original = "---\ntitle: Old\n---\n# Body\n";
     const updated = applyProperties(original, [{ key: "title", value: "New" }]);
-    expect(updated).toBe("---\ntitle: New\n---\n\n# Body\n");
+    expect(updated).toBe("---\ntitle: New\n---\n# Body\n");
     expect(parseFrontmatter(updated).body).toBe("# Body\n");
   });
 
   it("adds a first property to a note without frontmatter", () => {
     expect(applyProperties("# Body\n", [{ key: "status", value: "draft" }])).toBe(
-      "---\nstatus: draft\n---\n\n# Body\n",
+      "---\nstatus: draft\n---\n# Body\n",
     );
   });
 });

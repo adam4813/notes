@@ -1,3 +1,4 @@
+import { buildContent, parseFrontmatter } from "@notes/web/src/lib/frontmatter";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import { Table } from "@tiptap/extension-table";
@@ -46,25 +47,6 @@ function readMarkdown(instance: Editor): string {
   return markdown.replace(/\\([[\]])/g, "$1").replace(/\\#(?=[\p{L}\p{N}])/gu, "#");
 }
 
-interface FrontmatterParts {
-  frontmatter: string;
-  body: string;
-}
-
-const FRONTMATTER_RE = /^(---\n[\s\S]*?\n---\n*)([\s\S]*)$/;
-
-function splitFrontmatter(value: string): FrontmatterParts {
-  const match = FRONTMATTER_RE.exec(value);
-  if (!match) {
-    return { frontmatter: "", body: value };
-  }
-  return { frontmatter: match[1], body: match[2] };
-}
-
-function mergeFrontmatter(frontmatter: string, body: string): string {
-  return frontmatter ? `${frontmatter}${body}` : body;
-}
-
 type SuggestKind = "wikilink" | "tag";
 
 interface SuggestState {
@@ -107,9 +89,9 @@ export function RenderedEditor({
   onFocus,
   focusRequest,
 }: RenderedEditorProps) {
-  const currentParts = splitFrontmatter(value);
-  const frontmatterRef = useRef(currentParts.frontmatter);
-  frontmatterRef.current = currentParts.frontmatter;
+  const currentParts = parseFrontmatter(value);
+  const frontmatterRef = useRef(currentParts.props);
+  frontmatterRef.current = currentParts.props;
   const renderedValue = currentParts.body;
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -198,7 +180,7 @@ export function RenderedEditor({
       },
     },
     onUpdate: ({ editor: instance }) => {
-      onChangeRef.current(mergeFrontmatter(frontmatterRef.current, readMarkdown(instance)));
+      onChangeRef.current(buildContent(frontmatterRef.current, readMarkdown(instance)));
     },
   });
 

@@ -2,10 +2,12 @@
  * Minimal frontmatter read/write for the properties panel. Handles simple
  * `key: value` YAML blocks (the shape Notes writes) without a full YAML parser.
  */
+import matter from "gray-matter";
+import { stringify as stringifyYaml } from "yaml";
 
 export interface FrontmatterProp {
   key: string;
-  value: string;
+  value: unknown;
 }
 
 export interface ParsedFrontmatter {
@@ -16,19 +18,38 @@ export interface ParsedFrontmatter {
 
 const BLOCK_RE = /^---\n([\s\S]*?)\n---\n*/;
 
+export function frontmatterType(content: string): string | undefined {
+  const block = BLOCK_RE.exec(content);
+  return block ? /^type:\s*(.+)$/m.exec(block[1])?.[1].trim() : undefined;
+}
+
+export function stripFrontmatter(content: string): string {
+  return content.replace(BLOCK_RE, "").trim();
+}
+
 export function parseFrontmatter(content: string): ParsedFrontmatter {
   const match = BLOCK_RE.exec(content);
   if (!match) {
     return { props: [], body: content, hasBlock: false };
   }
-  const props: FrontmatterProp[] = [];
-  for (const line of match[1].split("\n")) {
-    const pair = /^([A-Za-z0-9_-]+):\s?(.*)$/.exec(line);
-    if (pair) {
-      props.push({ key: pair[1], value: pair[2] });
-    }
+  try {
+    const parsed = matter(content);
+    return {
+      props: Object.entries(parsed.data ?? {}).map(([key, value]) => ({
+        key,
+        value: value,
+      })),
+      body: parsed.content,
+      hasBlock: true,
+    };
+  } catch (e) {
+    console.error("Failed to parse frontmatter:", e);
+    return {
+      props: [],
+      body: content,
+      hasBlock: false,
+    };
   }
-  return { props, body: content.slice(match[0].length), hasBlock: true };
 }
 
 /** Rebuilds file content from properties + body (drops the block when empty). */
@@ -37,8 +58,11 @@ export function buildContent(props: FrontmatterProp[], body: string): string {
   if (clean.length === 0) {
     return body;
   }
-  const yaml = clean.map((prop) => `${prop.key.trim()}: ${prop.value}`).join("\n");
-  return `---\n${yaml}\n---\n\n${body}`;
+
+  const frontmatter = stringifyYaml(
+    Object.fromEntries(clean.map(({ key, value }) => [key, value])),
+  ).trimEnd();
+  return `---\n${frontmatter}\n---\n${body}`;
 }
 
 /** Applies an edited property list to existing content, preserving the body. */

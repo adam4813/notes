@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MarkdownEditor, NoteToolbar } from "@notes/editor";
-import { parseCalendar, type RichEvent } from "./calendar-format";
+import { CalendarModel, parseCalendar, type RichEvent } from "./calendar-format";
 
 interface CalendarViewProps {
   value: string;
@@ -61,7 +61,7 @@ function debounce<T extends (...args: Parameters<T>) => void>(fn: T, ms: number)
 }
 
 export function CalendarView({ value, path }: CalendarViewProps) {
-  const [eventIds, setEventIds] = useState<string[]>(() => parseCalendar(value).model.events);
+  const [model, setModel] = useState<CalendarModel>(() => parseCalendar(value));
   const [events, setEvents] = useState<Map<string, RichEvent>>(new Map());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mode, setMode] = useState<CalendarMode>("month");
@@ -73,7 +73,7 @@ export function CalendarView({ value, path }: CalendarViewProps) {
   useEffect(() => {
     if (value !== lastValue.current) {
       lastValue.current = value;
-      setEventIds(parseCalendar(value).model.events);
+      setModel(parseCalendar(value));
     }
   }, [value]);
 
@@ -88,8 +88,8 @@ export function CalendarView({ value, path }: CalendarViewProps) {
       const fileRes = await fetch(`/api/file?path=${encodeURIComponent(path)}`);
       if (fileRes.ok) {
         const fileData = (await fileRes.json()) as { content: string };
-        const { model } = parseCalendar(fileData.content);
-        setEventIds(model.events);
+        const model = parseCalendar(fileData.content);
+        setModel(model);
         lastValue.current = fileData.content;
       }
     } catch {
@@ -129,7 +129,7 @@ export function CalendarView({ value, path }: CalendarViewProps) {
     if (!res.ok) return;
     const event = (await res.json()) as RichEvent;
     setEvents((prev) => new Map(prev).set(event.id, event));
-    setEventIds((prev) => [...prev, event.id]);
+    setModel((prev) => ({ ...prev, events: [...prev.events, event.id] }));
     setSelectedId(event.id);
   };
 
@@ -143,7 +143,7 @@ export function CalendarView({ value, path }: CalendarViewProps) {
       next.delete(eventId);
       return next;
     });
-    setEventIds((prev) => prev.filter((id) => id !== eventId));
+    setModel((prev) => ({ ...prev, events: prev.events.filter((id) => id !== eventId) }));
     if (selectedId === eventId) setSelectedId(null);
   };
 
@@ -151,7 +151,7 @@ export function CalendarView({ value, path }: CalendarViewProps) {
 
   const byDate = useMemo(() => {
     const map = new Map<string, RichEvent[]>();
-    for (const id of eventIds) {
+    for (const id of model.events) {
       const event = events.get(id);
       if (!event) continue;
       const list = map.get(event.date) ?? [];
@@ -159,7 +159,7 @@ export function CalendarView({ value, path }: CalendarViewProps) {
       map.set(event.date, list);
     }
     return map;
-  }, [eventIds, events]);
+  }, [events, model]);
 
   const year = cursor.getFullYear();
   const month = cursor.getMonth();

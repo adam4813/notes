@@ -6,14 +6,7 @@ import { gridNoteType } from "@notes/note-grid";
 import { mermaidNoteType } from "@notes/note-mermaid";
 import { tableNoteType } from "@notes/note-tables";
 import type { Tome } from "@notes/tome";
-
-function frontmatterType(content: string): string | undefined {
-  const block = /^---\n([\s\S]*?)\n---/.exec(content);
-  if (!block) {
-    return undefined;
-  }
-  return /^type:\s*(.+)$/m.exec(block[1])?.[1].trim();
-}
+import { frontmatterType } from "@notes/web/src/lib/frontmatter";
 
 /**
  * Registers note-type providers (markdown fallback + first-party table) on a
