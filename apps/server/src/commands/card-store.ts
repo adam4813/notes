@@ -1,3 +1,8 @@
+import {
+  buildContent,
+  getFrontmatterField,
+  parseFrontmatter,
+} from "@notes/web/src/lib/frontmatter";
 import { basename } from "node:path";
 import { readdir } from "node:fs/promises";
 import { posix } from "node:path";
@@ -16,61 +21,34 @@ export function cardFilePath(boardPath: string, cardId: string): string {
   return `${cardDotFolder(boardPath)}/${cardId}.md`;
 }
 
+const keyFields: (keyof RichCard)[] = ["title", "done", "due", "labels", "priority", "column"];
+
 function serializeCard(card: RichCard): string {
-  const lines: string[] = ["---"];
-  lines.push(`title: ${JSON.stringify(card.title)}`);
-  lines.push(`column: ${JSON.stringify(card.column)}`);
-  lines.push(`done: ${card.done}`);
-  if (card.due) {
-    lines.push(`due: "${card.due}"`);
-  }
-  if (card.labels && card.labels.length > 0) {
-    lines.push(`labels: [${card.labels.map((l) => JSON.stringify(l)).join(", ")}]`);
-  }
-  if (card.priority) {
-    lines.push(`priority: "${card.priority}"`);
-  }
-  lines.push("---");
-  if (card.body) {
-    lines.push("", card.body);
-  }
-  return lines.join("\n");
+  return buildContent(
+    [...keyFields.map((key) => ({ key, value: card[key] })), ...(card.frontmatter ?? [])].filter(
+      Boolean,
+    ),
+    card.body,
+  );
 }
 
-const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---(?:\n|$)/;
-
 function parseCardFile(id: string, content: string): RichCard {
-  const fm = FRONTMATTER_RE.exec(content);
-  const yaml = fm ? fm[1] : "";
-  const body = fm ? content.slice(fm[0].length).trimStart() : content;
+  const parsed = parseFrontmatter(content);
 
-  const get = (key: string): string | undefined => {
-    const m = new RegExp(`^${key}:\\s*(.+)$`, "m").exec(yaml);
-    if (!m) return undefined;
-    return m[1].trim().replace(/^["'](.*)["']$/, "$1");
-  };
-
-  const getArr = (key: string): string[] => {
-    const m = new RegExp(`^${key}:\\s*\\[([^\\]]*)\\]`, "m").exec(yaml);
-    if (!m) return [];
-    return m[1]
-      .split(",")
-      .map((s) => s.trim().replace(/^["'](.*)["']$/, "$1"))
-      .filter(Boolean);
-  };
-
-  const doneStr = get("done");
-  const priority = get("priority") as RichCard["priority"] | undefined;
+  const dueStr = getFrontmatterField(parsed.props, "due");
+  const priority = getFrontmatterField<RichCard["priority"]>(parsed.props, "priority");
+  const labels = getFrontmatterField<string[]>(parsed.props, "labels");
 
   return {
     id,
-    title: get("title") ?? id,
-    column: get("column") ?? "",
-    done: doneStr === "true",
-    body,
-    ...(get("due") ? { due: get("due") } : {}),
-    ...(getArr("labels").length > 0 ? { labels: getArr("labels") } : {}),
+    title: getFrontmatterField(parsed.props, "title") ?? id,
+    column: getFrontmatterField(parsed.props, "column") ?? "",
+    done: getFrontmatterField(parsed.props, "done") === "true",
+    ...(dueStr ? { due: dueStr } : {}),
+    ...(labels?.length ? { labels } : {}),
     ...(priority ? { priority } : {}),
+    body: parsed.body,
+    frontmatter: parsed.props.filter((prop) => !keyFields.includes(prop.key as keyof RichCard)),
   };
 }
 

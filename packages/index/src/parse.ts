@@ -1,5 +1,9 @@
 import { basename } from "node:path";
-import { FrontmatterProp, parseFrontmatter } from "@notes/web/src/lib/frontmatter";
+import {
+  FrontmatterProp,
+  getFrontmatterField,
+  parseFrontmatter,
+} from "@notes/web/src/lib/frontmatter";
 
 export interface ParsedLink {
   target: string;
@@ -50,7 +54,7 @@ export function extractTags(body: string, props: FrontmatterProp[]): string[] {
     tags.add(match[1]);
   }
 
-  const frontmatterTags = props.find((prop) => prop.key === "tags")?.value;
+  const frontmatterTags = getFrontmatterField<string[] | string>(props, "tags");
   if (Array.isArray(frontmatterTags)) {
     for (const tag of frontmatterTags) {
       if (typeof tag === "string" && tag.trim()) {
@@ -94,7 +98,7 @@ export function parseNote(path: string, content: string): ParsedNote {
   }
 
   const { props, body } = parseFrontmatter(content);
-  const type = (props.find((prop) => prop.key === "type")?.value as string) ?? "markdown";
+  const type = getFrontmatterField(props, "type") ?? "markdown";
 
   return {
     path,

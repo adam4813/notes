@@ -20,11 +20,18 @@ const BLOCK_RE = /^---\n([\s\S]*?)\n---\n*/;
 
 export function frontmatterType(content: string): string | undefined {
   const block = BLOCK_RE.exec(content);
-  return block ? /^type:\s*(.+)$/m.exec(block[1])?.[1].trim() : undefined;
+  return block ? /^type:\s*(?:["']?)(.+?)(?:["']?)$/m.exec(block[1])?.[1].trim() : undefined;
 }
 
 export function stripFrontmatter(content: string): string {
   return content.replace(BLOCK_RE, "").trim();
+}
+
+export function getFrontmatterField<T = string>(
+  props: FrontmatterProp[],
+  key: string,
+): T | undefined {
+  return props.find((prop) => prop.key === key)?.value as T;
 }
 
 export function parseFrontmatter(content: string): ParsedFrontmatter {
@@ -61,6 +68,12 @@ export function buildContent(props: FrontmatterProp[], body: string): string {
 
   const frontmatter = stringifyYaml(
     Object.fromEntries(clean.map(({ key, value }) => [key, value])),
+    {
+      toStringDefaults: {
+        defaultStringType: "QUOTE_SINGLE",
+        defaultKeyType: "PLAIN",
+      },
+    },
   ).trimEnd();
   return `---\n${frontmatter}\n---\n${body}`;
 }

@@ -1,4 +1,5 @@
 import type { NotesPlugin } from "@notes/plugin-host";
+import { stripFrontmatter } from "@notes/web/src/lib/frontmatter";
 
 /**
  * Sample third-party plugin (lives outside `packages/*`). It uses only the
@@ -17,7 +18,7 @@ export const wordCountPlugin: NotesPlugin = {
   },
   activate(ctx) {
     const countWords = (text: string): number => {
-      const body = text.replace(/^---\n[\s\S]*?\n---\n/, "");
+      const body = stripFrontmatter(text);
       const matches = body.trim().match(/\S+/g);
       return matches ? matches.length : 0;
     };

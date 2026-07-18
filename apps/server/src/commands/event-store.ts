@@ -1,3 +1,8 @@
+import {
+  buildContent,
+  getFrontmatterField,
+  parseFrontmatter,
+} from "@notes/web/src/lib/frontmatter";
 import { basename } from "node:path";
 import { readdir } from "node:fs/promises";
 import { posix } from "node:path";
@@ -16,44 +21,34 @@ export function eventFilePath(calendarPath: string, eventId: string): string {
   return `${eventDotFolder(calendarPath)}/${eventId}.md`;
 }
 
+const keyFields: (keyof RichEvent)[] = ["title", "date", "time", "duration", "location", "allDay"];
+
 function serializeEvent(event: RichEvent): string {
-  const lines: string[] = ["---"];
-  lines.push(`title: ${JSON.stringify(event.title)}`);
-  lines.push(`date: "${event.date}"`);
-  if (event.time) lines.push(`time: "${event.time}"`);
-  if (event.duration != null) lines.push(`duration: ${event.duration}`);
-  if (event.location) lines.push(`location: ${JSON.stringify(event.location)}`);
-  if (event.allDay) lines.push(`allDay: true`);
-  lines.push("---");
-  if (event.body) lines.push("", event.body);
-  return lines.join("\n");
+  return buildContent(
+    [...keyFields.map((key) => ({ key, value: event[key] })), ...(event.frontmatter ?? [])].filter(
+      Boolean,
+    ),
+    event.body,
+  );
 }
 
-const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---(?:\n|$)/;
-
 function parseEventFile(id: string, content: string): RichEvent {
-  const fm = FRONTMATTER_RE.exec(content);
-  const yaml = fm ? fm[1] : "";
-  const body = fm ? content.slice(fm[0].length).trimStart() : content;
+  const parsed = parseFrontmatter(content);
 
-  const get = (key: string): string | undefined => {
-    const m = new RegExp(`^${key}:\\s*(.+)$`, "m").exec(yaml);
-    if (!m) return undefined;
-    return m[1].trim().replace(/^["'](.*)["']$/, "$1");
-  };
-
-  const durationStr = get("duration");
-  const allDayStr = get("allDay");
+  const durationStr = getFrontmatterField(parsed.props, "duration");
+  const timeStr = getFrontmatterField(parsed.props, "time");
+  const locationStr = getFrontmatterField(parsed.props, "location");
 
   return {
     id,
-    title: get("title") ?? id,
-    date: get("date") ?? "2000-01-01",
-    body,
-    ...(get("time") ? { time: get("time") } : {}),
+    title: getFrontmatterField(parsed.props, "title") ?? id,
+    date: getFrontmatterField(parsed.props, "date") ?? "2000-01-01",
+    ...(timeStr ? { time: timeStr } : {}),
     ...(durationStr ? { duration: Number(durationStr) } : {}),
-    ...(get("location") ? { location: get("location") } : {}),
-    ...(allDayStr === "true" ? { allDay: true } : {}),
+    ...(locationStr ? { location: locationStr } : {}),
+    ...(getFrontmatterField(parsed.props, "allDay") === "true" ? { allDay: true } : {}),
+    body: parsed.body,
+    frontmatter: parsed.props.filter((prop) => !keyFields.includes(prop.key as keyof RichEvent)),
   };
 }
 

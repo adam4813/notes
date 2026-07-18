@@ -1,4 +1,9 @@
-import { buildContent, FrontmatterProp, parseFrontmatter } from "@notes/web/src/lib/frontmatter";
+import {
+  buildContent,
+  FrontmatterProp,
+  getFrontmatterField,
+  parseFrontmatter,
+} from "@notes/web/src/lib/frontmatter";
 
 export interface RichCard {
   id: string;
@@ -9,6 +14,7 @@ export interface RichCard {
   labels?: string[];
   priority?: "low" | "medium" | "high";
   body: string;
+  frontmatter?: FrontmatterProp[];
 }
 
 export interface BoardColumn {
@@ -35,11 +41,7 @@ export function newCardId(): string {
  */
 export function parseBoard(markdown: string): BoardModel {
   const parsed = parseFrontmatter(markdown);
-  const columns = [];
-  const parsedColumns = parsed.props.find((prop) => prop.key === "columns");
-  if (parsedColumns) {
-    columns.push(...(parsedColumns.value as BoardColumn[]));
-  }
+  const columns = getFrontmatterField<BoardColumn[]>(parsed.props, "columns") ?? [];
 
   if (columns.length === 0) {
     columns.push({ name: "Todo", cards: [] });

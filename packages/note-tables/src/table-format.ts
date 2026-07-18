@@ -1,4 +1,9 @@
-import { buildContent, FrontmatterProp, parseFrontmatter } from "@notes/web/src/lib/frontmatter";
+import {
+  buildContent,
+  FrontmatterProp,
+  getFrontmatterField,
+  parseFrontmatter,
+} from "@notes/web/src/lib/frontmatter";
 import Papa from "papaparse";
 
 export type ColumnType = "text" | "number" | "date" | "checkbox" | "select";
@@ -45,15 +50,10 @@ function sanitizeColumn(raw: unknown, index: number): TableColumn {
 
 /** Parses a table note (frontmatter schema + embedded CSV) into a model. */
 export function parseTable(markdown: string): TableModel {
-  let columns: TableColumn[] = [];
-
   const parsed = parseFrontmatter(markdown);
-  const parsedColumns = parsed.props.find((prop) => prop.key === "columns");
-  if (parsedColumns) {
-    columns = (parsedColumns.value as TableColumn[]).map((column, index) =>
-      sanitizeColumn(column, index),
-    );
-  }
+  const parsedColumns = getFrontmatterField<TableColumn[]>(parsed.props, "columns");
+  let columns = parsedColumns?.map((column, index) => sanitizeColumn(column, index)) ?? [];
+
   const body = parsed.body;
 
   const csv = CSV_BLOCK_RE.exec(body);

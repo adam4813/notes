@@ -22,6 +22,8 @@ describe("mermaid-format", () => {
   });
 
   it("emptyMermaid produces a valid frontmatter block", () => {
-    expect(emptyMermaid()).toMatch(/^---\ntype: mermaid\n---\nflowchart TD/);
+    expect(emptyMermaid()).toMatch(
+      "---\ntype: 'mermaid'\n---\nflowchart TD\n  A[Start] --> B{Choice}\n  B -->|Yes| C[Do it]\n  B -->|No| D[Skip]",
+    );
   });
 });

@@ -1,5 +1,5 @@
 import { connectTomeChanges } from "@notes/web/src/api/ws";
-import { parseFrontmatter } from "@notes/web/src/lib/frontmatter";
+import { getFrontmatterField, parseFrontmatter } from "@notes/web/src/lib/frontmatter";
 import {
   useCallback,
   useEffect,
@@ -34,8 +34,8 @@ function fileBasename(p: string): string {
 
 function detectNoteInfo(content: string, filePath: string): { title: string; type: string } {
   const parsed = parseFrontmatter(content);
-  const titleMatch = (parsed.props.find((prop) => prop.key === "title")?.value as string) ?? "";
-  const typeMatch = (parsed.props.find((prop) => prop.key === "type")?.value as string) ?? "";
+  const titleMatch = getFrontmatterField(parsed.props, "title") ?? "";
+  const typeMatch = getFrontmatterField(parsed.props, "type") ?? "";
   const h1Match = /^#\s+(.+)$/m.exec(parsed.body ?? content);
   const title = (titleMatch || h1Match?.[1] || fileBasename(filePath)).trim();
   const type =

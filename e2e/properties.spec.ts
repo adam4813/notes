@@ -26,5 +26,5 @@ test("properties: add a frontmatter property from the panel and persist it", asy
       const body = (await response.json()) as { content: string };
       return body.content;
     })
-    .toContain("status: draft");
+    .toContain("status: 'draft'");
 });

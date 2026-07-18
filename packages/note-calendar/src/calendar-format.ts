@@ -1,4 +1,9 @@
-import { buildContent, FrontmatterProp, parseFrontmatter } from "@notes/web/src/lib/frontmatter";
+import {
+  buildContent,
+  FrontmatterProp,
+  getFrontmatterField,
+  parseFrontmatter,
+} from "@notes/web/src/lib/frontmatter";
 
 export interface RichEvent {
   id: string;
@@ -13,6 +18,7 @@ export interface RichEvent {
   allDay?: boolean;
   /** Raw markdown body (after frontmatter). */
   body: string;
+  frontmatter?: FrontmatterProp[];
 }
 
 export interface CalendarModel {
@@ -39,7 +45,7 @@ export function parseCalendar(markdown: string): CalendarModel {
       parsed.props.length > 0
         ? parsed.props.filter((prop) => prop.key !== "events")
         : [{ key: "type", value: "calendar" }],
-    events: (parsed.props.find((prop) => prop.key === "events")?.value as string[]) ?? [],
+    events: getFrontmatterField<string[]>(parsed.props, "events") ?? [],
   };
 }
 
