@@ -105,10 +105,19 @@ export function NoteEditor({
   path,
   defaultMode = "rendered",
   disableModeToggle,
+  readFn,
+  writeFn,
+  isStandalone = false,
 }: {
   path: string;
   defaultMode?: EditorMode;
   disableModeToggle?: boolean;
+  /** Override the default `api.read` for this tab (used by standalone files). */
+  readFn?: () => Promise<string>;
+  /** Override the default `api.write` for this tab (used by standalone files). */
+  writeFn?: (content: string) => Promise<void>;
+  /** When true, disables file drop/paste and frontmatter type detection. */
+  isStandalone?: boolean;
 }) {
   const { dispatch } = useWorkspace();
   const { markModified, setActiveDocument, settings, fileHandlers } = useAppServices();
@@ -130,9 +139,11 @@ export function NoteEditor({
   const contentRef = useRef("");
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
   const lastWriteAtRef = useRef(0);
-  // Always-current ref so the unmount cleanup can flush the right path/content.
+  // Always-current refs so the unmount cleanup can flush the right path/content.
   const pathRef = useRef(path);
   pathRef.current = path;
+  const writeFnRef = useRef(writeFn);
+  writeFnRef.current = writeFn;
   const isImage = isImagePath(path);
 
   const persistSession = useCallback(
@@ -153,7 +164,12 @@ export function NoteEditor({
         clearTimeout(saveTimer.current);
       }
       if (!isImage && dirtyRef.current) {
-        void api.write(pathRef.current, contentRef.current).catch(() => undefined);
+        const flush = writeFnRef.current;
+        if (flush) {
+          void flush(contentRef.current).catch(() => undefined);
+        } else {
+          void api.write(pathRef.current, contentRef.current).catch(() => undefined);
+        }
       }
     };
   }, [isImage]); // empty deps: runs only on unmount
@@ -170,12 +186,12 @@ export function NoteEditor({
         cancelled = true;
       };
     }
-    api
-      .read(path)
-      .then((result) => {
+    const doRead = readFn ? readFn() : api.read(path).then((result) => result.content);
+    doRead
+      .then((text) => {
         if (!cancelled) {
-          setContent(result.content);
-          contentRef.current = result.content;
+          setContent(text);
+          contentRef.current = text;
           dirtyRef.current = false;
           setSaveState("saved");
         }
@@ -188,27 +204,37 @@ export function NoteEditor({
     return () => {
       cancelled = true;
     };
-  }, [path, isImage]);
+  }, [path, isImage, readFn]);
 
   const save = useCallback(
     async (value: string) => {
       setSaveState("saving");
       try {
-        await api.write(path, value);
+        if (writeFn) {
+          await writeFn(value);
+        } else {
+          await api.write(path, value);
+        }
         lastWriteAtRef.current = Date.now();
         dirtyRef.current = false;
         setSaveState("saved");
       } catch {
-        // Never lose the edit: buffer it locally to sync when back online.
-        queueWrite({ path, content: value });
-        dirtyRef.current = false;
-        setSaveState("offline");
-        notify("Offline — your changes are saved locally and will sync automatically.", {
-          kind: "info",
-        });
+        if (writeFn) {
+          // Standalone file — no offline queue; surface the error.
+          setSaveState("error");
+          notify("Couldn't save file.", { kind: "error" });
+        } else {
+          // Never lose the edit: buffer it locally to sync when back online.
+          queueWrite({ path, content: value });
+          dirtyRef.current = false;
+          setSaveState("offline");
+          notify("Offline — your changes are saved locally and will sync automatically.", {
+            kind: "info",
+          });
+        }
       }
     },
-    [path, notify],
+    [path, notify, writeFn],
   );
 
   const handleChange = useCallback(
@@ -260,20 +286,23 @@ export function NoteEditor({
     }
     const ext = getExtension(path);
     const pluginHandler = fileHandlers.find((h) => h.extensions.includes(ext));
-    const type = pluginHandler
-      ? ext.slice(1) // e.g. "json"
-      : isImage
-        ? "image"
-        : path.toLowerCase().endsWith(".canvas")
-          ? "canvas"
-          : (frontmatterType(content) ?? "markdown");
+    const type = isStandalone
+      ? "markdown"
+      : pluginHandler
+        ? ext.slice(1) // e.g. "json"
+        : isImage
+          ? "image"
+          : path.toLowerCase().endsWith(".canvas")
+            ? "canvas"
+            : (frontmatterType(content) ?? "markdown");
     setActiveDocument({ path, content, type });
     return () => setActiveDocument(null);
-  }, [path, content, saveState, setActiveDocument, isImage, fileHandlers]);
+  }, [path, content, saveState, setActiveDocument, isImage, fileHandlers, isStandalone]);
 
   const pluginHandler = fileHandlers.find((h) => h.extensions.includes(getExtension(path)));
   const isCanvas = !pluginHandler && path.toLowerCase().endsWith(".canvas");
-  const frontType = isCanvas ? undefined : frontmatterType(content);
+  // Standalone files always use the plain markdown editor regardless of frontmatter type.
+  const frontType = isCanvas || isStandalone ? undefined : frontmatterType(content);
   const isBoard = frontType === "board";
   const isTable = frontType === "table";
   const isMermaid = frontType === "mermaid";
@@ -289,7 +318,9 @@ export function NoteEditor({
     !isCalendar &&
     !isGrid;
   const canToggleMode = canFind && !disableModeToggle;
-  const renderedWidthOverride = canFind ? readRenderedWidthOverride(content) : undefined;
+  // Standalone files don't write frontmatter, so never read/show the width override.
+  const renderedWidthOverride =
+    canFind && !isStandalone ? readRenderedWidthOverride(content) : undefined;
   const defaultRenderedWidth = parseRenderedWidthMode(settings.renderedWidthDefault) ?? "normal";
   const renderedWidth: RenderedWidthMode = renderedWidthOverride ?? defaultRenderedWidth;
   const selectedRenderedWidthOverride: RenderedWidthOverride = renderedWidthOverride ?? "unset";
@@ -435,28 +466,31 @@ export function NoteEditor({
               persistSession(mode, markdownViewStateRef.current);
             }}
             disableToolbarInEdit
+            disableFileDrop={isStandalone}
             toolbarTrailing={
               canFind ? (
                 <div className="editor-toolbar-meta">
-                  <label className="editor-width-control">
-                    <span className="editor-width-label">Width</span>
-                    <select
-                      className="editor-width-select"
-                      aria-label="Rendered width override"
-                      value={selectedRenderedWidthOverride}
-                      onChange={(event) => {
-                        const next = event.target.value as RenderedWidthOverride;
-                        const nextContent = applyRenderedWidthOverride(content, next);
-                        if (nextContent !== content) {
-                          handleChange(nextContent);
-                        }
-                      }}
-                    >
-                      <option value="unset">Unset (use default)</option>
-                      <option value="normal">Normal</option>
-                      <option value="wide">Wide</option>
-                    </select>
-                  </label>
+                  {!isStandalone && (
+                    <label className="editor-width-control">
+                      <span className="editor-width-label">Width</span>
+                      <select
+                        className="editor-width-select"
+                        aria-label="Rendered width override"
+                        value={selectedRenderedWidthOverride}
+                        onChange={(event) => {
+                          const next = event.target.value as RenderedWidthOverride;
+                          const nextContent = applyRenderedWidthOverride(content, next);
+                          if (nextContent !== content) {
+                            handleChange(nextContent);
+                          }
+                        }}
+                      >
+                        <option value="unset">Unset (use default)</option>
+                        <option value="normal">Normal</option>
+                        <option value="wide">Wide</option>
+                      </select>
+                    </label>
+                  )}
                   <div className="editor-find-wrap">
                     <button
                       className="editor-find-btn"

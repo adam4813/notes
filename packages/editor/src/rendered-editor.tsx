@@ -448,6 +448,9 @@ export function RenderedEditor({
       if (!editor) {
         return;
       }
+      if (callbacksRef.current?.disableFileDrop) {
+        return;
+      }
       const path = event.dataTransfer.getData(NOTES_PATH_MIME);
       if (path) {
         event.preventDefault();
@@ -498,6 +501,9 @@ export function RenderedEditor({
       if (!editor) {
         return;
       }
+      if (callbacksRef.current?.disableFileDrop) {
+        return;
+      }
       const file = Array.from(event.clipboardData.items)
         .find((item) => item.kind === "file")
         ?.getAsFile();
@@ -535,8 +541,9 @@ export function RenderedEditor({
         onPaste={handlePaste}
         onDragOver={(event) => {
           if (
-            event.dataTransfer.types.includes(NOTES_PATH_MIME) ||
-            event.dataTransfer.files.length > 0
+            !callbacksRef.current?.disableFileDrop &&
+            (event.dataTransfer.types.includes(NOTES_PATH_MIME) ||
+              event.dataTransfer.files.length > 0)
           ) {
             event.preventDefault();
           }

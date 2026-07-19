@@ -1,5 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { configStore } from "./config-store";
 import { buildMenu } from "./menu";
@@ -38,6 +38,9 @@ function setupWindowIpc(win: BrowserWindow): void {
   ipcMain.removeHandler("tome:choosePath");
   ipcMain.removeHandler("tome:revealPath");
   ipcMain.removeHandler("tome:revealPathInTome");
+  ipcMain.removeHandler("file:openDialog");
+  ipcMain.removeHandler("file:readStandalone");
+  ipcMain.removeHandler("file:writeStandalone");
 
   ipcMain.on("window:minimize", () => win.minimize());
   ipcMain.on("window:maximize", () => {
@@ -121,6 +124,36 @@ function setupWindowIpc(win: BrowserWindow): void {
     return newPath;
   });
 
+  // Standalone file operations (files opened outside the Tome)
+  ipcMain.handle("file:openDialog", async () => {
+    const result = await dialog.showOpenDialog(win, {
+      title: "Open Markdown File",
+      properties: ["openFile"],
+      filters: [{ name: "Markdown", extensions: ["md"] }],
+    });
+    if (result.canceled || !result.filePaths[0]) return null;
+    const absPath = result.filePaths[0];
+    return { absPath, name: path.basename(absPath) };
+  });
+
+  ipcMain.handle("file:readStandalone", async (_event, absPath: unknown) => {
+    if (typeof absPath !== "string" || !absPath.trim()) {
+      throw new Error("Invalid path");
+    }
+    return readFile(absPath, "utf-8");
+  });
+
+  ipcMain.handle(
+    "file:writeStandalone",
+    async (_event, payload: { absPath?: unknown; content?: unknown }) => {
+      const { absPath, content } = payload;
+      if (typeof absPath !== "string" || !absPath.trim() || typeof content !== "string") {
+        throw new Error("Invalid payload");
+      }
+      await writeFile(absPath, content, "utf-8");
+    },
+  );
+
   // Updater IPC
   ipcMain.on("updater:install", () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -132,6 +165,7 @@ function setupWindowIpc(win: BrowserWindow): void {
 async function main(): Promise<void> {
   await app.whenReady();
 
+  // placeholder menu before win is created
   buildMenu(() => void ipcMain.emit("tome:choosePath"));
 
   const isMac = process.platform === "darwin";
@@ -151,13 +185,47 @@ async function main(): Promise<void> {
     },
   });
 
-  // Re-build menu with the real win reference for Change Tome Folder.
-  buildMenu(async () => {
-    await ipcMain.emit("tome:choosePath", null, win);
-  });
+  // Rebuild menu with the real win reference so dialogs are parented to the window.
+  buildMenu(
+    async () => ipcMain.emit("tome:choosePath", null, win),
+    async () => {
+      const result = await dialog.showOpenDialog(win, {
+        title: "Open Markdown File",
+        properties: ["openFile"],
+        filters: [{ name: "Markdown", extensions: ["md"] }],
+      });
+      if (!result.canceled && result.filePaths[0]) {
+        win.webContents.send("file:openWith", result.filePaths[0]);
+      }
+    },
+  );
 
   // Register IPC handlers before the renderer can issue invokes.
   setupWindowIpc(win);
+
+  // Collect any .md file passed on the command line (Windows/Linux "Open with").
+  const argFile = process.argv
+    .slice(DEV ? 2 : 1)
+    .find((arg) => !arg.startsWith("-") && arg.toLowerCase().endsWith(".md"));
+
+  // Deliver a pending "open-with" file path once the renderer finishes loading.
+  const sendOpenWith = (filePath: string) => {
+    win.webContents.once("did-finish-load", () => {
+      win.webContents.send("file:openWith", filePath);
+    });
+  };
+
+  if (argFile) {
+    sendOpenWith(path.resolve(argFile));
+  }
+
+  // macOS: handle "Open With" from Finder (fires after app.whenReady resolves).
+  app.on("open-file", (event, filePath) => {
+    event.preventDefault();
+    if (filePath.toLowerCase().endsWith(".md")) {
+      sendOpenWith(filePath);
+    }
+  });
 
   win.once("ready-to-show", () => {
     win.show();
@@ -165,7 +233,8 @@ async function main(): Promise<void> {
   });
 
   if (DEV) {
-    await win.loadURL(WEB_DEV_URL);
+    const devUrl = argFile ? `${WEB_DEV_URL}?standalone=1` : WEB_DEV_URL;
+    await win.loadURL(devUrl);
     win.webContents.openDevTools({ mode: "detach" });
   } else {
     // Get (or prompt for) the tome path before starting the server.
@@ -181,7 +250,8 @@ async function main(): Promise<void> {
       }) => Promise<{ port: number; address: string }>;
     };
     const { port } = await startServer({ tomePath });
-    await win.loadURL(`http://127.0.0.1:${port}`);
+    const prodUrl = argFile ? `http://127.0.0.1:${port}?standalone=1` : `http://127.0.0.1:${port}`;
+    await win.loadURL(prodUrl);
   }
 }
 

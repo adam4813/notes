@@ -1,7 +1,7 @@
 import { app, Menu, shell } from "electron";
 import { configStore } from "./config-store";
 
-export function buildMenu(onChangeTome: () => void): void {
+export function buildMenu(onChangeTome: () => void, onOpenFile?: () => void): void {
   const isMac = process.platform === "darwin";
 
   const template: Electron.MenuItemConstructorOptions[] = [
@@ -26,6 +26,11 @@ export function buildMenu(onChangeTome: () => void): void {
     {
       label: "File",
       submenu: [
+        {
+          label: "Open File…",
+          accelerator: isMac ? "Cmd+Shift+F" : "Ctrl+Shift+F",
+          click: () => onOpenFile?.(),
+        },
         {
           label: "Open Tome Folder in Explorer",
           accelerator: isMac ? "Cmd+Shift+O" : "Ctrl+Shift+O",

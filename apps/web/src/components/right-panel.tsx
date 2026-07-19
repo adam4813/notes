@@ -10,6 +10,7 @@ import {
   type FrontmatterProp,
   stripFrontmatter,
 } from "../lib/frontmatter";
+import { isStandalonePath } from "../lib/standalone-handles";
 
 const HIDDEN_FRONTMATTER_KEYS = new Set(["type", "__notes_rendered_width", "columns", "events"]);
 
@@ -53,7 +54,8 @@ export function RightPanel() {
   const activePane = state.panes.find((pane) => pane.id === state.activePaneId) ?? state.panes[0];
   const activeTab = activePane?.tabs.find((tab) => tab.id === activePane.activeTabId);
   const path = activeTab?.path;
-  const isNote = Boolean(path && !path.startsWith("notes://"));
+  const isStandalone = Boolean(path && isStandalonePath(path));
+  const isNote = Boolean(path && !path.startsWith("notes://") && !isStandalone);
   const isCanvas = Boolean(path?.toLowerCase().endsWith(".canvas"));
   const ext = path
     ? path.lastIndexOf(".") !== -1
@@ -155,7 +157,13 @@ export function RightPanel() {
     <Island>
       <IslandBody>
         <PanelGroup>
-          {!isNote && <PanelEmpty>Open a note.</PanelEmpty>}
+          {!isNote && !isStandalone && <PanelEmpty>Open a note.</PanelEmpty>}
+
+          {isStandalone && (
+            <PanelSection title="Properties">
+              <PanelEmpty>Properties are not available for this file.</PanelEmpty>
+            </PanelSection>
+          )}
 
           {isNote && (
             <PanelSection title="Properties">

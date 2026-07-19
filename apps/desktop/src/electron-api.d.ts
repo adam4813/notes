@@ -29,6 +29,28 @@ interface ElectronAPI {
   /** Reveals a file in the native explorer, resolved against an explicit Tome path. */
   revealPathInTome(tomePath: string, relativePath: string): Promise<boolean>;
 
+  /**
+   * Opens a native file-open dialog restricted to .md files.
+   * Returns the chosen file's absolute path and display name, or null if cancelled.
+   */
+  openFileDialog(): Promise<{ absPath: string; name: string } | null>;
+  /**
+   * Reads the full text content of an arbitrary file by absolute path.
+   * Used for standalone (non-Tome) file tabs in the desktop app.
+   */
+  readStandaloneFile(absPath: string): Promise<string>;
+  /**
+   * Writes text content to an arbitrary file by absolute path.
+   * Used for standalone (non-Tome) file tabs in the desktop app.
+   */
+  writeStandaloneFile(absPath: string, content: string): Promise<void>;
+  /**
+   * Register a callback that fires whenever the OS asks the app to open a file
+   * (e.g. double-click in Explorer / Finder, or "Open with…").
+   * Returns a disposer function.
+   */
+  onOpenWithFile(cb: (absPath: string) => void): () => void;
+
   /** Register a callback for when an update is available. Returns a disposer. */
   onUpdateAvailable(cb: (info: unknown) => void): () => void;
   /** Register a callback for download progress. Returns a disposer. */

@@ -111,7 +111,7 @@ export function TabBar({ pane }: { pane: Pane }) {
       splitItems.forEach((si) => items.push({ label: si.label, run: () => dispatch(si.action) }));
     }
 
-    if (!tab.path.startsWith("notes://")) {
+    if (!tab.path.startsWith("notes://") && !tab.path.startsWith("standalone://")) {
       items.push(
         { separator: true },
         { label: "Rename…", run: () => void services.renamePath(tab.path) },
@@ -132,9 +132,10 @@ export function TabBar({ pane }: { pane: Pane }) {
         onActivateOverflow={(id) => dispatch({ type: "activateTab", paneId: pane.id, tabId: id })}
       >
         {pane.tabs.map((tab) => {
-          const fileName = tab.path.startsWith("notes://")
-            ? undefined
-            : (tab.path.split("/").pop() ?? tab.path);
+          const fileName =
+            tab.path.startsWith("notes://") || tab.path.startsWith("standalone://")
+              ? undefined
+              : (tab.path.split("/").pop() ?? tab.path);
           const tooltip = fileName ? `${fileName}\n${tab.path}` : `${tab.title}\n${tab.path}`;
           return (
             <Tab

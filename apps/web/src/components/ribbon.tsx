@@ -5,6 +5,10 @@ interface RibbonProps {
   newActions: Array<{ id: string; label: string; run: () => void }>;
   onCommand: () => void;
   onSearch: (query: string) => void;
+  onOpenFile: () => void;
+  tomeActive?: boolean;
+  onCloseTome?: () => void;
+  onOpenTome?: () => void;
 }
 
 function TopBarMenu({
@@ -68,7 +72,15 @@ function TopBarMenu({
   );
 }
 
-export function Ribbon({ newActions, onCommand, onSearch }: RibbonProps) {
+export function Ribbon({
+  newActions,
+  onCommand,
+  onSearch,
+  onOpenFile,
+  tomeActive = true,
+  onCloseTome,
+  onOpenTome,
+}: RibbonProps) {
   const electronApi = window.electronAPI;
   const isDesktop = Boolean(electronApi);
   const isMac = electronApi?.platform === "darwin";
@@ -100,6 +112,10 @@ export function Ribbon({ newActions, onCommand, onSearch }: RibbonProps) {
               onToggle={() => setOpenMenu((current) => (current === "file" ? null : "file"))}
               onClose={() => setOpenMenu((current) => (current === "file" ? null : current))}
               items={[
+                { type: "item", label: "Open File…", onClick: onOpenFile },
+                tomeActive
+                  ? { type: "item", label: "Close Tome", onClick: () => onCloseTome?.() }
+                  : { type: "item", label: "Load Tome", onClick: () => onOpenTome?.() },
                 { type: "item", label: "Change Tome Folder…", onClick: handleChangeTome },
                 { type: "separator" },
                 {

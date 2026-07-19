@@ -378,6 +378,43 @@ button {
   filter: brightness(1.05);
 }
 
+.sidebar-no-tome-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  opacity: 0.5;
+  padding: 0 8px;
+}
+
+.sidebar-no-tome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 12px;
+}
+
+.sidebar-no-tome-message {
+  font-size: 12px;
+  text-align: center;
+  opacity: 0.6;
+  margin: 0;
+}
+
+.sidebar-open-tome-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-2);
+  color: var(--fg);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.sidebar-open-tome-btn:hover {
+  filter: brightness(1.05);
+}
+
 /* Search pane */
 .search-pane {
   display: flex;
