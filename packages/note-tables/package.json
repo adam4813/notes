@@ -16,8 +16,7 @@
   "dependencies": {
     "@notes/core": "*",
     "@notes/editor": "*",
-    "papaparse": "^5.5.4",
-    "yaml": "^2.9.0"
+    "papaparse": "^5.5.4"
   },
   "devDependencies": {
     "@types/papaparse": "^5.5.2"

@@ -23,6 +23,8 @@
     "@notes/shared": "*",
     "@notes/tome": "*",
     "fastify": "^5.1.0",
+    "gray-matter": "^4.0.3",
+    "yaml": "^2.9.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
