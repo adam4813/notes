@@ -32,20 +32,20 @@
     "test:e2e": "playwright test"
   },
   "devDependencies": {
-    "@eslint/js": "^9.15.0",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.49.0",
     "@tiptap/core": "^3.27.4",
     "@tiptap/pm": "^3.27.4",
-    "@types/node": "^22.10.1",
+    "@types/node": "^26.1.1",
     "7zip-bin": "^5.2.0",
-    "concurrently": "^9.1.0",
-    "cross-env": "^7.0.3",
-    "eslint": "^9.15.0",
+    "concurrently": "^10.0.3",
+    "cross-env": "^10.1.0",
+    "eslint": "^10.6.0",
     "eslint-plugin-import": "^2.31.0",
-    "globals": "^15.12.0",
-    "prettier": "^3.4.1",
-    "typescript": "^5.7.2",
-    "typescript-eslint": "^8.16.0",
-    "vitest": "^2.1.6"
+    "globals": "^17.7.0",
+    "prettier": "^3.9.5",
+    "typescript": "^7.0.2",
+    "typescript-eslint": "^8.63.0",
+    "vitest": "^4.1.10"
   }
 }
