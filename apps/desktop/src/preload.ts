@@ -29,6 +29,22 @@ contextBridge.exposeInMainWorld("electronAPI", {
   revealPathInTome: (tomePath: string, relativePath: string): Promise<boolean> =>
     ipcRenderer.invoke("tome:revealPathInTome", { tomePath, relativePath }) as Promise<boolean>,
 
+  // Standalone file operations
+  openFileDialog: (): Promise<{ absPath: string; name: string } | null> =>
+    ipcRenderer.invoke("file:openDialog") as Promise<{ absPath: string; name: string } | null>,
+
+  readStandaloneFile: (absPath: string): Promise<string> =>
+    ipcRenderer.invoke("file:readStandalone", absPath) as Promise<string>,
+
+  writeStandaloneFile: (absPath: string, content: string): Promise<void> =>
+    ipcRenderer.invoke("file:writeStandalone", { absPath, content }) as Promise<void>,
+
+  onOpenWithFile: (cb: (absPath: string) => void) => {
+    const handler = (_event: IpcRendererEvent, absPath: string) => cb(absPath);
+    ipcRenderer.on("file:openWith", handler);
+    return () => ipcRenderer.removeListener("file:openWith", handler);
+  },
+
   // Auto-updater
   onUpdateAvailable: (cb: (info: unknown) => void) => {
     const handler = (_event: IpcRendererEvent, info: unknown) => cb(info);

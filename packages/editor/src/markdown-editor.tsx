@@ -50,6 +50,8 @@ interface MarkdownEditorProps {
   viewState?: MarkdownViewState;
   onViewStateChange?: (patch: Partial<MarkdownViewState>) => void;
   syncSplitScroll?: boolean;
+  /** When true, disables all file/note drop-and-paste operations. */
+  disableFileDrop?: boolean;
 }
 
 /**
@@ -66,6 +68,7 @@ export function MarkdownEditor({
   viewState,
   onViewStateChange,
   syncSplitScroll = true,
+  disableFileDrop = false,
 }: MarkdownEditorProps) {
   const { dispatch } = useWorkspace();
   const { settings } = useAppServices();
@@ -241,21 +244,27 @@ export function MarkdownEditor({
       },
       listNotes: async () => (await api.notes()).notes,
       listTags: async () => (await api.tags()).tags.map((tag) => tag.tag),
-      onImportFile: async (file) => {
-        const mediaPath = importedFilePath(file, normalizeMediaDirectory(settings.mediaDirectory));
-        try {
-          const bytes = new Uint8Array(await file.arrayBuffer());
-          await api.createBinary(mediaPath, toBase64(bytes));
-          notify(`Imported file saved to ${mediaPath}`, { kind: "success" });
-          return markdownForImportedFile(mediaPath, file.type, api.fileRawUrl(mediaPath));
-        } catch {
-          notify("Couldn't import dropped file", { kind: "error" });
-          return null;
-        }
-      },
+      onImportFile: disableFileDrop
+        ? undefined
+        : async (file) => {
+            const mediaPath = importedFilePath(
+              file,
+              normalizeMediaDirectory(settings.mediaDirectory),
+            );
+            try {
+              const bytes = new Uint8Array(await file.arrayBuffer());
+              await api.createBinary(mediaPath, toBase64(bytes));
+              notify(`Imported file saved to ${mediaPath}`, { kind: "success" });
+              return markdownForImportedFile(mediaPath, file.type, api.fileRawUrl(mediaPath));
+            } catch {
+              notify("Couldn't import dropped file", { kind: "error" });
+              return null;
+            }
+          },
       renderEmbed: (embedTarget) => <EmbedWidget target={embedTarget} />,
+      disableFileDrop,
     }),
-    [dispatch, notify, settings.mediaDirectory],
+    [dispatch, notify, settings.mediaDirectory, disableFileDrop],
   );
 
   return (

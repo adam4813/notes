@@ -41,6 +41,13 @@ import {
 import { loadExternalThemes } from "./theme/theme-loader";
 import type { SettingsBodyProps } from "./components/settings-view";
 import { normalizeMediaDirectory } from "./lib/images";
+import {
+  makeStandalonePath,
+  registerStandaloneHandle,
+  makeFsaHandle,
+  makeElectronHandle,
+  isStandalonePath,
+} from "./lib/standalone-handles";
 
 type PaletteMode = "files" | "commands" | null;
 type RenderedWidthSetting = "normal" | "wide";
@@ -78,6 +85,11 @@ export function App() {
   const [sidebarView, setSidebarView] = useState<SidebarView>("explorer");
   const [sidebarSearchQuery, setSidebarSearchQuery] = useState("");
   const [renameRequestPath, setRenameRequestPath] = useState<string | null>(null);
+  // tomeActive controls whether the Tome is loaded and shown. Starts as false
+  // when the app is opened via OS file association (?standalone=1 URL param).
+  const [tomeActive, setTomeActive] = useState(
+    () => new URLSearchParams(window.location.search).get("standalone") !== "1",
+  );
   const [openSettingsInTab, setOpenSettingsInTabState] = useState(
     () => globalThis.localStorage?.getItem("notes.settings.openInTab") === "true",
   );
@@ -201,6 +213,40 @@ export function App() {
     setRenameRequestPath(path);
   }, []);
 
+  const openStandaloneFile = useCallback(async () => {
+    const electronApi = window.electronAPI;
+    if (electronApi?.openFileDialog) {
+      const result = await electronApi.openFileDialog();
+      if (!result) return; // user canceled
+      const standalonePath = makeStandalonePath();
+      registerStandaloneHandle(standalonePath, makeElectronHandle(result.absPath, result.name));
+      dispatch({ type: "openFile", path: standalonePath, title: result.name });
+      return;
+    }
+
+    if (!("showOpenFilePicker" in window)) {
+      notify("Your browser doesn't support the File System Access API. Try Chrome or Edge.", {
+        kind: "error",
+      });
+      return;
+    }
+    const picker = window.showOpenFilePicker as (opts: object) => Promise<FileSystemFileHandle[]>;
+    try {
+      const [fsaHandle] = await picker({
+        types: [{ description: "Markdown files", accept: { "text/markdown": [".md"] } }],
+        multiple: false,
+      });
+      const standalonePath = makeStandalonePath();
+      registerStandaloneHandle(standalonePath, makeFsaHandle(fsaHandle));
+      dispatch({ type: "openFile", path: standalonePath, title: fsaHandle.name });
+    } catch (err) {
+      // AbortError means the user canceled the picker — that's fine.
+      if ((err as { name?: string }).name !== "AbortError") {
+        notify("Couldn't open file.", { kind: "error" });
+      }
+    }
+  }, [dispatch, notify]);
+
   const deletePath = useCallback(
     async (path: string) => {
       const name = path.split("/").pop() ?? path;
@@ -289,8 +335,24 @@ export function App() {
     globalThis.localStorage?.setItem(RENDERED_WIDTH_SETTING_KEY, value);
   }, []);
 
+  const openTome = useCallback(() => {
+    setTomeActive(true);
+    void refreshTree();
+    void loadExternalThemes().then(setExternalThemes);
+  }, [refreshTree]);
+
+  const closeTome = useCallback(() => {
+    setTomeActive(false);
+    dispatch({ type: "setTree", tree: [] });
+  }, [dispatch]);
+
   const seededRef = useRef(false);
   useEffect(() => {
+    if (!tomeActive) {
+      // Even in standalone mode, load themes (they don't need the Tome).
+      void loadExternalThemes().then(setExternalThemes);
+      return;
+    }
     void refreshTree();
     // Load external themes on startup.
     void loadExternalThemes().then(setExternalThemes);
@@ -309,11 +371,25 @@ export function App() {
         seedSampleNotes();
       }
     })();
-  }, [refreshTree, seedSampleNotes]);
+  }, [refreshTree, seedSampleNotes, tomeActive]);
 
   useEffect(() => {
     applyTheme(state.theme);
   }, [state.theme]);
+
+  // Listen for files opened via OS file association (Electron only).
+  useEffect(() => {
+    const electronApi = window.electronAPI;
+    if (!electronApi?.onOpenWithFile) {
+      return;
+    }
+    return electronApi.onOpenWithFile((absPath: string) => {
+      const name = absPath.split(/[\\/]/).pop() ?? absPath;
+      const standalonePath = makeStandalonePath();
+      registerStandaloneHandle(standalonePath, makeElectronHandle(absPath, name));
+      dispatch({ type: "openFile", path: standalonePath, title: name });
+    });
+  }, [dispatch]);
 
   // Flush any offline-buffered writes on load and whenever connectivity returns.
   useEffect(() => {
@@ -344,7 +420,11 @@ export function App() {
     const existing = new Set(flattenFiles(state.tree).map((file) => file.path));
     for (const pane of panesRef.current) {
       for (const tab of pane.tabs) {
-        if (!tab.path.startsWith("notes://") && !existing.has(tab.path)) {
+        if (
+          !tab.path.startsWith("notes://") &&
+          !isStandalonePath(tab.path) &&
+          !existing.has(tab.path)
+        ) {
           dispatch({ type: "closePath", path: tab.path });
         }
       }
@@ -370,11 +450,12 @@ export function App() {
   );
 
   useEffect(() => {
+    if (!tomeActive) return;
     return connectTomeChanges((change) => {
       void refreshTree();
       dispatch({ type: "setStatus", status: `${change.kind}: ${change.path}` });
     });
-  }, [refreshTree, dispatch]);
+  }, [refreshTree, dispatch, tomeActive]);
 
   // Discard provisional notes whose tab was closed without modification.
   useEffect(() => {
@@ -407,6 +488,27 @@ export function App() {
         icon: "🔍",
         defaultHotkey: "Mod+O",
         run: () => setPaletteMode("files"),
+      },
+      {
+        id: "open-standalone-file",
+        title: "Open file (standalone)…",
+        category: "File",
+        icon: "📄",
+        run: () => void openStandaloneFile(),
+      },
+      {
+        id: "open-tome",
+        title: "Load configured Tome",
+        category: "File",
+        icon: "📚",
+        run: openTome,
+      },
+      {
+        id: "close-tome",
+        title: "Close Tome",
+        category: "File",
+        icon: "🗂️",
+        run: closeTome,
       },
       {
         id: "open-settings",
@@ -499,6 +601,9 @@ export function App() {
       plugins.pluginCommands,
       state.activePaneId,
       openSettings,
+      openStandaloneFile,
+      openTome,
+      closeTome,
     ],
   );
 
@@ -695,6 +800,10 @@ export function App() {
             newActions={newActions}
             onCommand={() => setPaletteMode("commands")}
             onSearch={openSidebarSearch}
+            onOpenFile={() => void openStandaloneFile()}
+            tomeActive={tomeActive}
+            onCloseTome={closeTome}
+            onOpenTome={openTome}
           />
           <div className="shell-body">
             <Sidebar
@@ -704,6 +813,8 @@ export function App() {
               searchQuery={sidebarSearchQuery}
               renameRequestPath={renameRequestPath}
               onRenameRequestHandled={clearRenameRequest}
+              tomeActive={tomeActive}
+              onOpenTome={openTome}
             />
             <Workspace />
             <RightPanel />

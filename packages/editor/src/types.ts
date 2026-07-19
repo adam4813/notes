@@ -77,4 +77,9 @@ export interface EditorCallbacks {
   onImportFile?: (file: File) => Promise<string | null>;
   /** Renders an embedded note (`![[target]]`); when omitted, embeds are disabled. */
   renderEmbed?: (target: string) => ReactNode;
+  /**
+   * When true, all file/note drops and file pastes are disabled.
+   * Use for standalone files that should not import local assets.
+   */
+  disableFileDrop?: boolean;
 }

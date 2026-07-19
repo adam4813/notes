@@ -15,6 +15,9 @@ const externalSync = Annotation.define<boolean>();
 function notesDropExtension(callbacksRef: MutableRefObject<EditorCallbacks | undefined>) {
   return EditorView.domEventHandlers({
     dragover(event) {
+      if (callbacksRef.current?.disableFileDrop) {
+        return false;
+      }
       if (
         event.dataTransfer?.types.includes(NOTES_PATH_MIME) ||
         (event.dataTransfer?.files.length ?? 0) > 0
@@ -24,6 +27,9 @@ function notesDropExtension(callbacksRef: MutableRefObject<EditorCallbacks | und
       return false;
     },
     drop(event, view) {
+      if (callbacksRef.current?.disableFileDrop) {
+        return false;
+      }
       const path = event.dataTransfer?.getData(NOTES_PATH_MIME);
       if (path) {
         event.preventDefault();
@@ -57,6 +63,9 @@ function notesDropExtension(callbacksRef: MutableRefObject<EditorCallbacks | und
       return true;
     },
     paste(event, view) {
+      if (callbacksRef.current?.disableFileDrop) {
+        return false;
+      }
       const file = Array.from(event.clipboardData?.items ?? [])
         .find((item) => item.kind === "file")
         ?.getAsFile();

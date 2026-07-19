@@ -14,6 +14,7 @@ import {
   type WorkspaceAction,
   type WorkspaceState,
 } from "./types";
+import { isStandalonePath } from "../lib/standalone-handles";
 
 interface WorkspaceContextValue {
   state: WorkspaceState;
@@ -70,7 +71,20 @@ function loadLayout(): PersistedLayout | null {
 }
 
 function saveLayout(state: WorkspaceState): void {
-  const layout: PersistedLayout = { panes: state.panes, activePaneId: state.activePaneId };
+  // Standalone tabs can't be restored after a reload (the FileSystemFileHandle
+  // is gone), so filter them out before persisting.
+  const filteredPanes = state.panes
+    .map((pane) => ({
+      ...pane,
+      tabs: pane.tabs.filter((tab) => !isStandalonePath(tab.path)),
+    }))
+    .filter((pane) => pane.tabs.length > 0);
+  const panesToSave =
+    filteredPanes.length > 0 ? filteredPanes : [{ id: state.activePaneId, tabs: [] }];
+  const activePaneId = panesToSave.some((p) => p.id === state.activePaneId)
+    ? state.activePaneId
+    : panesToSave[0].id;
+  const layout: PersistedLayout = { panes: panesToSave, activePaneId };
   try {
     window.localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
   } catch {

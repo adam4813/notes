@@ -28,6 +28,8 @@ export function Sidebar({
   searchQuery,
   renameRequestPath,
   onRenameRequestHandled,
+  tomeActive = true,
+  onOpenTome,
 }: {
   view: SidebarView;
   onViewChange: (view: SidebarView) => void;
@@ -35,6 +37,8 @@ export function Sidebar({
   searchQuery: string;
   renameRequestPath: string | null;
   onRenameRequestHandled: () => void;
+  tomeActive?: boolean;
+  onOpenTome?: () => void;
 }) {
   const overflow = useTabOverflow(
     VIEWS.map((entry) => ({
@@ -54,42 +58,59 @@ export function Sidebar({
   return (
     <Island>
       <IslandHeader>
-        <TabStrip
-          listRef={overflow.tabListRef}
-          registerTabRef={overflow.registerTabRef}
-          hiddenTabIds={overflow.hiddenTabIds}
-        >
-          {VIEWS.map((entry) => (
-            <Tab
-              key={entry.id}
-              id={entry.id}
-              title={entry.label}
-              active={entry.id === view}
-              onActivate={() => onViewChange(entry.id as SidebarView)}
-              style={SIDEBAR_TAB_BUTTON_STYLE}
-            />
-          ))}
-        </TabStrip>
-        <div className="sidebar-view-separator" aria-hidden />
-        <button
-          className="sidebar-view-btn--action"
-          title="Open or create note"
-          aria-label="Open or create note"
-          onClick={onOpenPicker}
-        >
-          <span aria-hidden>📂</span>
-        </button>
+        {tomeActive ? (
+          <>
+            <TabStrip
+              listRef={overflow.tabListRef}
+              registerTabRef={overflow.registerTabRef}
+              hiddenTabIds={overflow.hiddenTabIds}
+            >
+              {VIEWS.map((entry) => (
+                <Tab
+                  key={entry.id}
+                  id={entry.id}
+                  title={entry.label}
+                  active={entry.id === view}
+                  onActivate={() => onViewChange(entry.id as SidebarView)}
+                  style={SIDEBAR_TAB_BUTTON_STYLE}
+                />
+              ))}
+            </TabStrip>
+            <div className="sidebar-view-separator" aria-hidden />
+            <button
+              className="sidebar-view-btn--action"
+              title="Open or create note"
+              aria-label="Open or create note"
+              onClick={onOpenPicker}
+            >
+              <span aria-hidden>📂</span>
+            </button>
+          </>
+        ) : (
+          <span className="sidebar-no-tome-label">No Tome</span>
+        )}
       </IslandHeader>
 
       <IslandBody>
-        {view === "explorer" && (
-          <Explorer
-            renameRequestPath={renameRequestPath}
-            onRenameRequestHandled={onRenameRequestHandled}
-          />
+        {tomeActive ? (
+          <>
+            {view === "explorer" && (
+              <Explorer
+                renameRequestPath={renameRequestPath}
+                onRenameRequestHandled={onRenameRequestHandled}
+              />
+            )}
+            {view === "search" && <SearchPane initialTag={pendingTag} initialQuery={searchQuery} />}
+            {view === "tags" && <TagPane onPickTag={pickTag} />}
+          </>
+        ) : (
+          <div className="sidebar-no-tome">
+            <p className="sidebar-no-tome-message">No Tome folder is open.</p>
+            <button className="sidebar-open-tome-btn" onClick={onOpenTome}>
+              📚 Load Tome
+            </button>
+          </div>
         )}
-        {view === "search" && <SearchPane initialTag={pendingTag} initialQuery={searchQuery} />}
-        {view === "tags" && <TagPane onPickTag={pickTag} />}
       </IslandBody>
     </Island>
   );
