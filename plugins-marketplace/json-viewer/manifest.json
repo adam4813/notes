@@ -1,0 +1,9 @@
+{
+  "id": "json-viewer",
+  "name": "JSON Viewer",
+  "version": "1.0.0",
+  "description": "Renders .json files with pretty-printing. Embedded JSON files (![[ ]]) are also supported. This plugin does not support frontmatter properties.",
+  "author": "Notes",
+  "entry": { "client": true },
+  "permissions": []
+}

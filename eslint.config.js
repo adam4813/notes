@@ -17,6 +17,8 @@ export default tseslint.config(
       "**/dist-*/**",
       "**/*-staging/**",
       "**/build/**",
+      "plugins-marketplace/**",
+      "dev-tome/**",
     ],
   },
   js.configs.recommended,
