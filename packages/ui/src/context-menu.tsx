@@ -21,7 +21,7 @@ interface ContextMenuProps {
   position: MenuPosition;
   items: ContextMenuEntry[];
   onClose: () => void;
-  menuRef?: React.RefObject<HTMLDivElement>;
+  menuRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export function ContextMenu({ position, items, onClose, menuRef }: ContextMenuProps) {

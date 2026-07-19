@@ -74,7 +74,7 @@ function FileNodeCard({
   const [title, setTitle] = useState(() => fileBasename(file));
   const [blocked, setBlocked] = useState(false);
   const [error, setError] = useState(false);
-  const saveTimer = useRef<ReturnType<typeof setTimeout>>();
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const contentRef = useRef("");
 
   const subscribeToFileChange = useCallback(

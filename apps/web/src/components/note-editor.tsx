@@ -47,7 +47,7 @@ function PluginFileView({
   onChange?: (content: string) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const disposeRef = useRef<(() => void) | undefined>();
+  const disposeRef = useRef<() => void>(undefined);
 
   useEffect(() => {
     const el = ref.current;
@@ -137,7 +137,7 @@ export function NoteEditor({
   const regionRef = useRef<HTMLDivElement>(null);
   const dirtyRef = useRef(false);
   const contentRef = useRef("");
-  const saveTimer = useRef<ReturnType<typeof setTimeout>>();
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const lastWriteAtRef = useRef(0);
   // Always-current refs so the unmount cleanup can flush the right path/content.
   const pathRef = useRef(path);

@@ -23,7 +23,7 @@ interface OverflowItem {
 interface TabStripProps {
   children: ReactNode;
   /** Ref returned by useTabOverflow — attach to the list container */
-  listRef: React.RefObject<HTMLDivElement>;
+  listRef: React.RefObject<HTMLDivElement | null>;
   /** Callback returned by useTabOverflow — register each tab's DOM node */
   registerTabRef: (id: string, el: HTMLDivElement | null) => void;
   /** Set returned by useTabOverflow — which tab ids should be hidden */

@@ -20,7 +20,7 @@ export interface VirtualWindow {
 export function useVirtual(
   count: number,
   itemHeight: number,
-  scrollRef: RefObject<HTMLElement>,
+  scrollRef: RefObject<HTMLElement | null>,
   overscan = 10,
 ): VirtualWindow {
   const [scrollTop, setScrollTop] = useState(0);
