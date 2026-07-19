@@ -79,8 +79,7 @@ export function usePlugins(): PluginsApi {
           );
           return [...filtered, handler];
         });
-        return () =>
-          setFileHandlers((prev) => prev.filter((h) => h !== handler));
+        return () => setFileHandlers((prev) => prev.filter((h) => h !== handler));
       },
       document: documentSignal,
       storage: window.localStorage,

@@ -163,8 +163,8 @@ button {
 }
 
 .update-banner-btn {
-  background: rgba(255,255,255,0.2);
-  border: 1px solid rgba(255,255,255,0.4);
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   color: #fff;
   border-radius: 5px;
   padding: 3px 10px;
@@ -174,13 +174,13 @@ button {
 }
 
 .update-banner-btn:hover {
-  background: rgba(255,255,255,0.35);
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .update-banner-dismiss {
   background: transparent;
   border: none;
-  color: rgba(255,255,255,0.75);
+  color: rgba(255, 255, 255, 0.75);
   cursor: pointer;
   font-size: 16px;
   line-height: 1;
@@ -1259,8 +1259,12 @@ button {
   box-shadow: var(--shadow);
 }
 
-.toast--error { border-color: var(--status-offline); }
-.toast--success { border-color: var(--status-ok); }
+.toast--error {
+  border-color: var(--status-offline);
+}
+.toast--success {
+  border-color: var(--status-ok);
+}
 
 .toast-message {
   flex: 1;

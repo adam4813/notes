@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FileTypeHandler, NotesPlugin, PluginCommand, PluginHost, StatusBarItem } from "./context";
+import type {
+  FileTypeHandler,
+  NotesPlugin,
+  PluginCommand,
+  PluginHost,
+  StatusBarItem,
+} from "./context";
 import { Signal } from "./signal";
 import { PluginManager } from "./plugin-manager";
 

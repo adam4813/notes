@@ -284,8 +284,8 @@ export function SettingsBody(props: SettingsBodyProps) {
         </p>
         {tomePluginsPath && (
           <p className="settings-hint">
-            Drop plugin folders into{" "}
-            <code className="settings-path">{tomePluginsPath}</code> and restart to install.
+            Drop plugin folders into <code className="settings-path">{tomePluginsPath}</code> and
+            restart to install.
           </p>
         )}
         {plugins.length === 0 && <div className="panel-empty">No plugins installed.</div>}

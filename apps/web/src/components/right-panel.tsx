@@ -55,7 +55,11 @@ export function RightPanel() {
   const path = activeTab?.path;
   const isNote = Boolean(path && !path.startsWith("notes://"));
   const isCanvas = Boolean(path?.toLowerCase().endsWith(".canvas"));
-  const ext = path ? (path.lastIndexOf(".") !== -1 ? path.slice(path.lastIndexOf(".")).toLowerCase() : "") : "";
+  const ext = path
+    ? path.lastIndexOf(".") !== -1
+      ? path.slice(path.lastIndexOf(".")).toLowerCase()
+      : ""
+    : "";
   const pluginHandler = fileHandlers.find((h) => h.extensions.includes(ext));
   const supportsFrontmatter = !isCanvas && (!pluginHandler || pluginHandler.supportsFrontmatter);
   const [backlinks, setBacklinks] = useState<Backlink[]>([]);
