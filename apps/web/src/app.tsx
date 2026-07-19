@@ -568,20 +568,16 @@ export function App() {
         }
         const contentBase64 = btoa(binary);
         const { manifest } = await api.installPlugin(contentBase64);
-        setPendingRestartPlugins((prev) => [
-          ...prev.filter((m) => m.id !== manifest.id),
-          manifest,
-        ]);
+        setPendingRestartPlugins((prev) => [...prev.filter((m) => m.id !== manifest.id), manifest]);
         notify(`Plugin "${manifest.name}" installed.`, {
           kind: "success",
           timeout: 0,
           action: { label: "Restart now", run: () => window.location.reload() },
         });
       } catch (err) {
-        notify(
-          `Plugin install failed: ${err instanceof Error ? err.message : String(err)}`,
-          { kind: "error" },
-        );
+        notify(`Plugin install failed: ${err instanceof Error ? err.message : String(err)}`, {
+          kind: "error",
+        });
       }
     },
     [notify],

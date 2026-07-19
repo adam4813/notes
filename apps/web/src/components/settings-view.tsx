@@ -346,7 +346,9 @@ export function SettingsBody(props: SettingsBodyProps) {
           </p>
         )}
         <PluginInstallZone onInstall={(file) => void onInstallPlugin(file)} />
-        <p className="settings-hint settings-hint--sm">Drag a .zip or click to browse. Installed plugins load on the next restart.</p>
+        <p className="settings-hint settings-hint--sm">
+          Drag a .zip or click to browse. Installed plugins load on the next restart.
+        </p>
         {plugins.length === 0 && <div className="panel-empty">No plugins installed.</div>}
         <ul className="plugin-list">
           {plugins.map((plugin) => (
