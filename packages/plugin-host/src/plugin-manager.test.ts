@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { NotesPlugin, PluginCommand, PluginHost, StatusBarItem } from "./context";
+import type { FileTypeHandler, NotesPlugin, PluginCommand, PluginHost, StatusBarItem } from "./context";
 import { Signal } from "./signal";
 import { PluginManager } from "./plugin-manager";
 
@@ -7,6 +7,7 @@ function makeHost() {
   const commands = new Map<string, PluginCommand>();
   const statusItems = new Map<string, StatusBarItem>();
   const tokens = new Map<string, string>();
+  const fileHandlers: FileTypeHandler[] = [];
   const store = new Map<string, string>();
   const host: PluginHost = {
     registerCommand: (command) => {
@@ -21,13 +22,17 @@ function makeHost() {
       tokens.set(name, value);
       return () => tokens.delete(name);
     },
+    registerFileHandler: (handler) => {
+      fileHandlers.push(handler);
+      return () => fileHandlers.splice(fileHandlers.indexOf(handler), 1);
+    },
     document: new Signal(null),
     storage: {
       getItem: (key) => store.get(key) ?? null,
       setItem: (key, value) => store.set(key, value),
     },
   };
-  return { host, commands, statusItems, tokens, store };
+  return { host, commands, statusItems, tokens, fileHandlers, store };
 }
 
 function samplePlugin(overrides: Partial<NotesPlugin> = {}): NotesPlugin {

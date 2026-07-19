@@ -1,4 +1,5 @@
 import { createContext, useContext, type ReactNode } from "react";
+import type { FileTypeHandler } from "@notes/plugin-host";
 import type { SettingsBodyProps } from "../components/settings-view";
 
 export interface AppServices {
@@ -21,6 +22,8 @@ export interface AppServices {
   noteTypes: Record<string, string>;
   /** Publishes the active document to plugins (status bar, etc.). */
   setActiveDocument: (doc: { path: string; content: string; type: string } | null) => void;
+  /** Plugin-registered file-type handlers, keyed by file extension. */
+  fileHandlers: FileTypeHandler[];
   /** Everything the settings surface needs, so a settings tab can render. */
   settings: SettingsBodyProps;
 }
@@ -47,6 +50,7 @@ const defaultSettings: SettingsBodyProps = {
   onRenderedWidthDefaultChange: noop,
   externalThemes: [],
   onImportDefaultThemes: async () => {},
+  tomePluginsPath: "",
   hotkeys: {
     commands: [],
     comboFor: () => undefined,
@@ -72,6 +76,7 @@ const AppServicesContext = createContext<AppServices>({
   seedSampleNotes: noop,
   noteTypes: {},
   setActiveDocument: noop,
+  fileHandlers: [],
   settings: defaultSettings,
 });
 

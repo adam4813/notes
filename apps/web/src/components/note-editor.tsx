@@ -11,6 +11,7 @@ import { CanvasView } from "@notes/note-canvas";
 import { GridView } from "@notes/note-grid";
 import { MermaidView } from "@notes/note-mermaid";
 import { TableGrid } from "@notes/note-tables";
+import type { FileTypeHandler } from "@notes/plugin-host";
 import { ContextMenu, ContextMenuEntry, useContextMenu } from "@notes/ui";
 import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/client";
@@ -26,6 +27,43 @@ import { ModeToggle, SaveState } from "./mode-toggle";
 
 function basename(path: string): string {
   return (path.split("/").pop() ?? path).replace(/\.[^.]+$/, "");
+}
+
+function getExtension(path: string): string {
+  const dot = path.lastIndexOf(".");
+  return dot !== -1 ? path.slice(dot).toLowerCase() : "";
+}
+
+/** DOM-bridged component that mounts a plugin file-type renderer into a div. */
+function PluginFileView({
+  handler,
+  path,
+  content,
+  onChange,
+}: {
+  handler: FileTypeHandler;
+  path: string;
+  content: string;
+  onChange?: (content: string) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const disposeRef = useRef<(() => void) | undefined>();
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    disposeRef.current?.();
+    disposeRef.current = undefined;
+    el.innerHTML = "";
+    const result = handler.mountEditor(el, { path, content, onChange });
+    if (typeof result === "function") disposeRef.current = result;
+    return () => {
+      disposeRef.current?.();
+      disposeRef.current = undefined;
+    };
+  }, [handler, path, content, onChange]);
+
+  return <div ref={ref} className="rendered-scroll" />;
 }
 
 type RenderedWidthMode = "normal" | "wide";
@@ -73,7 +111,7 @@ export function NoteEditor({
   disableModeToggle?: boolean;
 }) {
   const { dispatch } = useWorkspace();
-  const { markModified, setActiveDocument, settings } = useAppServices();
+  const { markModified, setActiveDocument, settings, fileHandlers } = useAppServices();
   const { notify } = useToasts();
   const stateKey = editorStateKey(path);
   const initialSession = markdownSessionByPath.get(stateKey) ?? {
@@ -220,16 +258,21 @@ export function NoteEditor({
     if (saveState === "loading") {
       return;
     }
-    const type = isImage
-      ? "image"
-      : path.toLowerCase().endsWith(".canvas")
-        ? "canvas"
-        : (frontmatterType(content) ?? "markdown");
+    const ext = getExtension(path);
+    const pluginHandler = fileHandlers.find((h) => h.extensions.includes(ext));
+    const type = pluginHandler
+      ? ext.slice(1) // e.g. "json"
+      : isImage
+        ? "image"
+        : path.toLowerCase().endsWith(".canvas")
+          ? "canvas"
+          : (frontmatterType(content) ?? "markdown");
     setActiveDocument({ path, content, type });
     return () => setActiveDocument(null);
-  }, [path, content, saveState, setActiveDocument, isImage]);
+  }, [path, content, saveState, setActiveDocument, isImage, fileHandlers]);
 
-  const isCanvas = path.toLowerCase().endsWith(".canvas");
+  const pluginHandler = fileHandlers.find((h) => h.extensions.includes(getExtension(path)));
+  const isCanvas = !pluginHandler && path.toLowerCase().endsWith(".canvas");
   const frontType = isCanvas ? undefined : frontmatterType(content);
   const isBoard = frontType === "board";
   const isTable = frontType === "table";
@@ -237,7 +280,14 @@ export function NoteEditor({
   const isCalendar = frontType === "calendar";
   const isGrid = frontType === "grid";
   const canFind =
-    !isImage && !isCanvas && !isBoard && !isTable && !isMermaid && !isCalendar && !isGrid;
+    !pluginHandler &&
+    !isImage &&
+    !isCanvas &&
+    !isBoard &&
+    !isTable &&
+    !isMermaid &&
+    !isCalendar &&
+    !isGrid;
   const canToggleMode = canFind && !disableModeToggle;
   const renderedWidthOverride = canFind ? readRenderedWidthOverride(content) : undefined;
   const defaultRenderedWidth = parseRenderedWidthMode(settings.renderedWidthDefault) ?? "normal";
@@ -324,13 +374,24 @@ export function NoteEditor({
             saveState={saveState}
           />
         )}
-        {isImage ? (
-          <div className="image-note">
+        {pluginHandler ? (
+          <div className="plugin-note">
             <NoteToolbar
-              label="Image"
-              className="image-note-toolbar"
-              trailing={<span className="image-note-path">{path}</span>}
+              label={pluginHandler.label}
+              trailing={<span className="note-toolbar-path">{path}</span>}
             >
+              <span className="note-type-badge">{pluginHandler.label}</span>
+            </NoteToolbar>
+            <PluginFileView
+              handler={pluginHandler}
+              path={path}
+              content={content}
+              onChange={handleChange}
+            />
+          </div>
+        ) : isImage ? (
+          <div className="image-note">
+            <NoteToolbar label="Image" trailing={<span className="note-toolbar-path">{path}</span>}>
               <span className="note-type-badge">Image</span>
             </NoteToolbar>
             <div className="image-note-body">

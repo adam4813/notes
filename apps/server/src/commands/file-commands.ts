@@ -104,4 +104,12 @@ export function registerFileCommands(bus: CommandBus, getTome: () => Tome): void
       return { path: payload.path };
     },
   });
+
+  bus.register<FilePathPayload, { path: string; exists: boolean }>({
+    name: "file.exists",
+    handler: async (payload) => ({
+      path: payload.path,
+      exists: await getTome().exists(payload.path),
+    }),
+  });
 }

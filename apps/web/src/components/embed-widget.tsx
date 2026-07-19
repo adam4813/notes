@@ -1,15 +1,53 @@
 import { GridView } from "@notes/note-grid";
 import { MermaidView } from "@notes/note-mermaid";
 import { TableGrid } from "@notes/note-tables";
+import type { FileTypeHandler } from "@notes/plugin-host";
 import { useEffect, useRef, useState } from "react";
 import { frontmatterType, stripFrontmatter } from "../lib/frontmatter";
 import { api } from "../api/client";
 import { isImagePath } from "../lib/images";
 import { connectTomeChanges } from "../api/ws";
 import { useWorkspace } from "../state/app-context";
+import { useAppServices } from "../state/app-services";
 
 function basename(path: string): string {
   return (path.split("/").pop() ?? path).replace(/\.[^.]+$/, "");
+}
+
+function getExtension(path: string): string {
+  const dot = path.lastIndexOf(".");
+  return dot !== -1 ? path.slice(dot).toLowerCase() : "";
+}
+
+/** DOM-bridged embed renderer for plugin-provided file-type handlers. */
+function PluginEmbedView({
+  handler,
+  path,
+  content,
+}: {
+  handler: FileTypeHandler;
+  path: string;
+  content: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const disposeRef = useRef<(() => void) | undefined>();
+  const mount = handler.mountEmbed ?? handler.mountEditor;
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    disposeRef.current?.();
+    disposeRef.current = undefined;
+    el.innerHTML = "";
+    const result = mount(el, { path, content });
+    if (typeof result === "function") disposeRef.current = result;
+    return () => {
+      disposeRef.current?.();
+      disposeRef.current = undefined;
+    };
+  }, [mount, path, content]);
+
+  return <div ref={ref} className="rendered-scroll" />;
 }
 
 interface EmbedState {
@@ -33,6 +71,7 @@ const TYPE_LABEL: Record<string, string> = {
 /** Renders an embedded note (`![[target]]`) inline: its widget + save-back. */
 export function EmbedWidget({ target }: { target: string }) {
   const { dispatch } = useWorkspace();
+  const { fileHandlers } = useAppServices();
   const [state, setState] = useState<EmbedState>({ status: "loading" });
   const contentRef = useRef("");
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -61,9 +100,13 @@ export function EmbedWidget({ target }: { target: string }) {
         return;
       }
       contentRef.current = content;
-      const type = path.toLowerCase().endsWith(".canvas")
-        ? "canvas"
-        : (frontmatterType(content) ?? "markdown");
+      const ext = getExtension(path);
+      const pluginHandlerForPath = fileHandlers.find((h) => h.extensions.includes(ext));
+      const type = pluginHandlerForPath
+        ? ext.slice(1)
+        : path.toLowerCase().endsWith(".canvas")
+          ? "canvas"
+          : (frontmatterType(content) ?? "markdown");
       setState({ status: "ready", path, content, type });
     })();
     return () => {
@@ -119,8 +162,12 @@ export function EmbedWidget({ target }: { target: string }) {
 
   const { path, content = "", type = "markdown" } = state;
   const title = basename(path);
+  const pluginHandler = fileHandlers.find((h) => h.extensions.includes(getExtension(path)));
 
   const body = () => {
+    if (pluginHandler) {
+      return <PluginEmbedView handler={pluginHandler} path={path} content={content} />;
+    }
     switch (type) {
       case "image":
         return <img className="embed-image" src={api.fileRawUrl(path)} alt={title} />;

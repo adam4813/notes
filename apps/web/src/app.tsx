@@ -575,6 +575,7 @@ export function App() {
       onRenderedWidthDefaultChange: setRenderedWidthDefault,
       externalThemes,
       onImportDefaultThemes: importDefaultThemes,
+      tomePluginsPath: plugins.tomePluginsPath,
       hotkeys: {
         commands: commands.map((command) => ({
           id: command.id,
@@ -607,6 +608,7 @@ export function App() {
       setRenderedWidthDefault,
       externalThemes,
       importDefaultThemes,
+      plugins.tomePluginsPath,
       commands,
       hotkeys,
     ],
@@ -628,6 +630,7 @@ export function App() {
       noteTypes,
       setActiveDocument: (doc: { path: string; content: string; type: string } | null) =>
         plugins.documentSignal.set(doc),
+      fileHandlers: plugins.fileHandlers,
       settings: settingsProps,
     }),
     [
@@ -644,6 +647,7 @@ export function App() {
       seedSampleNotes,
       noteTypes,
       plugins.documentSignal,
+      plugins.fileHandlers,
       settingsProps,
     ],
   );

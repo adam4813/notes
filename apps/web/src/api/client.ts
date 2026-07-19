@@ -1,4 +1,5 @@
 import type { ThemeMeta } from "@notes/shared";
+import type { PluginManifest } from "@notes/plugin-host";
 
 export interface FileEntry {
   path: string;
@@ -102,4 +103,10 @@ export const api = {
     ),
   importDefaultThemes: () =>
     request<{ imported: string[] }>("/api/themes/import-defaults", { method: "POST" }),
+  plugins: () =>
+    request<{ plugins: PluginManifest[]; pluginsPath: string }>("/api/plugins"),
+  pluginScript: (id: string) =>
+    fetch(`/api/plugins/${encodeURIComponent(id)}/client`).then((r) =>
+      r.ok ? r.text() : Promise.reject(new Error(`Plugin "${id}" not found`)),
+    ),
 };

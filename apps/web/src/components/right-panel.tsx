@@ -3,6 +3,7 @@ import { Island, IslandBody, PanelEmpty, PanelGroup, PanelSection } from "@notes
 import { api, type Backlink } from "../api/client";
 import { useWorkspace } from "../state/app-context";
 import { useToasts } from "../state/toast";
+import { useAppServices } from "../state/app-services";
 import {
   applyProperties,
   parseFrontmatter,
@@ -48,11 +49,15 @@ const OUTLINE_LEVELS = ["🗄️", "📁", "📂", "📄"];
 export function RightPanel() {
   const { state, dispatch } = useWorkspace();
   const { notify } = useToasts();
+  const { fileHandlers } = useAppServices();
   const activePane = state.panes.find((pane) => pane.id === state.activePaneId) ?? state.panes[0];
   const activeTab = activePane?.tabs.find((tab) => tab.id === activePane.activeTabId);
   const path = activeTab?.path;
   const isNote = Boolean(path && !path.startsWith("notes://"));
   const isCanvas = Boolean(path?.toLowerCase().endsWith(".canvas"));
+  const ext = path ? (path.lastIndexOf(".") !== -1 ? path.slice(path.lastIndexOf(".")).toLowerCase() : "") : "";
+  const pluginHandler = fileHandlers.find((h) => h.extensions.includes(ext));
+  const supportsFrontmatter = !isCanvas && (!pluginHandler || pluginHandler.supportsFrontmatter);
   const [backlinks, setBacklinks] = useState<Backlink[]>([]);
   const [headings, setHeadings] = useState<Heading[]>([]);
   const [content, setContent] = useState("");
@@ -150,8 +155,12 @@ export function RightPanel() {
 
           {isNote && (
             <PanelSection title="Properties">
-              {isCanvas ? (
-                <PanelEmpty>Properties aren't available for canvas notes.</PanelEmpty>
+              {!supportsFrontmatter ? (
+                <PanelEmpty>
+                  {pluginHandler
+                    ? `${pluginHandler.label} files don't support properties.`
+                    : "Properties aren't available for canvas notes."}
+                </PanelEmpty>
               ) : (
                 <>
                   {typeValue && (

@@ -1,6 +1,7 @@
 import type { CommandBus, RequestContext } from "@notes/core";
 import type { FastifyInstance } from "fastify";
 import { listTomeThemes, getThemeCSS, importDefaultThemes } from "./commands/theme-commands";
+import { listTomePlugins, getTomePluginScript } from "./commands/plugin-commands";
 
 interface PathQuery {
   path?: string;
@@ -122,7 +123,21 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
 
   app.get("/api/resolve", async (request) => {
     const { text = "" } = request.query as { text?: string };
-    return bus.dispatch("index.resolve", { text }, ctx);
+    const result = (await bus.dispatch("index.resolve", { text }, ctx)) as {
+      path: string | null;
+    };
+    if (result.path) return result;
+    // Fallback: treat `text` as a literal file path and check existence.
+    // This allows embedding non-indexed files such as .json, .csv, etc.
+    try {
+      const exists = (await bus.dispatch("file.exists", { path: text }, ctx)) as {
+        exists: boolean;
+      };
+      if (exists.exists) return { path: text };
+    } catch {
+      // Ignore
+    }
+    return { path: null };
   });
 
   app.post("/api/reindex", async () => bus.dispatch("index.rebuild", {}, ctx));
@@ -208,5 +223,24 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
   app.post("/api/themes/import-defaults", async () => {
     const imported = await importDefaultThemes(tomePath);
     return { imported };
+  });
+
+  // ── Tome Plugins ─────────────────────────────────────────────────────────
+  app.get("/api/plugins", async () => {
+    const { join } = await import("node:path");
+    const entries = await listTomePlugins(tomePath);
+    return {
+      plugins: entries.map((e) => e.manifest),
+      pluginsPath: join(tomePath, ".notes", "plugins"),
+    };
+  });
+
+  app.get("/api/plugins/:id/client", async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const script = await getTomePluginScript(tomePath, id);
+    if (!script) {
+      return reply.status(404).send({ error: "Plugin not found" });
+    }
+    return reply.type("application/javascript").send(script);
   });
 }

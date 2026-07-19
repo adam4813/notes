@@ -1,14 +1,5 @@
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"]);
-const TEXT_EXTENSIONS = new Set([
-  ".txt",
-  ".md",
-  ".markdown",
-  ".csv",
-  ".json",
-  ".xml",
-  ".yml",
-  ".yaml",
-]);
+const TEXT_EXTENSIONS = new Set([".txt", ".md", ".markdown", ".csv", ".xml", ".yml", ".yaml"]);
 const AUDIO_EXTENSIONS = new Set([".mp3", ".wav", ".ogg", ".m4a", ".flac", ".aac"]);
 const VIDEO_EXTENSIONS = new Set([".mp4", ".webm", ".mov", ".m4v", ".avi", ".mkv"]);
 
@@ -102,6 +93,14 @@ export function markdownForImportedFile(path: string, mimeType: string, rawUrl: 
   if (mimeType.startsWith("video/") || [...VIDEO_EXTENSIONS].some((ext) => lower.endsWith(ext))) {
     return `<video controls src="${rawUrl}"></video>`;
   }
+  // Structured data files that Notes can open natively → embed wikilink.
+  if (lower.endsWith(".json") || mimeType === "application/json") {
+    return `![[${path}]]`;
+  }
+  if (lower.endsWith(".md") || lower.endsWith(".canvas")) {
+    return `![[${path.replace(/\.[^.]+$/, "")}]]`;
+  }
+  // TODO: Add an embed view and link for "text" files
   if (mimeType.startsWith("text/") || [...TEXT_EXTENSIONS].some((ext) => lower.endsWith(ext))) {
     return `[${title}](${rawUrl})`;
   }

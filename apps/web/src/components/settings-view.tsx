@@ -53,6 +53,8 @@ export interface SettingsBodyProps {
   /** Externally installed themes loaded from the Tome's `.notes/themes/`. */
   externalThemes: ThemeMeta[];
   onImportDefaultThemes: () => Promise<void>;
+  /** Filesystem path to the Tome's `.notes/plugins/` folder. */
+  tomePluginsPath: string;
 }
 
 const BUILT_IN_THEME_OPTIONS: { value: string; label: string }[] = [
@@ -101,6 +103,7 @@ export function SettingsBody(props: SettingsBodyProps) {
     hotkeys,
     externalThemes,
     onImportDefaultThemes,
+    tomePluginsPath,
   } = props;
 
   const allThemeOptions = [
@@ -279,6 +282,12 @@ export function SettingsBody(props: SettingsBodyProps) {
         <p className="settings-hint">
           Local, trusted plugins load in-process. See docs/plugins.md to write your own.
         </p>
+        {tomePluginsPath && (
+          <p className="settings-hint">
+            Drop plugin folders into{" "}
+            <code className="settings-path">{tomePluginsPath}</code> and restart to install.
+          </p>
+        )}
         {plugins.length === 0 && <div className="panel-empty">No plugins installed.</div>}
         <ul className="plugin-list">
           {plugins.map((plugin) => (

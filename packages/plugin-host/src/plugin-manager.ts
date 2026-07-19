@@ -106,6 +106,11 @@ export class PluginManager {
         entry.disposers.push(disposer);
         return disposer;
       },
+      registerFileHandler: (handler) => {
+        const disposer = this.host.registerFileHandler(handler);
+        entry.disposers.push(disposer);
+        return disposer;
+      },
       document: this.host.document,
       settings,
     };
