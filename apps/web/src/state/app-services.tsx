@@ -33,6 +33,9 @@ const noop = () => {};
 const defaultSettings: SettingsBodyProps = {
   plugins: [],
   onToggle: noop,
+  onInstallPlugin: async () => {},
+  pendingRestartPlugins: [],
+  onRestart: noop,
   theme: "system",
   onThemeChange: noop,
   accent: "",

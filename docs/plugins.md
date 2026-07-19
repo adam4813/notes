@@ -8,25 +8,46 @@ future work. This guide documents the complete public `@notes/plugin-host` surfa
 
 - Plugins are **trusted** and run **in-process** (no sandbox yet).
 - **Bundled plugins** ship with the app (`apps/web/src/plugins/`). Each exports a `NotesPlugin`.
-- **Tome plugins** are loaded from `.notes/plugins/` inside your Tome at startup. Drop a plugin
-  folder there (or via the OS file explorer) and **restart the app** to pick it up. Then enable
-  it from **Settings → Plugins**.
+- **Tome plugins** are loaded from `.notes/plugins/` inside your Tome at startup. Install them
+  via **Settings → Plugins** (drag-drop or browse a `.zip`) or by dropping a plugin folder
+  directly into `.notes/plugins/` via the OS file explorer. Both methods require a **restart**
+  to take effect. Then enable the plugin from **Settings → Plugins**.
 - Enable/disable plugins from **Settings** (⚙ in the ribbon). The enabled set is **scoped per
   Tome** (`notes.plugins.enabled:<tome>` in `localStorage`), so each Tome remembers its own.
 
-## Tome plugin structure
+## Installing a Tome plugin
 
-A Tome-installed plugin lives at `.notes/plugins/<id>/`:
+### Via the Settings UI (recommended)
+
+1. Open **Settings → Plugins**.
+2. Drag a plugin `.zip` onto the install zone, or click to open a file picker.
+3. The app extracts and validates the ZIP, then notifies you to restart.
+4. After restart, toggle the plugin on from the plugin list.
+
+The ZIP file must contain `manifest.json` and `client.js` either at the root or inside a
+single top-level folder:
 
 ```
-.notes/plugins/
-  json-viewer/
-    manifest.json   ← plugin metadata (validated against the manifest schema)
-    client.js       ← pre-built ESM module, exported as default or a named export
+json-viewer.zip
+└── manifest.json
+└── client.js
 ```
 
-The `client.js` must be vanilla JS (no bundler step required). It runs in the browser context
-with access to the DOM and the `PluginContext` API passed to `activate`.
+### Via the OS file explorer
+
+Drop a plugin folder directly into `.notes/plugins/` inside your Tome:
+
+```
+<your-tome>/
+  .notes/
+    plugins/
+      json-viewer/
+        manifest.json
+        client.js
+```
+
+Restart the app, then enable the plugin from Settings.
+
 
 ## Manifest
 
@@ -68,6 +89,24 @@ surfaced in Settings with the error.
   "permissions": []
 }
 ```
+
+### `client.js` format
+
+The `client.js` must be vanilla JS (no bundler step required) and export the plugin as the
+`default` export or as a named export with the same value as the plugin id:
+
+```js
+const myPlugin = {
+  manifest: { /* same as manifest.json */ },
+  activate(ctx) { /* ... */ },
+};
+export default myPlugin;
+```
+
+Because `client.js` is loaded via a blob URL dynamic import, it **cannot use bare `import`
+specifiers** (e.g. `import { foo } from "@notes/plugin-host"` will fail). All logic must be
+self-contained or use DOM APIs. The `PluginContext` passed to `activate` is the only bridge
+to the host application.
 
 ## Lifecycle
 

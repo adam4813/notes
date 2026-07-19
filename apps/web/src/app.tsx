@@ -6,6 +6,7 @@ import { emptyCalendar } from "@notes/note-calendar";
 import { emptyGrid } from "@notes/note-grid";
 import { emptyMermaid } from "@notes/note-mermaid";
 import { emptyTableMarkdown } from "@notes/note-tables";
+import type { PluginManifest } from "@notes/plugin-host";
 import type { ThemeMeta } from "@notes/shared";
 import { api, type FileEntry } from "./api/client";
 import { flushQueue, pendingCount } from "./api/offline-queue";
@@ -93,6 +94,7 @@ export function App() {
   const [recentCommandIds, setRecentCommandIds] = useState<string[]>(() => loadRecentCommands());
   const [noteTypes, setNoteTypes] = useState<Record<string, string>>({});
   const [externalThemes, setExternalThemes] = useState<ThemeMeta[]>([]);
+  const [pendingRestartPlugins, setPendingRestartPlugins] = useState<PluginManifest[]>([]);
   const plugins = usePlugins();
   const treeRef = useRef(state.tree);
   treeRef.current = state.tree;
@@ -554,10 +556,44 @@ export function App() {
     }
   }, [notify]);
 
+  const installPlugin = useCallback(
+    async (zipFile: File) => {
+      try {
+        const buffer = await zipFile.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        let binary = "";
+        const chunk = 8192;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+        }
+        const contentBase64 = btoa(binary);
+        const { manifest } = await api.installPlugin(contentBase64);
+        setPendingRestartPlugins((prev) => [
+          ...prev.filter((m) => m.id !== manifest.id),
+          manifest,
+        ]);
+        notify(`Plugin "${manifest.name}" installed.`, {
+          kind: "success",
+          timeout: 0,
+          action: { label: "Restart now", run: () => window.location.reload() },
+        });
+      } catch (err) {
+        notify(
+          `Plugin install failed: ${err instanceof Error ? err.message : String(err)}`,
+          { kind: "error" },
+        );
+      }
+    },
+    [notify],
+  );
+
   const settingsProps = useMemo<SettingsBodyProps>(
     () => ({
       plugins: plugins.list,
       onToggle: plugins.toggle,
+      onInstallPlugin: installPlugin,
+      pendingRestartPlugins,
+      onRestart: () => window.location.reload(),
       theme: state.theme,
       onThemeChange: (theme) => dispatch({ type: "setTheme", theme }),
       accent,
@@ -593,6 +629,8 @@ export function App() {
     [
       plugins.list,
       plugins.toggle,
+      installPlugin,
+      pendingRestartPlugins,
       state.theme,
       dispatch,
       accent,

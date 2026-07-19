@@ -35,3 +35,5 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+/plugins-marketplace/*.zip

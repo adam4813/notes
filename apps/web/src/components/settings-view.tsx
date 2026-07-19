@@ -1,5 +1,6 @@
-import type { PluginInfo } from "@notes/plugin-host";
+import type { PluginInfo, PluginManifest } from "@notes/plugin-host";
 import type { ThemeMeta } from "@notes/shared";
+import { useRef, useState } from "react";
 import type { ThemeMode } from "../state/types";
 import { HotkeyRow } from "./hotkey-row";
 
@@ -34,6 +35,10 @@ export interface AccentPreset {
 export interface SettingsBodyProps {
   plugins: PluginInfo[];
   onToggle: (id: string, enabled: boolean) => void;
+  onInstallPlugin: (zipFile: File) => Promise<void>;
+  /** Plugins just installed this session that need a restart to be activated. */
+  pendingRestartPlugins: PluginManifest[];
+  onRestart: () => void;
   theme: ThemeMode;
   onThemeChange: (theme: ThemeMode) => void;
   accent: string;
@@ -63,6 +68,55 @@ const BUILT_IN_THEME_OPTIONS: { value: string; label: string }[] = [
   { value: "contrast", label: "High contrast" },
 ];
 
+/** Drag-drop / file-picker zone for installing a plugin from a .zip file. */
+function PluginInstallZone({ onInstall }: { onInstall: (file: File) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const accept = (file: File) => {
+    if (!file.name.toLowerCase().endsWith(".zip")) return;
+    onInstall(file);
+  };
+
+  return (
+    <div
+      className={`plugin-install-zone${dragging ? " plugin-install-zone--drag" : ""}`}
+      onClick={() => inputRef.current?.click()}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragging(false);
+        const file = e.dataTransfer.files[0];
+        if (file) accept(file);
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label="Install plugin from ZIP"
+      onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
+    >
+      <span className="plugin-install-icon">📦</span>
+      <span className="plugin-install-label">
+        Drop a plugin <code>.zip</code> here, or click to browse
+      </span>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".zip"
+        className="plugin-install-input"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) accept(file);
+          e.target.value = "";
+        }}
+      />
+    </div>
+  );
+}
+
 function uiThemeValue(theme: ThemeMode): string {
   if (theme === "light" || theme === "dark" || theme === "system") {
     return "default";
@@ -85,6 +139,9 @@ export function SettingsBody(props: SettingsBodyProps) {
   const {
     plugins,
     onToggle,
+    onInstallPlugin,
+    pendingRestartPlugins,
+    onRestart,
     theme,
     onThemeChange,
     accent,
@@ -288,6 +345,8 @@ export function SettingsBody(props: SettingsBodyProps) {
             restart to install.
           </p>
         )}
+        <PluginInstallZone onInstall={(file) => void onInstallPlugin(file)} />
+        <p className="settings-hint settings-hint--sm">Drag a .zip or click to browse. Installed plugins load on the next restart.</p>
         {plugins.length === 0 && <div className="panel-empty">No plugins installed.</div>}
         <ul className="plugin-list">
           {plugins.map((plugin) => (
@@ -309,6 +368,21 @@ export function SettingsBody(props: SettingsBodyProps) {
                 />
                 <span>{plugin.enabled ? "Enabled" : "Disabled"}</span>
               </label>
+            </li>
+          ))}
+          {pendingRestartPlugins.map((manifest) => (
+            <li key={manifest.id} className="plugin-row plugin-row--pending">
+              <div className="plugin-meta">
+                <span className="plugin-name">{manifest.name}</span>
+                <span className="plugin-version">v{manifest.version}</span>
+                {manifest.description && (
+                  <span className="plugin-desc">{manifest.description}</span>
+                )}
+                <span className="plugin-pending-badge">⏳ Installed — restart required</span>
+              </div>
+              <button className="plugin-restart-btn" onClick={onRestart}>
+                Restart
+              </button>
             </li>
           ))}
         </ul>

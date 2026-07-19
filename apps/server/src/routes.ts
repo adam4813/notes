@@ -1,7 +1,11 @@
 import type { CommandBus, RequestContext } from "@notes/core";
 import type { FastifyInstance } from "fastify";
 import { listTomeThemes, getThemeCSS, importDefaultThemes } from "./commands/theme-commands";
-import { listTomePlugins, getTomePluginScript } from "./commands/plugin-commands";
+import {
+  listTomePlugins,
+  getTomePluginScript,
+  installPluginFromZip,
+} from "./commands/plugin-commands";
 
 interface PathQuery {
   path?: string;
@@ -242,5 +246,18 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
       return reply.status(404).send({ error: "Plugin not found" });
     }
     return reply.type("application/javascript").send(script);
+  });
+
+  app.post("/api/plugins/install", async (request, reply) => {
+    const body = request.body as { contentBase64?: string };
+    if (!body.contentBase64) {
+      return reply.status(400).send({ error: "contentBase64 is required" });
+    }
+    const zipBuffer = Buffer.from(body.contentBase64, "base64");
+    const result = await installPluginFromZip(tomePath, zipBuffer);
+    if (!result.ok) {
+      return reply.status(422).send({ error: result.error });
+    }
+    return { manifest: result.manifest };
   });
 }

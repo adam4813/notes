@@ -108,4 +108,9 @@ export const api = {
     fetch(`/api/plugins/${encodeURIComponent(id)}/client`).then((r) =>
       r.ok ? r.text() : Promise.reject(new Error(`Plugin "${id}" not found`)),
     ),
+  installPlugin: (contentBase64: string) =>
+    request<{ manifest: PluginManifest }>("/api/plugins/install", {
+      method: "POST",
+      body: JSON.stringify({ contentBase64 }),
+    }),
 };
