@@ -16,8 +16,7 @@
     "package": "electron-builder",
     "package:win": "electron-builder --win",
     "package:mac": "electron-builder --mac",
-    "package:linux": "electron-builder --linux",
-    "postinstall": "electron-builder install-app-deps"
+    "package:linux": "electron-builder --linux"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.2.0",
