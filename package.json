@@ -30,7 +30,10 @@
     "format": "prettier --write .",
     "prepare": "husky",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "version:patch": "npm version patch --workspaces --include-workspace-root --git-tag-version false",
+    "version:minor": "npm version minor --workspaces --include-workspace-root --git-tag-version false",
+    "version:major": "npm version major --workspaces --include-workspace-root --git-tag-version false"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
