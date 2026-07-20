@@ -90,6 +90,7 @@ body,
 }
 
 body {
+  /* prettier-ignore */
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: var(--app-font-size);
   background: var(--bg-app);
@@ -271,6 +272,7 @@ button {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  /* prettier-ignore */
   transition: background 0.1s, color 0.1s;
   padding: 14px;
 }
@@ -1114,6 +1116,7 @@ button {
   border-radius: 8px;
   padding: 12px 16px;
   cursor: pointer;
+  /* prettier-ignore */
   transition: border-color 0.15s, background 0.15s;
   user-select: none;
   margin-bottom: 4px;

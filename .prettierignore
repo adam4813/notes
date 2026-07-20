@@ -7,3 +7,4 @@ playwright-report
 test-results
 package-lock.json
 **/*.md
+apps/server/src/themes/**/*.css
