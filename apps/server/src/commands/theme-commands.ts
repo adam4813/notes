@@ -11,7 +11,9 @@ function bundledThemesDir(): string {
   const override = process.env["NOTES_THEMES_DIR"];
   if (override) {
     const resolved = resolve(override);
-    if (existsSync(resolved)) {
+    const safeRoot = resolve(process.cwd());
+    const withinSafeRoot = resolved === safeRoot || resolved.startsWith(safeRoot + sep);
+    if (withinSafeRoot && existsSync(resolved)) {
       return resolved;
     }
   }
