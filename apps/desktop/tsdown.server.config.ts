@@ -12,6 +12,9 @@ export default defineConfig({
   sourcemap: true,
   platform: "node",
   target: "node20",
+  outputOptions: {
+    entryFileNames: "[name].js",
+  },
   // Polyfill import.meta.url for CJS bundle (used in config.ts for __dirname equivalent)
   shims: true,
   banner: {
