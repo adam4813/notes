@@ -1,6 +1,6 @@
 {
   "name": "@notes/note-mermaid",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "description": "Mermaid diagram note type, markdown-backed (first-party plugin).",
   "type": "module",
