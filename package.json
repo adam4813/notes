@@ -28,6 +28,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "prepare": "husky",
     "test": "vitest run",
     "test:e2e": "playwright test"
   },
@@ -43,6 +44,7 @@
     "eslint": "^9.39.5",
     "eslint-plugin-import": "^2.31.0",
     "globals": "^17.7.0",
+    "husky": "^9.1.7",
     "prettier": "^3.9.5",
     "typescript": "^6.0.0",
     "typescript-eslint": "^8.63.0",
