@@ -1,4 +1,4 @@
-import { defineConfig } from "tsup";
+import { defineConfig } from "tsdown";
 
 /**
  * Bundles the Electron main process and preload script to CJS.
@@ -11,9 +11,12 @@ export default defineConfig({
   },
   format: ["cjs"],
   outDir: "dist-electron",
-  splitting: false,
   sourcemap: true,
-  external: ["electron"],
   platform: "node",
   target: "node20",
+  deps: {
+    neverBundle: ["electron"],
+  },
+  clean: false,
+  dts: false,
 });
