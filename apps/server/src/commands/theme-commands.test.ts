@@ -1,23 +1,39 @@
 import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { importDefaultThemes } from "./theme-commands";
 
-const ENV_KEY = "NOTES_THEMES_DIR";
-const originalThemesDir = process.env[ENV_KEY];
+let root = "";
 
-afterEach(() => {
-  if (originalThemesDir === undefined) {
-    delete process.env[ENV_KEY];
-  } else {
-    process.env[ENV_KEY] = originalThemesDir;
-  }
+vi.mock("node:path", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:path")>();
+  return {
+    ...actual, // Keep native behavior for resolve, join, etc.
+    default: {
+      // @ts-expect-error It cannot see the default export. We know it exists, so spread it and disreard typescript
+      ...actual.default,
+      join(...args: string[]) {
+        // The themes dir is hard-coded to the server's source directory structure, so we need to override it for tests
+        if (args.at(-1) === "../themes") {
+          return actual.join(root, "bundled");
+        }
+        return actual.join(...args);
+      },
+    },
+    join(...args: string[]) {
+      // The themes dir is hard-coded to the server's source directory structure, so we need to override it for tests
+      if (args.at(-1) === "../themes") {
+        return actual.join(root, "bundled");
+      }
+      return actual.join(...args);
+    },
+  };
 });
 
 describe("importDefaultThemes", () => {
   it("imports only complete bundled themes", async () => {
-    const root = await mkdtemp(join(tmpdir(), "notes-theme-test-"));
+    root = await mkdtemp(join(tmpdir(), "notes-theme-test-"));
     const bundled = join(root, "bundled");
     const tome = join(root, "tome");
     await mkdir(bundled, { recursive: true });
@@ -36,7 +52,6 @@ describe("importDefaultThemes", () => {
     await mkdir(broken, { recursive: true });
     await writeFile(join(broken, "meta.json"), JSON.stringify({ id: "broken-theme" }), "utf8");
 
-    process.env[ENV_KEY] = bundled;
     const imported = await importDefaultThemes(tome);
 
     expect(imported).toEqual(["good-theme"]);

@@ -16,7 +16,7 @@ export function MermaidDiagram({ source }: MermaidDiagramProps) {
     if (!code) {
       setError(null);
       if (hostRef.current) {
-        hostRef.current.innerHTML = "";
+        hostRef.current.replaceChildren();
       }
       return;
     }
@@ -34,7 +34,15 @@ export function MermaidDiagram({ source }: MermaidDiagramProps) {
           if (!cancelled) {
             setError(null);
             if (hostRef.current) {
-              hostRef.current.innerHTML = svg;
+              const blob = new Blob([svg], { type: "image/svg+xml" });
+              const objectUrl = URL.createObjectURL(blob);
+              const img = document.createElement("img");
+              img.alt = "Mermaid diagram";
+              img.style.maxWidth = "100%";
+              img.onload = () => URL.revokeObjectURL(objectUrl);
+              img.onerror = () => URL.revokeObjectURL(objectUrl);
+              img.src = objectUrl;
+              hostRef.current.replaceChildren(img);
             }
           }
         } catch (renderError) {
