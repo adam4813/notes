@@ -21,9 +21,9 @@ export interface ParsedNote {
   bodyText: string;
 }
 
-const WIKILINK_RE = /\[\[([^\]]+?)\]\]/g;
+const WIKILINK_RE = /\[\[([^\[\]]+)\]\]/g;
 const TAG_RE = /(?:^|[\s(])#([A-Za-z0-9][\w/-]*)/g;
-const H1_RE = /^#\s+(.+)$/m;
+const H1_RE = /^#[ \t]+(\S[^\n]*)/m;
 
 export function extractWikilinks(body: string): ParsedLink[] {
   const links: ParsedLink[] = [];

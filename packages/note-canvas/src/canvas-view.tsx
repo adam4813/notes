@@ -872,10 +872,21 @@ export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProp
                   <div className="canvas-link">
                     <span className="canvas-file-icon">🔗</span>
                     <a
-                      href={node.url}
+                      href="#"
                       target="_blank"
                       rel="noreferrer"
                       onPointerDown={(event) => event.stopPropagation()}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        try {
+                          const u = new URL(node.url);
+                          if (u.protocol === "http:" || u.protocol === "https:") {
+                            window.open(node.url, "_blank", "noopener,noreferrer");
+                          }
+                        } catch {
+                          // invalid URL, do nothing
+                        }
+                      }}
                     >
                       {node.url}
                     </a>

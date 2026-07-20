@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, copyFile } from "node:fs/promises";
-import { join, dirname } from "node:path";
+import { join, dirname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ThemeMeta } from "@notes/shared";
 
@@ -9,8 +9,11 @@ const THEMES_DIR = ".notes/themes";
 /** Directory that ships with the server binary containing bundled default themes. */
 function bundledThemesDir(): string {
   const override = process.env["NOTES_THEMES_DIR"];
-  if (override && existsSync(override)) {
-    return override;
+  if (override) {
+    const resolved = resolve(override);
+    if (existsSync(resolved)) {
+      return resolved;
+    }
   }
   return join(dirname(fileURLToPath(import.meta.url)), "../themes");
 }
@@ -63,7 +66,9 @@ export async function listTomeThemes(tomePath: string): Promise<ThemeEntry[]> {
  * Returns null if the theme is not found.
  */
 export async function getThemeCSS(tomePath: string, id: string): Promise<string | null> {
-  const cssPath = join(tomePath, THEMES_DIR, id, "theme.css");
+  const themesRoot = resolve(join(tomePath, THEMES_DIR));
+  const cssPath = resolve(join(themesRoot, id, "theme.css"));
+  if (!cssPath.startsWith(themesRoot + sep)) return null;
   if (!existsSync(cssPath)) return null;
   return readFile(cssPath, "utf-8");
 }
@@ -85,11 +90,14 @@ export async function listBundledThemes(): Promise<string[]> {
  */
 export async function importDefaultThemes(tomePath: string): Promise<string[]> {
   const sourceRoot = bundledThemesDir();
+  const destRoot = resolve(join(tomePath, THEMES_DIR));
   const bundledIds = await listBundledThemes();
   const imported: string[] = [];
   for (const id of bundledIds) {
-    const src = join(sourceRoot, id);
-    const dest = join(tomePath, THEMES_DIR, id);
+    const src = resolve(join(sourceRoot, id));
+    if (!src.startsWith(sourceRoot + sep)) continue;
+    const dest = resolve(join(destRoot, id));
+    if (!dest.startsWith(destRoot + sep)) continue;
     const metaSrc = join(src, "meta.json");
     const cssSrc = join(src, "theme.css");
     if (!existsSync(metaSrc) || !existsSync(cssSrc)) {
