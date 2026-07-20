@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { mkdir, readdir, readFile, copyFile } from "node:fs/promises";
 import { join, dirname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,10 +11,17 @@ function bundledThemesDir(): string {
   const override = process.env["NOTES_THEMES_DIR"];
   if (override) {
     const resolved = resolve(override);
-    const safeRoot = resolve(process.cwd());
-    const withinSafeRoot = resolved === safeRoot || resolved.startsWith(safeRoot + sep);
-    if (withinSafeRoot && existsSync(resolved)) {
-      return resolved;
+    try {
+      const canonicalRoot = realpathSync(resolve(process.cwd()));
+      const canonicalResolved = realpathSync(resolved);
+      const withinSafeRoot =
+        canonicalResolved === canonicalRoot ||
+        canonicalResolved.startsWith(canonicalRoot + sep);
+      if (withinSafeRoot && existsSync(canonicalResolved)) {
+        return canonicalResolved;
+      }
+    } catch {
+      // Invalid/non-existent path, or cannot be canonicalized: fall back to bundled themes.
     }
   }
   return join(dirname(fileURLToPath(import.meta.url)), "../themes");
