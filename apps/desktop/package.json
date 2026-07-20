@@ -13,12 +13,10 @@
     "dev": "npm run build:electron && cross-env ELECTRON_DEV=1 electron .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "generate-icons": "node scripts/generate-icons.mjs",
-    "prebuild-native": "node scripts/prebuild-native.mjs",
     "package": "electron-builder",
     "package:win": "electron-builder --win",
     "package:mac": "electron-builder --mac",
-    "package:linux": "electron-builder --linux",
-    "postinstall": "electron-builder install-app-deps"
+    "package:linux": "electron-builder --linux"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.2.0",
@@ -31,6 +29,7 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "electron-updater": "^6.8.9"
+    "electron-updater": "^6.8.9",
+    "better-sqlite3": "^12.11.1"
   }
 }

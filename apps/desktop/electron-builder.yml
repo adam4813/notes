@@ -5,6 +5,9 @@ copyright: "Copyright © 2026"
 # asar disabled for MVP to avoid native-module path complexity
 asar: false
 
+# Run npm rebuild to restore local Node.js native modules
+afterPack: ./scripts/afterPack.js
+
 directories:
   buildResources: resources
   output: ../../dist-desktop
@@ -19,19 +22,6 @@ files:
 extraResources:
   - from: ../web/dist
     to: web/dist
-  # Native modules pre-built for Electron ABI (see scripts/prebuild-native.mjs).
-  # Run `npm run prebuild-native` before packaging to regenerate.
-  - from: native-staging/better-sqlite3
-    to: node_modules/better-sqlite3
-    filter:
-      - "**"
-      - "!**/*.md"
-      - "!**/test/**"
-      - "!**/build/deps/**"
-  - from: native-staging/bindings
-    to: node_modules/bindings
-  - from: native-staging/file-uri-to-path
-    to: node_modules/file-uri-to-path
 
 win:
   target: nsis

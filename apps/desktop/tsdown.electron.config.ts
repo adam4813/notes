@@ -11,6 +11,9 @@ export default defineConfig({
   },
   format: ["cjs"],
   outDir: "dist-electron",
+  outputOptions: {
+    entryFileNames: "[name].js",
+  },
   sourcemap: true,
   platform: "node",
   target: "node20",
