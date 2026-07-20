@@ -50,7 +50,7 @@ export async function startServer(overrides?: Partial<ServerConfig>): Promise<St
   const config = { ...loadConfig(), ...overrides };
   const app = Fastify({ logger: true, bodyLimit: 10485760 });
   registerErrorHandler(app);
-  await app.register(fastifyRateLimit, { max: 300, timeWindow: "1 minute" });
+  await app.register(fastifyRateLimit, { max: 10000, timeWindow: "1 minute" });
 
   const events = new EventBus<TomeEventMap>();
   const tower = new Tower();

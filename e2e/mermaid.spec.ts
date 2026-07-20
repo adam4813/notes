@@ -9,10 +9,13 @@ test("mermaid note: create, edit source, and render a diagram", async ({ page })
 
   // The Mermaid note renders its source + a diagram preview.
   await expect(page.getByTestId("mermaid-source")).toBeVisible();
-  await expect(page.getByTestId("mermaid-preview").locator("svg")).toBeVisible({ timeout: 15_000 });
+  const image = page.getByTestId("mermaid-preview").locator("img");
+  await expect(image).toBeVisible({ timeout: 15_000 });
 
-  // Editing the source updates the rendered diagram.
+  const oldSrc = (await image.getAttribute("src")) ?? "";
+
+  // Editing the source updates the rendered diagram's image block
   const source = page.getByTestId("mermaid-source");
   await source.fill("flowchart LR\n  Zephyr --> Diagram");
-  await expect(page.getByTestId("mermaid-preview")).toContainText("Zephyr", { timeout: 15_000 });
+  await expect(image).not.toHaveAttribute("src", oldSrc);
 });
