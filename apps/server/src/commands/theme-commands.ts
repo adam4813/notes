@@ -10,18 +10,29 @@ const THEMES_DIR = ".notes/themes";
 function bundledThemesDir(): string {
   const override = process.env["NOTES_THEMES_DIR"];
   if (override) {
-    const resolved = resolve(override);
-    try {
-      const canonicalRoot = realpathSync(resolve(process.cwd()));
-      const canonicalResolved = realpathSync(resolved);
-      const withinSafeRoot =
-        canonicalResolved === canonicalRoot ||
-        canonicalResolved.startsWith(canonicalRoot + sep);
-      if (withinSafeRoot && existsSync(canonicalResolved)) {
-        return canonicalResolved;
+    const trimmed = override.trim();
+    const isSimpleDirName =
+      trimmed.length > 0 &&
+      trimmed !== "." &&
+      trimmed !== ".." &&
+      !trimmed.includes("/") &&
+      !trimmed.includes("\\") &&
+      !trimmed.includes("..");
+    if (isSimpleDirName) {
+      const safeBase = resolve(process.cwd());
+      const resolved = resolve(safeBase, trimmed);
+      try {
+        const canonicalRoot = realpathSync(safeBase);
+        const canonicalResolved = realpathSync(resolved);
+        const withinSafeRoot =
+          canonicalResolved === canonicalRoot ||
+          canonicalResolved.startsWith(canonicalRoot + sep);
+        if (withinSafeRoot && existsSync(canonicalResolved)) {
+          return canonicalResolved;
+        }
+      } catch {
+        // Invalid/non-existent path, or cannot be canonicalized: fall back to bundled themes.
       }
-    } catch {
-      // Invalid/non-existent path, or cannot be canonicalized: fall back to bundled themes.
     }
   }
   return join(dirname(fileURLToPath(import.meta.url)), "../themes");
