@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@fastify/static": "^9.3.0",
-    "@fastify/websocket": "^11.0.1",
+    "@fastify/websocket": "^11.3.0",
     "@notes/core": "*",
     "@notes/index": "*",
     "@notes/note-boards": "*",
@@ -26,7 +26,7 @@
     "fflate": "^0.8.3",
     "gray-matter": "^4.0.3",
     "yaml": "^2.9.0",
-    "zod": "^3.23.8"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "tsx": "^4.19.2"

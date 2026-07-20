@@ -54,7 +54,7 @@ export function usePlugins(): PluginsApi {
   const [fileHandlers, setFileHandlers] = useState<FileTypeHandler[]>([]);
   const [list, setList] = useState<PluginInfo[]>([]);
   const [tomePluginsPath, setTomePluginsPath] = useState("");
-  const managerRef = useRef<PluginManager>();
+  const managerRef = useRef<PluginManager>(undefined);
 
   useEffect(() => {
     let manager: PluginManager | undefined;

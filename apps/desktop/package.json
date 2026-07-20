@@ -17,17 +17,18 @@
     "package": "electron-builder",
     "package:win": "electron-builder --win",
     "package:mac": "electron-builder --mac",
-    "package:linux": "electron-builder --linux"
+    "package:linux": "electron-builder --linux",
+    "postinstall": "electron-builder install-app-deps"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.2.0",
-    "cross-env": "^7.0.3",
-    "electron": "31.7.7",
+    "cross-env": "^10.1.0",
+    "electron": "43.1.0",
     "electron-builder": "^26.15.3",
     "png2icons": "^2.0.1",
     "sharp": "^0.35.3",
     "tsup": "^8.3.5",
-    "typescript": "^5.7.2"
+    "typescript": "^7.0.2"
   },
   "dependencies": {
     "electron-updater": "^6.8.9"

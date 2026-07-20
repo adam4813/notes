@@ -30,7 +30,7 @@ function PluginEmbedView({
   content: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const disposeRef = useRef<(() => void) | undefined>();
+  const disposeRef = useRef<() => void>(undefined);
   const mount = handler.mountEmbed ?? handler.mountEditor;
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export function EmbedWidget({ target }: { target: string }) {
   const { fileHandlers } = useAppServices();
   const [state, setState] = useState<EmbedState>({ status: "loading" });
   const contentRef = useRef("");
-  const saveTimer = useRef<ReturnType<typeof setTimeout>>();
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const lastWriteAtRef = useRef(0);
 
   useEffect(() => {

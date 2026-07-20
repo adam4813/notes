@@ -3,7 +3,7 @@ import { replaceAll, replaceMatch } from "../lib/find";
 
 interface FindBarProps {
   /** The editor region whose visible text is searched and highlighted. */
-  regionRef: RefObject<HTMLElement>;
+  regionRef: RefObject<HTMLElement | null>;
   /** Current markdown source, used for replace operations. */
   content: string;
   onReplace: (next: string) => void;
