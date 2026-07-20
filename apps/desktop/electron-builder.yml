@@ -5,6 +5,9 @@ copyright: "Copyright © 2026"
 # asar disabled for MVP to avoid native-module path complexity
 asar: false
 
+# Run npm rebuild to restore local Node.js native modules
+afterPack: ./scripts/afterPack.js
+
 directories:
   buildResources: resources
   output: ../../dist-desktop
