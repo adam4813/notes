@@ -383,10 +383,12 @@ export function App() {
     const meta = externalThemes.find((t) => t.id === state.theme);
     if (meta) {
       if (meta.appFont !== undefined) {
-        setFontFamilies((prev) => ({ ...prev, app: meta.appFont! }));
+        const appFont = meta.appFont;
+        setFontFamilies((prev) => ({ ...prev, app: appFont }));
       }
       if (meta.editorFont !== undefined) {
-        setFontFamilies((prev) => ({ ...prev, editor: meta.editorFont! }));
+        const editorFont = meta.editorFont;
+        setFontFamilies((prev) => ({ ...prev, editor: editorFont }));
       }
     }
   }, [state.theme, externalThemes]);
