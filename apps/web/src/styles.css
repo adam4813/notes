@@ -814,6 +814,50 @@ button {
   gap: 10px;
 }
 
+/* Wrapper around each editor pane — enables edge drop zones */
+.pane-wrapper {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  display: flex;
+}
+
+/* Edge drop zones — shown when dragging a tab with a single pane open */
+.pane-edge-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.15s,
+    width 0.1s;
+  border-radius: var(--radius-island);
+}
+
+.pane-wrapper--dragging .pane-edge-zone {
+  opacity: 0.35;
+  pointer-events: all;
+}
+
+.pane-edge-zone--left {
+  left: 0;
+  background: linear-gradient(to right, var(--accent), transparent);
+}
+
+.pane-edge-zone--right {
+  right: 0;
+  background: linear-gradient(to left, var(--accent), transparent);
+}
+
+.pane-edge-zone--active {
+  opacity: 0.65 !important;
+  width: 80px;
+}
+
 .pane-close {
   border: 1px solid var(--border);
   border-radius: 6px;

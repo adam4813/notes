@@ -92,4 +92,99 @@ describe("workspaceReducer", () => {
     const state = workspaceReducer(initial(), { type: "setTheme", theme: "dark" });
     expect(state.theme).toBe("dark");
   });
+
+  it("reorders tabs within the same pane via moveTab", () => {
+    let state = workspaceReducer(initial(), { type: "openFile", path: "a.md", title: "a" });
+    state = workspaceReducer(state, { type: "openFile", path: "b.md", title: "b" });
+    state = workspaceReducer(state, { type: "openFile", path: "c.md", title: "c" });
+    const pane = state.panes[0];
+    const tabA = pane.tabs[0];
+
+    // Move "a" (index 0) to after "c" (insert at index 3)
+    state = workspaceReducer(state, {
+      type: "moveTab",
+      fromPaneId: pane.id,
+      tabId: tabA.id,
+      toPaneId: pane.id,
+      toIndex: 3,
+    });
+    expect(state.panes[0].tabs.map((t) => t.path)).toEqual(["b.md", "c.md", "a.md"]);
+    expect(state.panes[0].activeTabId).toBe(tabA.id);
+  });
+
+  it("moves a tab between panes via moveTab", () => {
+    let state = workspaceReducer(initial(), { type: "openFile", path: "a.md", title: "a" });
+    state = workspaceReducer(state, { type: "openFile", path: "b.md", title: "b" });
+    const left = state.panes[0].id;
+    state = workspaceReducer(state, { type: "splitPane", paneId: left, mode: "duplicate" });
+    // left: [a, b], right: [b] (duplicate of active)
+    const right = state.panes[1].id;
+    const tabA = state.panes[0].tabs[0];
+
+    state = workspaceReducer(state, {
+      type: "moveTab",
+      fromPaneId: left,
+      tabId: tabA.id,
+      toPaneId: right,
+      toIndex: 0,
+    });
+    expect(state.panes.find((p) => p.id === left)?.tabs.map((t) => t.path)).toEqual(["b.md"]);
+    // right already had b.md; a.md is inserted at index 0
+    const rightPane = state.panes.find((p) => p.id === right);
+    expect(rightPane?.tabs[0].path).toBe("a.md");
+  });
+
+  it("collapses the source pane when moveTab empties it", () => {
+    let state = workspaceReducer(initial(), { type: "openFile", path: "a.md", title: "a" });
+    const left = state.panes[0].id;
+    state = workspaceReducer(state, { type: "splitPane", paneId: left, mode: "duplicate" });
+    const right = state.panes[1].id;
+    // right has only the duplicate of a.md
+    const rightTabId = state.panes[1].tabs[0].id;
+
+    state = workspaceReducer(state, {
+      type: "moveTab",
+      fromPaneId: right,
+      tabId: rightTabId,
+      toPaneId: left,
+      toIndex: 1,
+    });
+    expect(state.panes).toHaveLength(1);
+    expect(state.panes[0].id).toBe(left);
+  });
+
+  it("splits with a specific tabId via splitPane", () => {
+    let state = workspaceReducer(initial(), { type: "openFile", path: "a.md", title: "a" });
+    state = workspaceReducer(state, { type: "openFile", path: "b.md", title: "b" });
+    const pane = state.panes[0];
+    const tabA = pane.tabs[0]; // "a" is not active (b is)
+
+    state = workspaceReducer(state, {
+      type: "splitPane",
+      paneId: pane.id,
+      mode: "move",
+      tabId: tabA.id,
+    });
+    expect(state.panes).toHaveLength(2);
+    // "a" moved to new pane, "b" stays in original
+    expect(state.panes[0].tabs.map((t) => t.path)).toEqual(["b.md"]);
+    expect(state.panes[1].tabs.map((t) => t.path)).toEqual(["a.md"]);
+  });
+
+  it("splits with insertBefore to place new pane on the left", () => {
+    let state = workspaceReducer(initial(), { type: "openFile", path: "a.md", title: "a" });
+    state = workspaceReducer(state, { type: "openFile", path: "b.md", title: "b" });
+    const pane = state.panes[0];
+
+    state = workspaceReducer(state, {
+      type: "splitPane",
+      paneId: pane.id,
+      mode: "move",
+      insertBefore: true,
+    });
+    expect(state.panes).toHaveLength(2);
+    // New pane is first (left), original is second (right)
+    expect(state.panes[0].tabs.map((t) => t.path)).toEqual(["b.md"]); // active tab moved to new pane on left
+    expect(state.panes[1].tabs.map((t) => t.path)).toEqual(["a.md"]); // original keeps non-active tab
+  });
 });

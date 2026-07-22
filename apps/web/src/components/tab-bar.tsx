@@ -1,4 +1,4 @@
-import { MouseEvent, useMemo } from "react";
+import { type DragEvent, type MouseEvent, useMemo, useState } from "react";
 import {
   ContextMenu,
   Tab,
@@ -10,6 +10,7 @@ import {
 import { useAppServices } from "../state/app-services";
 import { useWorkspace } from "../state/app-context";
 import type { Pane, Tab as TabModel, WorkspaceAction } from "../state/types";
+import { useDragContext } from "./drag-context";
 
 interface CloseMenuItem {
   label: string;
@@ -82,13 +83,57 @@ function buildSplitItems(pane: Pane, paneCount: number): SplitMenuItem[] {
 export function TabBar({ pane }: { pane: Pane }) {
   const { state, dispatch } = useWorkspace();
   const services = useAppServices();
+  const { setDraggedTab } = useDragContext();
 
   const overflow = useTabOverflow(pane.tabs, pane.activeTabId);
   const ctxMenu = useContextMenu<TabModel>();
 
+  const [draggingTabId, setDraggingTabId] = useState<string | null>(null);
+
   const close = (event: MouseEvent, tabId: string) => {
     event.stopPropagation();
     dispatch({ type: "closeTab", paneId: pane.id, tabId });
+  };
+
+  const handleDragStart = (e: DragEvent<HTMLDivElement>, tab: TabModel) => {
+    e.dataTransfer.setData(
+      "application/notes-tab",
+      JSON.stringify({ tabId: tab.id, paneId: pane.id }),
+    );
+    e.dataTransfer.effectAllowed = "move";
+    setDraggingTabId(tab.id);
+    setDraggedTab({ tabId: tab.id, paneId: pane.id });
+  };
+
+  const handleDragEnd = () => {
+    setDraggingTabId(null);
+    setDraggedTab(null);
+  };
+
+  const handleTabDrop = (data: string, toTabId: string | null, side: "before" | "after") => {
+    try {
+      const { tabId: fromTabId, paneId: fromPaneId } = JSON.parse(data) as {
+        tabId: string;
+        paneId: string;
+      };
+
+      let toIndex: number;
+      if (toTabId === null) {
+        // Dropped on empty strip space — append after all tabs.
+        toIndex = pane.tabs.length;
+      } else {
+        const idx = pane.tabs.findIndex((t) => t.id === toTabId);
+        if (idx === -1) {
+          toIndex = pane.tabs.length;
+        } else {
+          toIndex = side === "before" ? idx : idx + 1;
+        }
+      }
+
+      dispatch({ type: "moveTab", fromPaneId, tabId: fromTabId, toPaneId: pane.id, toIndex });
+    } catch {
+      // ignore invalid drag data
+    }
   };
 
   const contextMenuItems = useMemo((): ContextMenuEntry[] => {
@@ -130,6 +175,8 @@ export function TabBar({ pane }: { pane: Pane }) {
         hiddenTabIds={overflow.hiddenTabIds}
         overflowTabs={overflow.overflowTabs}
         onActivateOverflow={(id) => dispatch({ type: "activateTab", paneId: pane.id, tabId: id })}
+        draggingTabId={draggingTabId}
+        onTabDrop={handleTabDrop}
       >
         {pane.tabs.map((tab) => {
           const fileName =
@@ -152,6 +199,9 @@ export function TabBar({ pane }: { pane: Pane }) {
                 e.stopPropagation();
                 ctxMenu.open({ x: e.clientX, y: e.clientY }, tab);
               }}
+              draggable
+              onDragStart={(e) => handleDragStart(e, tab)}
+              onDragEnd={handleDragEnd}
             />
           );
         })}

@@ -1,4 +1,11 @@
-import { createContext, type MouseEvent, type ReactNode, useContext, useState } from "react";
+import {
+  createContext,
+  type DragEvent,
+  type MouseEvent,
+  type ReactNode,
+  useContext,
+  useState,
+} from "react";
 import { PopupMenu } from "./popup-menu";
 
 /* ─── Context used by Tab to register itself with TabStrip ─────────────── */
@@ -6,11 +13,17 @@ import { PopupMenu } from "./popup-menu";
 interface TabStripCtx {
   registerTabRef: (id: string, el: HTMLDivElement | null) => void;
   hiddenTabIds: Set<string>;
+  dragOverTabId: string | null;
+  dragOverSide: "before" | "after" | null;
+  draggingTabId: string | null;
 }
 
 const TabStripContext = createContext<TabStripCtx>({
   registerTabRef: () => {},
   hiddenTabIds: new Set(),
+  dragOverTabId: null,
+  dragOverSide: null,
+  draggingTabId: null,
 });
 
 /* ─── TabStrip ──────────────────────────────────────────────────────────── */
@@ -34,6 +47,15 @@ interface TabStripProps {
   onActivateOverflow?: (id: string) => void;
   /** Any extra buttons to render after the overflow trigger */
   trailing?: ReactNode;
+  /** ID of the tab currently being dragged (applies dimmed styling) */
+  draggingTabId?: string | null;
+  /**
+   * Called when a dragged tab is dropped onto the strip.
+   * @param data  Raw value from dataTransfer (set during dragstart)
+   * @param toTabId  The tab id under the drop cursor, or null if empty space
+   * @param side  Whether the drop is before or after `toTabId`
+   */
+  onTabDrop?: (data: string, toTabId: string | null, side: "before" | "after") => void;
 }
 
 export function TabStrip({
@@ -44,12 +66,58 @@ export function TabStrip({
   overflowTabs = [],
   onActivateOverflow,
   trailing,
+  draggingTabId = null,
+  onTabDrop,
 }: TabStripProps) {
   const [overflowOpen, setOverflowOpen] = useState(false);
+  const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
+  const [dragOverSide, setDragOverSide] = useState<"before" | "after" | null>(null);
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const tabEl = (e.target as Element).closest("[data-tab-id]") as HTMLElement | null;
+    // Ignore the tab currently being dragged — no point showing a drop indicator on itself.
+    if (tabEl?.dataset.tabId && tabEl.dataset.tabId !== draggingTabId) {
+      const rect = tabEl.getBoundingClientRect();
+      const side: "before" | "after" = e.clientX < rect.left + rect.width / 2 ? "before" : "after";
+      setDragOverTabId(tabEl.dataset.tabId);
+      setDragOverSide(side);
+    } else {
+      setDragOverTabId(null);
+      setDragOverSide(null);
+    }
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const data = e.dataTransfer.getData("application/notes-tab");
+    if (data) {
+      onTabDrop?.(data, dragOverTabId, dragOverSide ?? "after");
+    }
+    setDragOverTabId(null);
+    setDragOverSide(null);
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragOverTabId(null);
+      setDragOverSide(null);
+    }
+  };
 
   return (
-    <TabStripContext.Provider value={{ registerTabRef, hiddenTabIds }}>
-      <div className="tab-strip" ref={listRef} role="tablist">
+    <TabStripContext.Provider
+      value={{ registerTabRef, hiddenTabIds, dragOverTabId, dragOverSide, draggingTabId }}
+    >
+      <div
+        className="tab-strip"
+        ref={listRef}
+        role="tablist"
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        onDragLeave={handleDragLeave}
+      >
         {children}
       </div>
 
@@ -106,6 +174,10 @@ interface TabProps {
   onClose?: (event: MouseEvent) => void;
   onContextMenu?: (event: MouseEvent) => void;
   style?: React.CSSProperties;
+  /** Whether this tab can be dragged */
+  draggable?: boolean;
+  onDragStart?: (event: DragEvent<HTMLDivElement>) => void;
+  onDragEnd?: (event: DragEvent<HTMLDivElement>) => void;
 }
 
 export function Tab({
@@ -118,19 +190,37 @@ export function Tab({
   onClose,
   onContextMenu,
   style,
+  draggable,
+  onDragStart,
+  onDragEnd,
 }: TabProps) {
-  const { registerTabRef, hiddenTabIds } = useContext(TabStripContext);
+  const { registerTabRef, hiddenTabIds, dragOverTabId, dragOverSide, draggingTabId } =
+    useContext(TabStripContext);
   const hidden = hiddenTabIds.has(id);
+  const isDropBefore = dragOverTabId === id && dragOverSide === "before";
+  const isDropAfter = dragOverTabId === id && dragOverSide === "after";
+  const isBeingDragged = draggingTabId === id;
 
   return (
     <div
       ref={(el) => registerTabRef(id, el)}
-      className={["tab", active && "tab--active", hidden && "tab--hidden"]
+      className={[
+        "tab",
+        active && "tab--active",
+        hidden && "tab--hidden",
+        isDropBefore && "tab--drop-before",
+        isDropAfter && "tab--drop-after",
+        isBeingDragged && "tab--dragging",
+      ]
         .filter(Boolean)
         .join(" ")}
+      data-tab-id={id}
       title={tooltip}
+      draggable={draggable}
       onClick={onActivate}
       onContextMenu={onContextMenu}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
       style={style}
       role="tab"
     >
