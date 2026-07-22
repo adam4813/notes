@@ -17,6 +17,7 @@ export function BoardCard({
   updateCardState,
   column,
   onOpenModal,
+  isColumnDragActive = false,
 }: {
   card: RichCard;
   isNew?: boolean;
@@ -29,6 +30,7 @@ export function BoardCard({
   updateCardState: (card: RichCard) => void;
   column: BoardColumn;
   onOpenModal: (card: RichCard) => void;
+  isColumnDragActive?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [editingTitle, setEditingTitle] = useState(isNew ?? false);
@@ -83,6 +85,7 @@ export function BoardCard({
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => onDropCard(e, column.name, card.id)}
       onDragEnter={(e) => {
+        if (isColumnDragActive) return;
         e.stopPropagation();
         onDragEnter(card.id, column.name);
       }}

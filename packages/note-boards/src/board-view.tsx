@@ -47,6 +47,14 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const [modalCard, setModalCard] = useState<RichCard | null>(null);
   const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
+
+  // Column drag state
+  const [draggingColumnName, setDraggingColumnName] = useState<string | null>(null);
+  const columnDragRef = useRef<string | null>(null);
+  const [columnDropBefore, setColumnDropBefore] = useState<string | null>(null);
+  const columnRefs = useRef(new Map<string, HTMLElement | null>());
+  const boardScrollRef = useRef<HTMLDivElement | null>(null);
+
   const lastValue = useRef(value);
   const dragRef = useRef<CardDrag | null>(null);
 
@@ -92,6 +100,24 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
       onChange(md);
     },
     [onChange, model],
+  );
+
+  // Move a column to a new position (beforeName === null => end)
+  const handleMoveColumn = useCallback(
+    (fromName: string, beforeName: string | null) => {
+      const cols = model.columns;
+      const fromIdx = cols.findIndex((c) => c.name === fromName);
+      if (fromIdx === -1) return;
+      const moving = cols[fromIdx];
+      const without = cols.filter((c) => c.name !== fromName);
+      let insertAt =
+        beforeName === null ? without.length : without.findIndex((c) => c.name === beforeName);
+      if (insertAt === -1) insertAt = without.length;
+      const next = [...without];
+      next.splice(insertAt, 0, moving);
+      commitColumns(next);
+    },
+    [commitColumns, model.columns],
   );
 
   // Debounced card save.
@@ -259,6 +285,12 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
   const onDragStart = (event: DragEvent, cardId: string, fromColumn: string) => {
     dragRef.current = { cardId, fromColumn };
     event.dataTransfer.effectAllowed = "move";
+    // Mark this drag as a card drag so nested elements can distinguish it
+    try {
+      event.dataTransfer.setData("application/x-notes-board-card", cardId);
+    } catch (error) {
+      console.error("Failed to set drag data:", error);
+    }
     setDraggingCardId(cardId);
   };
 
@@ -324,6 +356,37 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
     commitColumns(model.columns.filter((c) => c.name !== colName));
   };
 
+  // Column drag handlers
+  const onColumnDragStart = (event: DragEvent, columnName: string) => {
+    columnDragRef.current = columnName;
+    event.dataTransfer.effectAllowed = "move";
+    try {
+      event.dataTransfer.setData("application/x-notes-board-column", columnName);
+    } catch {
+      console.error("Failed to set drag data for column:", columnName);
+    }
+    setDraggingColumnName(columnName);
+  };
+
+  const onColumnDragEnd = () => {
+    setColumnDropBefore(null);
+    setDraggingColumnName(null);
+    columnDragRef.current = null;
+  };
+
+  const onDropColumn = (event: DragEvent, beforeColumnName: string | null) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const from = columnDragRef.current ?? draggingColumnName;
+    columnDragRef.current = null;
+    setDraggingColumnName(null);
+    setColumnDropBefore(null);
+    if (!from) return;
+    // No-op when dropping before itself
+    if (from === beforeColumnName) return;
+    handleMoveColumn(from, beforeColumnName);
+  };
+
   if (loading) {
     return (
       <div className="board-note">
@@ -335,99 +398,201 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
   return (
     <div className="board-note">
       <div style={{ paddingBottom: "2px", height: "100%", background: "var(--bg-island)" }}>
-        <div className="board-scroll">
+        <div
+          className="board-scroll"
+          ref={boardScrollRef}
+          onDragEnter={(e) => {
+            // If a column is being dragged, treat entering the scroll area as a drop-at-end
+            if (columnDragRef.current || draggingColumnName) {
+              e.preventDefault();
+              setColumnDropBefore(null);
+            }
+          }}
+          onDragOver={(e) => {
+            if (!(columnDragRef.current || draggingColumnName)) return;
+            e.preventDefault();
+            const x = e.clientX;
+            let foundBefore: string | null = null;
+            for (const col of model.columns) {
+              const el = columnRefs.current.get(col.name);
+              if (!el) continue;
+              const rect = el.getBoundingClientRect();
+              // choose before if cursor is left of column midpoint
+              if (x < rect.left + rect.width / 2) {
+                foundBefore = col.name;
+                break;
+              }
+            }
+            setColumnDropBefore(foundBefore);
+          }}
+        >
           {model.columns.map((column) => {
             const isDragOver = dropTarget?.column === column.name;
+            const isDraggingColumn = draggingColumnName === column.name;
             return (
-              <section
-                key={column.name}
-                className={`board-column${isDragOver ? " board-column--drag-over" : ""}`}
-                onDragEnter={(e) => {
-                  // Only fires when cursor enters column area not covered by a card or silhouette
-                  // (those stop propagation). Set drop to end-of-column.
-                  e.preventDefault();
-                  setDropTarget({ column: column.name, beforeCardId: null });
-                }}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  // Use the tracked dropTarget so drops on silhouette land in the right spot
-                  const beforeId =
-                    dropTarget?.column === column.name ? dropTarget.beforeCardId : null;
-                  onDropCard(e, column.name, beforeId);
-                }}
-                onDragLeave={(e) => {
-                  if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                    setDropTarget(null);
-                  }
-                }}
-              >
-                <header className="board-column-head">
-                  <span
-                    className="board-column-name"
-                    onDoubleClick={() => void renameColumn(column.name)}
-                  >
-                    {column.name}
-                  </span>
-                  <span className="board-column-count">{column.cards.length}</span>
-                  <button
-                    className="board-column-del"
-                    aria-label={`Delete column ${column.name}`}
-                    onClick={() => deleteColumn(column.name)}
-                  >
-                    ×
-                  </button>
-                </header>
-
-                <div className="board-cards">
-                  {column.cards.map((cardId) => {
-                    const card = cards.get(cardId);
-                    if (!card) return null;
-                    const isDraggedCard = dragRef.current?.cardId === cardId;
-                    const showSilhouette =
-                      !isDraggedCard &&
-                      dropTarget?.column === column.name &&
-                      dropTarget.beforeCardId === cardId;
-                    return (
-                      <Fragment key={cardId}>
-                        {showSilhouette && (
-                          <div
-                            className="board-card-silhouette"
-                            onDragEnter={(e) => e.stopPropagation()}
-                            onDragOver={(e) => e.preventDefault()}
-                          />
-                        )}
-                        <BoardCard
-                          card={card}
-                          isNew={card.id === newCardId}
-                          isDragging={card.id === draggingCardId}
-                          onDragStart={onDragStart}
-                          onDragEnd={onDragEnd}
-                          onDropCard={onDropCard}
-                          onDragEnter={onCardDragEnter}
-                          updateCardState={updateCardState}
-                          handleDeleteCard={handleDeleteCard}
-                          column={column}
-                          onOpenModal={setModalCard}
-                        />
-                      </Fragment>
-                    );
-                  })}
-                  {/* Silhouette at end of column */}
-                  {dropTarget?.column === column.name && dropTarget.beforeCardId === null && (
+              <Fragment key={column.name}>
+                {columnDropBefore === column.name &&
+                  (columnDragRef.current || draggingColumnName) && (
                     <div
-                      className="board-card-silhouette"
-                      onDragEnter={(e) => e.stopPropagation()}
+                      className="board-column-silhouette"
+                      onDragEnter={(e) => {
+                        e.stopPropagation();
+                        setColumnDropBefore(column.name);
+                      }}
                       onDragOver={(e) => e.preventDefault()}
+                      onDragLeave={(e) => {
+                        if (!e.currentTarget.contains(e.relatedTarget as Node))
+                          setColumnDropBefore(null);
+                      }}
+                      onDrop={(e) => onDropColumn(e, column.name)}
                     />
                   )}
-                </div>
 
-                <button className="board-add-card" onClick={() => void handleAddCard(column.name)}>
-                  ＋ Add card
-                </button>
-              </section>
+                <section
+                  key={column.name}
+                  ref={(el) => {
+                    if (el) columnRefs.current.set(column.name, el);
+                    else columnRefs.current.delete(column.name);
+                  }}
+                  className={`board-column${isDragOver ? " board-column--drag-over" : ""}${isDraggingColumn ? " board-column--dragging" : ""}`}
+                  onDragEnter={(e) => {
+                    if (columnDragRef.current || draggingColumnName) {
+                      e.preventDefault();
+                      setColumnDropBefore(column.name);
+                      return;
+                    }
+                    // Only fires when cursor enters column area not covered by a card or silhouette
+                    // (those stop propagation). Set drop to end-of-column.
+                    e.preventDefault();
+                    setDropTarget({ column: column.name, beforeCardId: null });
+                  }}
+                  onDragOver={(e) => {
+                    if (columnDragRef.current || draggingColumnName) {
+                      e.preventDefault();
+                      return;
+                    }
+                    e.preventDefault();
+                  }}
+                  onDrop={(e) => {
+                    if (columnDragRef.current || draggingColumnName) {
+                      onDropColumn(e, column.name);
+                      return;
+                    }
+                    // Use the tracked dropTarget so drops on silhouette land in the right spot
+                    const beforeId =
+                      dropTarget?.column === column.name ? dropTarget.beforeCardId : null;
+                    onDropCard(e, column.name, beforeId);
+                  }}
+                  onDragLeave={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                      if (!(columnDragRef.current || draggingColumnName)) {
+                        setDropTarget(null);
+                      }
+                      // If column drag left the column entirely, clear the column drop indicator
+                      if (columnDragRef.current || draggingColumnName) {
+                        if (
+                          !e.currentTarget
+                            .closest(".board-scroll")
+                            ?.contains(e.relatedTarget as Node)
+                        ) {
+                          setColumnDropBefore(null);
+                        }
+                      }
+                    }
+                  }}
+                >
+                  <header
+                    className="board-column-head"
+                    draggable
+                    onDragStart={(e) => onColumnDragStart(e, column.name)}
+                    onDragEnd={() => onColumnDragEnd()}
+                  >
+                    <span
+                      className="board-column-name"
+                      onDoubleClick={() => void renameColumn(column.name)}
+                    >
+                      {column.name}
+                    </span>
+                    <span className="board-column-count">{column.cards.length}</span>
+                    <button
+                      className="board-column-del"
+                      aria-label={`Delete column ${column.name}`}
+                      onClick={() => deleteColumn(column.name)}
+                    >
+                      ×
+                    </button>
+                  </header>
+
+                  <div className="board-cards">
+                    {column.cards.map((cardId) => {
+                      const card = cards.get(cardId);
+                      if (!card) return null;
+                      const isDraggedCard = dragRef.current?.cardId === cardId;
+                      const showSilhouette =
+                        !isDraggedCard &&
+                        dropTarget?.column === column.name &&
+                        dropTarget.beforeCardId === cardId;
+                      return (
+                        <Fragment key={cardId}>
+                          {showSilhouette && (
+                            <div
+                              className="board-card-silhouette"
+                              onDragEnter={(e) => e.stopPropagation()}
+                              onDragOver={(e) => e.preventDefault()}
+                            />
+                          )}
+                          <BoardCard
+                            card={card}
+                            isNew={card.id === newCardId}
+                            isDragging={card.id === draggingCardId}
+                            onDragStart={onDragStart}
+                            onDragEnd={onDragEnd}
+                            onDropCard={onDropCard}
+                            onDragEnter={onCardDragEnter}
+                            updateCardState={updateCardState}
+                            handleDeleteCard={handleDeleteCard}
+                            column={column}
+                            onOpenModal={setModalCard}
+                            isColumnDragActive={Boolean(
+                              columnDragRef.current || draggingColumnName,
+                            )}
+                          />
+                        </Fragment>
+                      );
+                    })}
+                    {/* Silhouette at end of column */}
+                    {dropTarget?.column === column.name && dropTarget.beforeCardId === null && (
+                      <div
+                        className="board-card-silhouette"
+                        onDragEnter={(e) => e.stopPropagation()}
+                        onDragOver={(e) => e.preventDefault()}
+                      />
+                    )}
+                  </div>
+
+                  <button
+                    className="board-add-card"
+                    onClick={() => void handleAddCard(column.name)}
+                  >
+                    ＋ Add card
+                  </button>
+                </section>
+              </Fragment>
             );
           })}
+
+          {/* Silhouette at end of board for dropping columns at the end */}
+          {(columnDragRef.current || draggingColumnName) && columnDropBefore === null && (
+            <div
+              className="board-column-silhouette"
+              onDragEnter={(e) => {
+                e.stopPropagation();
+                setColumnDropBefore(null);
+              }}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => onDropColumn(e, null)}
+            />
+          )}
 
           <button className="board-add-column" onClick={() => void addColumn()}>
             ＋ Add column

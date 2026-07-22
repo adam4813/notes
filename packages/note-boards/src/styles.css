@@ -87,6 +87,23 @@
   flex-shrink: 0;
 }
 
+/* Column silhouette shown between columns while dragging a column */
+.board-column-silhouette {
+  width: 260px;
+  min-width: 260px;
+  height: calc(100% - 24px); /* leave room for padding */
+  border: 2px dashed var(--accent, #4f8ef7);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg) 92%, var(--accent, #4f8ef7) 8%);
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+
+.board-column--dragging {
+  opacity: 0.45;
+  border-style: dashed;
+}
+
 .board-card {
   display: flex;
   align-items: flex-start;
