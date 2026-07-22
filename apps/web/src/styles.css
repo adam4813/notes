@@ -1944,7 +1944,7 @@ button {
   gap: 8px;
   padding: 6px 10px;
   min-height: 40px;
-  border-block: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
 .editor-toolbar-main,

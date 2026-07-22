@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Island, IslandBody, IslandHeader, Tab, TabStrip, useTabOverflow } from "@notes/ui";
+import { Island, IslandBody, IslandHeader, Tab } from "@notes/ui";
 import { Explorer } from "./explorer";
 import { SearchPane } from "./search-pane";
 import { TagPane } from "./tag-pane";
@@ -40,14 +40,6 @@ export function Sidebar({
   tomeActive?: boolean;
   onOpenTome?: () => void;
 }) {
-  const overflow = useTabOverflow(
-    VIEWS.map((entry) => ({
-      id: entry.id,
-      path: entry.id,
-      title: entry.label,
-    })),
-    view,
-  );
   const [pendingTag, setPendingTag] = useState<string | undefined>(undefined);
 
   const pickTag = (tag: string) => {
@@ -60,11 +52,7 @@ export function Sidebar({
       <IslandHeader>
         {tomeActive ? (
           <>
-            <TabStrip
-              listRef={overflow.tabListRef}
-              registerTabRef={overflow.registerTabRef}
-              hiddenTabIds={overflow.hiddenTabIds}
-            >
+            <div className="tab-strip" role="tablist">
               {VIEWS.map((entry) => (
                 <Tab
                   key={entry.id}
@@ -75,7 +63,7 @@ export function Sidebar({
                   style={SIDEBAR_TAB_BUTTON_STYLE}
                 />
               ))}
-            </TabStrip>
+            </div>
             <div className="sidebar-view-separator" aria-hidden />
             <button
               className="sidebar-view-btn--action"

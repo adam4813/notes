@@ -25,8 +25,8 @@
 .island-header {
   display: flex;
   align-items: center;
-  min-height: 40px;
-  padding: 6px;
+  height: 37px;
+  padding: 4px 6px;
   gap: 2px;
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;

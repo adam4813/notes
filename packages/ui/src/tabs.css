@@ -38,6 +38,11 @@
   color: var(--text-default);
 }
 
+.tab:not(.tab--active):not(:first-child) {
+  border-left-color: var(--border-subtle);
+  border-radius: 0;
+}
+
 /* Hidden during overflow recalculation */
 .tab--hidden {
   visibility: hidden;
