@@ -186,11 +186,7 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       // Insert new pane immediately before or after the source pane.
       const sourceIdx = sourcePanes.findIndex((p) => p.id === source.id);
       const insertAt = action.insertBefore ? sourceIdx : sourceIdx + 1;
-      const panes = [
-        ...sourcePanes.slice(0, insertAt),
-        newPane,
-        ...sourcePanes.slice(insertAt),
-      ];
+      const panes = [...sourcePanes.slice(0, insertAt), newPane, ...sourcePanes.slice(insertAt)];
       return { ...state, panes, activePaneId: newPane.id };
     }
 

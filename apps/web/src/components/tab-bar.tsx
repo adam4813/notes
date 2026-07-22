@@ -96,7 +96,10 @@ export function TabBar({ pane }: { pane: Pane }) {
   };
 
   const handleDragStart = (e: DragEvent<HTMLDivElement>, tab: TabModel) => {
-    e.dataTransfer.setData("application/notes-tab", JSON.stringify({ tabId: tab.id, paneId: pane.id }));
+    e.dataTransfer.setData(
+      "application/notes-tab",
+      JSON.stringify({ tabId: tab.id, paneId: pane.id }),
+    );
     e.dataTransfer.effectAllowed = "move";
     setDraggingTabId(tab.id);
     setDraggedTab({ tabId: tab.id, paneId: pane.id });
