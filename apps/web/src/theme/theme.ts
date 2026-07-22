@@ -18,8 +18,14 @@ export const DEFAULT_FONT_FAMILY = "";
 /** Sentinel value meaning "use the same font as the app UI". */
 export const USE_APP_FONT = "__use_app__";
 
-/** Available font family presets for the picker. */
-export const FONT_FAMILY_OPTIONS: { id: string; label: string; value: string }[] = [
+export interface FontFamilyOption {
+  id: string;
+  label: string;
+  value: string;
+}
+
+/** Static fallback presets used when the Local Font Access API is unavailable. */
+export const FONT_FAMILY_PRESETS: FontFamilyOption[] = [
   { id: "system", label: "System default", value: "" },
   { id: "inter", label: "Inter", value: "Inter, sans-serif" },
   { id: "roboto", label: "Roboto", value: "Roboto, sans-serif" },
@@ -30,6 +36,66 @@ export const FONT_FAMILY_OPTIONS: { id: string; label: string; value: string }[]
   { id: "fira-code", label: "Fira Code", value: "'Fira Code', monospace" },
   { id: "jetbrains-mono", label: "JetBrains Mono", value: "'JetBrains Mono', monospace" },
 ];
+
+/**
+ * Queries system fonts via the Local Font Access API (`window.queryLocalFonts()`).
+ * Returns a deduplicated, sorted list of font family options. Falls back to the
+ * static preset list when the API is unavailable or the user denies permission.
+ */
+export async function querySystemFonts(): Promise<FontFamilyOption[]> {
+  if (typeof window === "undefined" || !("queryLocalFonts" in window)) {
+    return FONT_FAMILY_PRESETS;
+  }
+  try {
+    const fonts: { family: string; fullName: string }[] = await (
+      window as unknown as { queryLocalFonts: () => Promise<{ family: string; fullName: string }[]> }
+    ).queryLocalFonts();
+    const families = new Set<string>();
+    for (const font of fonts) {
+      families.add(font.family);
+    }
+    const sorted = [...families].sort((a, b) => a.localeCompare(b));
+    const options: FontFamilyOption[] = [
+      { id: "system", label: "System default", value: "" },
+      ...sorted.map((family) => ({
+        id: family.toLowerCase().replace(/\s+/g, "-"),
+        label: family,
+        value: family,
+      })),
+    ];
+    return options;
+  } catch {
+    return FONT_FAMILY_PRESETS;
+  }
+}
+
+/**
+ * Builds the final font family option list for the settings picker.
+ * If the active theme declares a font preference, it is surfaced to the top
+ * (right after "System default") with a label like "Theme — <FontName>".
+ */
+export function buildFontFamilyOptions(
+  base: FontFamilyOption[],
+  themeFont?: string,
+): FontFamilyOption[] {
+  if (!themeFont) {
+    return base;
+  }
+  // Check if the theme font is already in the list
+  const existing = base.find(
+    (o) => o.value === themeFont || o.label.toLowerCase() === themeFont.toLowerCase(),
+  );
+  // Build a theme entry that surfaces at position 1 (after System default)
+  const themeOption: FontFamilyOption = {
+    id: `theme-${themeFont.toLowerCase().replace(/\s+/g, "-")}`,
+    label: `Theme — ${themeFont}`,
+    value: existing?.value ?? themeFont,
+  };
+  // Place it after "System default" and remove any duplicate
+  const [systemDefault, ...rest] = base;
+  const filtered = rest.filter((o) => o.id !== themeOption.id);
+  return [systemDefault, themeOption, ...filtered];
+}
 
 /** Built-in accent presets; the first is the default (empty = token default). */
 export const ACCENT_PRESETS: { id: string; label: string; value: string }[] = [

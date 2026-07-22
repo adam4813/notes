@@ -39,8 +39,11 @@ import {
   loadFontSizes,
   applyFontFamilies,
   loadFontFamilies,
-  FONT_FAMILY_OPTIONS,
+  FONT_FAMILY_PRESETS,
+  querySystemFonts,
+  buildFontFamilyOptions,
 } from "./theme/theme";
+import type { FontFamilyOption } from "./theme/theme";
 import { loadExternalThemes } from "./theme/theme-loader";
 import type { SettingsBodyProps } from "./components/settings-view";
 import { normalizeMediaDirectory } from "./lib/images";
@@ -107,6 +110,7 @@ export function App() {
   const [accent, setAccentState] = useState(() => loadAccent());
   const [fontSizes, setFontSizes] = useState(() => loadFontSizes());
   const [fontFamilies, setFontFamilies] = useState(() => loadFontFamilies());
+  const [fontFamilyOptions, setFontFamilyOptions] = useState<FontFamilyOption[]>(FONT_FAMILY_PRESETS);
   const [recentCommandIds, setRecentCommandIds] = useState<string[]>(() => loadRecentCommands());
   const [noteTypes, setNoteTypes] = useState<Record<string, string>>({});
   const [externalThemes, setExternalThemes] = useState<ThemeMeta[]>([]);
@@ -459,6 +463,11 @@ export function App() {
     applyFontFamilies(fontFamilies.app, fontFamilies.editor);
   }, [fontFamilies]);
 
+  // Query system fonts on mount via the Local Font Access API.
+  useEffect(() => {
+    void querySystemFonts().then(setFontFamilyOptions);
+  }, []);
+
   const setAccent = useCallback((color: string) => setAccentState(color), []);
   const setAppFontSize = useCallback(
     (size: number) => setFontSizes((prev) => ({ ...prev, app: size })),
@@ -734,7 +743,10 @@ export function App() {
       onEditorFontSizeChange: setEditorFontSize,
       appFontFamily: fontFamilies.app,
       editorFontFamily: fontFamilies.editor,
-      fontFamilyOptions: FONT_FAMILY_OPTIONS,
+      fontFamilyOptions: buildFontFamilyOptions(
+        fontFamilyOptions,
+        externalThemes.find((t) => t.id === state.theme)?.appFont,
+      ),
       onAppFontFamilyChange: setAppFontFamily,
       onEditorFontFamilyChange: setEditorFontFamily,
       openInTab: openSettingsInTab,
@@ -773,6 +785,7 @@ export function App() {
       setAppFontSize,
       setEditorFontSize,
       fontFamilies,
+      fontFamilyOptions,
       setAppFontFamily,
       setEditorFontFamily,
       openSettingsInTab,
