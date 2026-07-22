@@ -17,6 +17,28 @@ export interface ContextMenuSeparatorDef {
 
 export type ContextMenuEntry = ContextMenuItemDef | ContextMenuSeparatorDef;
 
+/**
+ * Callback type that note-view components register with their parent NoteEditor
+ * to supply content-specific context menu items.
+ *
+ * Receive the element that was right-clicked; return an array of items to
+ * replace the generic edit menu, or `null` to fall back to the default items.
+ *
+ * @example
+ * ```ts
+ * // In a note view component:
+ * useEffect(() => {
+ *   onRegisterContextMenu?.((target) => {
+ *     const el = target?.closest("[data-my-item-id]");
+ *     if (!el) return null;
+ *     return [{ label: "Delete", run: () => deleteItem(el.dataset.myItemId!), danger: true }];
+ *   });
+ *   return () => onRegisterContextMenu?.(null);
+ * }, [onRegisterContextMenu]);
+ * ```
+ */
+export type NoteViewContextMenuBuilder = (target: Element | null) => ContextMenuEntry[] | null;
+
 interface ContextMenuProps {
   position: MenuPosition;
   items: ContextMenuEntry[];

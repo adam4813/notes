@@ -168,6 +168,9 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
   });
 
   app.post("/api/card/create", async (request) => bus.dispatch("card.create", request.body, ctx));
+  app.post("/api/card/duplicate", async (request) =>
+    bus.dispatch("card.duplicate", request.body, ctx),
+  );
 
   app.post("/api/card/update", async (request) => bus.dispatch("card.update", request.body, ctx));
 

@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { usePromptDialog } from "@notes/editor";
+import { type NoteViewContextMenuBuilder } from "@notes/ui";
 import { BoardCard } from "./board-card";
 import { BoardCardModal } from "./board-card-modal";
 import {
@@ -14,6 +15,8 @@ interface BoardViewProps {
   value: string;
   onChange: (markdown: string) => void;
   path: string;
+  /** Called once on mount so the parent NoteEditor can show card-specific context menus. */
+  onRegisterContextMenu?: (builder: NoteViewContextMenuBuilder | null) => void;
 }
 
 interface CardDrag {
@@ -35,7 +38,7 @@ function debounce<T extends (...args: Parameters<T>) => void>(fn: T, ms: number)
   }) as T;
 }
 
-export function BoardView({ value, onChange, path }: BoardViewProps) {
+export function BoardView({ value, onChange, path, onRegisterContextMenu }: BoardViewProps) {
   const { openPrompt, promptDialog } = usePromptDialog();
   const [model, setModel] = useState<BoardModel>(() => parseBoard(value));
   const [cards, setCards] = useState<Map<string, RichCard>>(new Map());
@@ -157,6 +160,73 @@ export function BoardView({ value, onChange, path }: BoardViewProps) {
     }));
     setModalCard((prev) => (prev?.id === cardId ? null : prev));
   };
+
+  const duplicateCard = useCallback(
+    async (original: RichCard) => {
+      const res = await fetch("/api/card/duplicate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ boardPath: path, cardId: original.id }),
+      });
+      if (!res.ok) return;
+      const copy = (await res.json()) as RichCard;
+      setCards((prev) => new Map(prev).set(copy.id, copy));
+      setModel((prev) => ({
+        ...prev,
+        columns: prev.columns.map((col) => {
+          const idx = col.cards.indexOf(original.id);
+          if (idx === -1) return col;
+          const next = [...col.cards];
+          next.splice(idx + 1, 0, copy.id);
+          return { ...col, cards: next };
+        }),
+      }));
+    },
+    [path],
+  );
+
+  // Keep always-current refs so the context menu builder never captures stale closures.
+  const cardsRef = useRef(cards);
+  cardsRef.current = cards;
+  const handleDeleteCardRef = useRef(handleDeleteCard);
+  handleDeleteCardRef.current = handleDeleteCard;
+  const duplicateCardRef = useRef(duplicateCard);
+  duplicateCardRef.current = duplicateCard;
+
+  // Register a context menu builder with the parent NoteEditor so right-clicking
+  // a card shows card-specific actions instead of the generic edit menu.
+  useEffect(() => {
+    if (!onRegisterContextMenu) return;
+    const builder: import("@notes/ui").NoteViewContextMenuBuilder = (target) => {
+      const cardEl = target?.closest("[data-card-id]");
+      // Return [] (not null) so the generic edit menu (undo/redo/cut…) is
+      // suppressed entirely — those commands don't apply to board operations.
+      if (!cardEl) return [];
+      const cardId = cardEl.getAttribute("data-card-id");
+      if (!cardId) return [];
+      const card = cardsRef.current.get(cardId);
+      if (!card) return [];
+      return [
+        {
+          label: "Duplicate card",
+          run: () => void duplicateCardRef.current(card),
+        },
+        { separator: true as const },
+        {
+          label: "Delete card…",
+          run: () => {
+            const title = cardsRef.current.get(cardId)?.title;
+            const label = title?.trim() ? `"${title}"` : "this card";
+            if (!window.confirm(`Delete ${label}? This cannot be undone.`)) return;
+            void handleDeleteCardRef.current(cardId);
+          },
+          danger: true,
+        },
+      ];
+    };
+    onRegisterContextMenu(builder);
+    return () => onRegisterContextMenu(null);
+  }, [onRegisterContextMenu]);
 
   const handleMoveCard = async (drag: CardDrag, toColumn: string, toIndex: number) => {
     await fetch("/api/card/move", {

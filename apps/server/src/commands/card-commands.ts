@@ -145,6 +145,36 @@ export function registerCardCommands(
   });
 
   // ------------------------------------------------------------------
+  // card.duplicate — copy a card and insert it after the source
+  // ------------------------------------------------------------------
+  bus.register<{ boardPath: string; cardId: string }, RichCard>({
+    name: "card.duplicate",
+    handler: async ({ boardPath, cardId }) => {
+      const tome = getTome();
+      const source = await readCard(boardPath, cardId, tome);
+      const { newCardId } = await import("@notes/note-boards");
+      const newId = newCardId();
+      const duplicate: RichCard = {
+        ...source,
+        id: newId,
+        title: `${source.title} (copy)`,
+      };
+      await writeCard(boardPath, duplicate, tome);
+      // Insert immediately after the source in the board layout
+      const model = await readBoardModel(boardPath, tome);
+      for (const col of model.columns) {
+        const idx = col.cards.indexOf(cardId);
+        if (idx !== -1) {
+          col.cards.splice(idx + 1, 0, newId);
+          break;
+        }
+      }
+      await saveBoardModel(boardPath, model, tome);
+      return duplicate;
+    },
+  });
+
+  // ------------------------------------------------------------------
   // card.move — reorder card within or between columns
   // ------------------------------------------------------------------
   bus.register<

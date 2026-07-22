@@ -78,6 +78,7 @@ export function BoardCard({
   return (
     <div
       ref={cardRef}
+      data-card-id={card.id}
       className={`board-card${card.done ? " board-card--done" : ""}${expanded ? " board-card--expanded" : ""}${isDragging ? " board-card--dragging" : ""}`}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => onDropCard(e, column.name, card.id)}
