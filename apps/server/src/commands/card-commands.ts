@@ -1,8 +1,10 @@
-import type { CommandBus } from "@notes/core";
+import type { CommandBus, EventBus } from "@notes/core";
 import type { RichCard } from "@notes/note-boards";
 import { parseBoard, serializeBoard } from "@notes/note-boards";
 import type { Tome } from "@notes/tome";
-import { deleteCard, listCards, readCard, writeCard } from "./card-store";
+import { renameCompanionFolder } from "./companion-folder-rename";
+import type { NoteLifecycleEventMap } from "./note-lifecycle";
+import { cardDotFolder, deleteCard, listCards, readCard, writeCard } from "./card-store";
 
 interface GetTome {
   (): Tome;
@@ -25,7 +27,18 @@ async function saveBoardModel(
  * Registers card CRUD commands. All commands receive `boardPath` (relative
  * tome path to the `.md` board file) and operate on the companion dot-folder.
  */
-export function registerCardCommands(bus: CommandBus, getTome: GetTome): void {
+export function registerCardCommands(
+  bus: CommandBus,
+  getTome: GetTome,
+  events?: EventBus<NoteLifecycleEventMap>,
+): void {
+  events?.on("note.path-moved", async ({ fromPath, toPath, noteType }) => {
+    if (noteType !== "board") {
+      return;
+    }
+    await renameCompanionFolder(getTome(), fromPath, toPath, (path) => cardDotFolder(path));
+  });
+
   // ------------------------------------------------------------------
   // card.list — fetch all RichCards for a board, ordered by column layout
   // ------------------------------------------------------------------

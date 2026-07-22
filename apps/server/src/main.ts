@@ -7,6 +7,7 @@ import { TomeWatcher, type TomeEventMap } from "@notes/tome";
 import Fastify from "fastify";
 import fastifyStatic from "@fastify/static";
 import fastifyRateLimit from "@fastify/rate-limit";
+import { NoteLifecycleEventMap } from "./commands/note-lifecycle";
 import { registerFileCommands } from "./commands/file-commands";
 import { registerCardCommands } from "./commands/card-commands";
 import { registerEventCommands } from "./commands/event-commands";
@@ -52,16 +53,17 @@ export async function startServer(overrides?: Partial<ServerConfig>): Promise<St
   registerErrorHandler(app);
   await app.register(fastifyRateLimit, { max: 10000, timeWindow: "1 minute" });
 
-  const events = new EventBus<TomeEventMap>();
+  const tomeEvents = new EventBus<TomeEventMap>();
+  const noteEvents = new EventBus<NoteLifecycleEventMap>();
   const tower = new Tower();
   tower.openTome("default", config.tomePath);
 
   const bus = new CommandBus();
   bus.use(validationMiddleware);
   bus.use(createLoggingMiddleware((message) => app.log.debug(message)));
-  registerFileCommands(bus, () => tower.active);
-  registerCardCommands(bus, () => tower.active);
-  registerEventCommands(bus, () => tower.active);
+  registerFileCommands(bus, () => tower.active, noteEvents);
+  registerCardCommands(bus, () => tower.active, noteEvents);
+  registerEventCommands(bus, () => tower.active, noteEvents);
   registerNoteTypeCommands(bus, () => tower.active);
 
   const ctx = { tomePath: config.tomePath };
@@ -81,14 +83,14 @@ export async function startServer(overrides?: Partial<ServerConfig>): Promise<St
     });
   }
 
-  const watcher = new TomeWatcher(config.tomePath, events);
+  const watcher = new TomeWatcher(config.tomePath, tomeEvents);
 
   try {
     await tower.active.ensureRoot();
 
     const indexService = await IndexService.create(
       tower.active,
-      events,
+      tomeEvents,
       join(config.tomePath, ".notes", "index.db"),
     );
     await indexService.buildFromTome();
@@ -97,7 +99,7 @@ export async function startServer(overrides?: Partial<ServerConfig>): Promise<St
 
     registerRoutes(app, bus, ctx);
 
-    await registerWebSocket(app, events);
+    await registerWebSocket(app, tomeEvents);
     watcher.start();
 
     const port = await findFreePort(config.port);

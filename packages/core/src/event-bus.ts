@@ -1,4 +1,4 @@
-export type EventListener<TPayload> = (payload: TPayload) => void;
+export type EventListener<TPayload> = (payload: TPayload) => void | Promise<void>;
 
 /**
  * Minimal typed publish/subscribe bus (Observer pattern). Event maps are
@@ -21,13 +21,18 @@ export class EventBus<TEventMap extends Record<string, unknown>> {
     this.listeners.get(type)?.delete(listener as EventListener<unknown>);
   }
 
-  emit<TKey extends keyof TEventMap>(type: TKey, payload: TEventMap[TKey]): void {
+  async emit<TKey extends keyof TEventMap>(type: TKey, payload: TEventMap[TKey]): Promise<void> {
     const set = this.listeners.get(type);
     if (!set) {
       return;
     }
+    const results: Promise<void>[] = [];
     for (const listener of [...set]) {
-      (listener as EventListener<TEventMap[TKey]>)(payload);
+      const result = (listener as EventListener<TEventMap[TKey]>)(payload);
+      if (result instanceof Promise) {
+        results.push(result);
+      }
     }
+    await Promise.all(results);
   }
 }

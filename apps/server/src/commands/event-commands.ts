@@ -1,8 +1,10 @@
-import type { CommandBus } from "@notes/core";
+import type { CommandBus, EventBus } from "@notes/core";
 import type { RichEvent } from "@notes/note-calendar";
 import { newEventId, parseCalendar, serializeCalendar } from "@notes/note-calendar";
 import type { Tome } from "@notes/tome";
-import { deleteEvent, listEvents, readEvent, writeEvent } from "./event-store";
+import { renameCompanionFolder } from "./companion-folder-rename";
+import type { NoteLifecycleEventMap } from "./note-lifecycle";
+import { deleteEvent, eventDotFolder, listEvents, readEvent, writeEvent } from "./event-store";
 
 interface GetTome {
   (): Tome;
@@ -25,7 +27,18 @@ async function saveCalendarModel(
  * Registers event CRUD commands. All commands receive `calendarPath` (relative
  * tome path to the `.md` calendar file) and operate on the companion dot-folder.
  */
-export function registerEventCommands(bus: CommandBus, getTome: GetTome): void {
+export function registerEventCommands(
+  bus: CommandBus,
+  getTome: GetTome,
+  events?: EventBus<NoteLifecycleEventMap>,
+): void {
+  events?.on("note.path-moved", async ({ fromPath, toPath, noteType }) => {
+    if (noteType !== "calendar") {
+      return;
+    }
+    await renameCompanionFolder(getTome(), fromPath, toPath, (path) => eventDotFolder(path));
+  });
+
   // ------------------------------------------------------------------
   // event.list — fetch all RichEvents for a calendar, sorted by date+time
   // ------------------------------------------------------------------
