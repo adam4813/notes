@@ -1,4 +1,4 @@
-import type { CommandBus } from "@notes/core";
+import type { CommandBus, EventBus } from "@notes/core";
 import type {
   FileBinaryPayload,
   FileMovePayload,
@@ -7,9 +7,14 @@ import type {
 } from "@notes/shared";
 import type { Tome } from "@notes/tome";
 import { rewriteEmbeddedReferences } from "../rename-references";
+import { emitNotePathMoved, type NoteLifecycleEventMap } from "./note-lifecycle";
 
 /** Registers the core `file.*` commands, backed by the active Tome. */
-export function registerFileCommands(bus: CommandBus, getTome: () => Tome): void {
+export function registerFileCommands(
+  bus: CommandBus,
+  getTome: () => Tome,
+  events: EventBus<NoteLifecycleEventMap>,
+): void {
   bus.register({
     name: "file.tree",
     handler: async () => ({ entries: await getTome().listTree() }),
@@ -58,9 +63,19 @@ export function registerFileCommands(bus: CommandBus, getTome: () => Tome): void
   for (const name of ["file.rename", "file.move"] as const) {
     bus.register<FileMovePayload, FileMovePayload>({
       name,
-      handler: async (payload) => {
+      handler: async (payload, ctx) => {
         const tome = getTome();
+        const noteTypeResult = (await bus.dispatch(
+          "note.detectType",
+          { path: payload.from },
+          ctx,
+        )) as { type: string | null };
         await tome.move(payload.from, payload.to);
+        await emitNotePathMoved(events, {
+          fromPath: payload.from,
+          toPath: payload.to,
+          noteType: noteTypeResult.type,
+        });
         const entries = await tome.listTree({ includeDotfiles: true });
         const stack = [...entries];
         while (stack.length > 0) {

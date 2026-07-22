@@ -54,7 +54,7 @@ export class TomeWatcher {
         return;
       }
       const path = relative(this.root, absolutePath).split(sep).join("/");
-      this.bus.emit("tome:change", { kind, path });
+      void this.bus.emit("tome:change", { kind, path });
     });
   }
 
