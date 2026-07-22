@@ -1,0 +1,53 @@
+name: PR — Ensure package.json version bumped
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'package.json'
+
+permissions:
+  contents: read
+
+jobs:
+  check-version-bump:
+    name: Check package.json version bump
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Fetch main branch
+        run: git fetch origin main
+
+      - name: Save main package.json
+        run: |
+          set -e
+          git show origin/main:package.json > package-main.json || true
+
+      - name: Check version bumped
+        run: |
+          set -euo pipefail
+          if [ ! -f package.json ]; then
+            echo "No package.json in PR checkout"
+            exit 1
+          fi
+          if [ ! -f package-main.json ]; then
+            echo "No package.json found on main branch to compare against"
+            exit 1
+          fi
+          PR_VERSION=$(jq -r '.version // empty' package.json)
+          MAIN_VERSION=$(jq -r '.version // empty' package-main.json)
+          if [ -z "$PR_VERSION" ]; then
+            echo "package.json in PR has no version field"
+            exit 1
+          fi
+          if [ "$PR_VERSION" = "$MAIN_VERSION" ]; then
+            echo "package.json version unchanged ($PR_VERSION). Please bump the version in package.json."
+            exit 1
+          fi
+          echo "package.json version changed: $MAIN_VERSION -> $PR_VERSION"
