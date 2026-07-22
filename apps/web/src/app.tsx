@@ -110,7 +110,8 @@ export function App() {
   const [accent, setAccentState] = useState(() => loadAccent());
   const [fontSizes, setFontSizes] = useState(() => loadFontSizes());
   const [fontFamilies, setFontFamilies] = useState(() => loadFontFamilies());
-  const [fontFamilyOptions, setFontFamilyOptions] = useState<FontFamilyOption[]>(FONT_FAMILY_PRESETS);
+  const [fontFamilyOptions, setFontFamilyOptions] =
+    useState<FontFamilyOption[]>(FONT_FAMILY_PRESETS);
   const [recentCommandIds, setRecentCommandIds] = useState<string[]>(() => loadRecentCommands());
   const [noteTypes, setNoteTypes] = useState<Record<string, string>>({});
   const [externalThemes, setExternalThemes] = useState<ThemeMeta[]>([]);

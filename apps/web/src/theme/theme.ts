@@ -48,7 +48,9 @@ export async function querySystemFonts(): Promise<FontFamilyOption[]> {
   }
   try {
     const fonts: { family: string; fullName: string }[] = await (
-      window as unknown as { queryLocalFonts: () => Promise<{ family: string; fullName: string }[]> }
+      window as unknown as {
+        queryLocalFonts: () => Promise<{ family: string; fullName: string }[]>;
+      }
     ).queryLocalFonts();
     const families = new Set<string>();
     for (const font of fonts) {
@@ -78,23 +80,24 @@ export function buildFontFamilyOptions(
   base: FontFamilyOption[],
   themeFont?: string,
 ): FontFamilyOption[] {
-  if (!themeFont) {
+  if (!themeFont || base.length === 0) {
     return base;
   }
   // Check if the theme font is already in the list
   const existing = base.find(
-    (o) => o.value === themeFont || o.label.toLowerCase() === themeFont.toLowerCase(),
+    (o) => o.value === themeFont || o.label.localeCompare(themeFont, undefined, { sensitivity: "base" }) === 0,
   );
   // Build a theme entry that surfaces at position 1 (after System default)
+  const themeValue = existing?.value ?? themeFont;
   const themeOption: FontFamilyOption = {
     id: `theme-${themeFont.toLowerCase().replace(/\s+/g, "-")}`,
     label: `Theme — ${themeFont}`,
-    value: existing?.value ?? themeFont,
+    value: themeValue,
   };
-  // Place it after "System default" and remove any duplicate
-  const [systemDefault, ...rest] = base;
-  const filtered = rest.filter((o) => o.id !== themeOption.id);
-  return [systemDefault, themeOption, ...filtered];
+  // Place it after "System default" and remove any duplicate by value
+  const systemDefault = base.find((o) => o.id === "system") ?? base[0];
+  const rest = base.filter((o) => o !== systemDefault && o.value !== themeValue);
+  return [systemDefault, themeOption, ...rest];
 }
 
 /** Built-in accent presets; the first is the default (empty = token default). */
