@@ -85,7 +85,9 @@ export function buildFontFamilyOptions(
   }
   // Check if the theme font is already in the list
   const existing = base.find(
-    (o) => o.value === themeFont || o.label.localeCompare(themeFont, undefined, { sensitivity: "base" }) === 0,
+    (o) =>
+      o.value === themeFont ||
+      o.label.localeCompare(themeFont, undefined, { sensitivity: "base" }) === 0,
   );
   // Build a theme entry that surfaces at position 1 (after System default)
   const themeValue = existing?.value ?? themeFont;
