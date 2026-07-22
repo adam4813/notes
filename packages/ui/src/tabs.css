@@ -106,3 +106,46 @@
   opacity: 0.35;
   cursor: default;
 }
+
+/* ─── Drag & drop ───────────────────────────────────────────────────────── */
+
+/* Source tab dims while being dragged */
+.tab--dragging {
+  opacity: 0.4;
+}
+
+/* Drop indicator: a 2px vertical line drawn before the tab */
+.tab--drop-before {
+  position: relative;
+}
+
+.tab--drop-before::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Drop indicator: a 2px vertical line drawn after the tab */
+.tab--drop-after {
+  position: relative;
+}
+
+.tab--drop-after::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+  z-index: 10;
+  pointer-events: none;
+}

@@ -36,9 +36,25 @@ export type WorkspaceAction =
   | { type: "closeAllTabs"; paneId: string }
   | { type: "activateTab"; paneId: string; tabId: string }
   | { type: "focusPane"; paneId: string }
-  | { type: "splitPane"; paneId: string; mode: "duplicate" | "move" }
+  | {
+      type: "splitPane";
+      paneId: string;
+      mode: "duplicate" | "move";
+      /** If provided, move this specific tab instead of the active tab */
+      tabId?: string;
+      /** If true, insert the new pane before (left of) the source pane */
+      insertBefore?: boolean;
+    }
   | { type: "closePane"; paneId: string }
   | { type: "moveTabToOpposite"; paneId: string }
+  | {
+      type: "moveTab";
+      fromPaneId: string;
+      tabId: string;
+      toPaneId: string;
+      /** Index in the target pane's tab array where the tab should be inserted */
+      toIndex: number;
+    }
   | { type: "renamePath"; from: string; to: string; title: string }
   | { type: "renamePrefix"; from: string; to: string }
   | { type: "closePath"; path: string }

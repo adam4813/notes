@@ -160,7 +160,10 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         return state;
       }
       const source = state.panes.find((p) => p.id === action.paneId) ?? state.panes[0];
-      const activeTab = source.tabs.find((tab) => tab.id === source.activeTabId);
+      // If a specific tabId is provided, use that tab; otherwise fall back to the active tab.
+      const activeTab = action.tabId
+        ? source.tabs.find((tab) => tab.id === action.tabId)
+        : source.tabs.find((tab) => tab.id === source.activeTabId);
 
       const newPane: Pane = { id: generateId("pane"), tabs: [] };
       if (activeTab) {
@@ -169,9 +172,9 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         newPane.activeTabId = cloned.id;
       }
 
-      let panes = [...state.panes, newPane];
+      let sourcePanes = [...state.panes];
       if (action.mode === "move" && activeTab) {
-        panes = panes.map((pane) => {
+        sourcePanes = sourcePanes.map((pane) => {
           if (pane.id !== source.id) {
             return pane;
           }
@@ -179,6 +182,15 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
           return { ...pane, tabs, activeTabId: tabs[tabs.length - 1]?.id };
         });
       }
+
+      // Insert new pane immediately before or after the source pane.
+      const sourceIdx = sourcePanes.findIndex((p) => p.id === source.id);
+      const insertAt = action.insertBefore ? sourceIdx : sourceIdx + 1;
+      const panes = [
+        ...sourcePanes.slice(0, insertAt),
+        newPane,
+        ...sourcePanes.slice(insertAt),
+      ];
       return { ...state, panes, activePaneId: newPane.id };
     }
 
@@ -224,6 +236,61 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       const finalPanes = remaining.length > 0 ? remaining : [{ id: generateId("pane"), tabs: [] }];
       const activePaneId = finalPanes.some((pane) => pane.id === target.id)
         ? target.id
+        : finalPanes[0].id;
+      return { ...state, panes: finalPanes, activePaneId };
+    }
+
+    case "moveTab": {
+      const { fromPaneId, tabId, toPaneId, toIndex } = action;
+      const sourcePane = state.panes.find((p) => p.id === fromPaneId);
+      if (!sourcePane) return state;
+      const tab = sourcePane.tabs.find((t) => t.id === tabId);
+      if (!tab) return state;
+
+      if (fromPaneId === toPaneId) {
+        // Reorder within the same pane.
+        return updatePane(state, fromPaneId, (pane) => {
+          const fromIndex = pane.tabs.findIndex((t) => t.id === tabId);
+          if (fromIndex === -1) return pane;
+          const tabs = [...pane.tabs];
+          tabs.splice(fromIndex, 1);
+          // After removing the dragged tab, all indices after it shift left by 1.
+          // Compensate only when the insertion point was to the right of the source.
+          const insertAt = fromIndex < toIndex ? toIndex - 1 : toIndex;
+          tabs.splice(Math.min(insertAt, tabs.length), 0, tab);
+          return { ...pane, tabs, activeTabId: tab.id };
+        });
+      }
+
+      // Move between panes.
+      const targetPane = state.panes.find((p) => p.id === toPaneId);
+      if (!targetPane) return state;
+
+      const panes = state.panes.map((pane) => {
+        if (pane.id === fromPaneId) {
+          const tabs = pane.tabs.filter((t) => t.id !== tabId);
+          const activeTabId =
+            pane.activeTabId === tabId ? tabs[tabs.length - 1]?.id : pane.activeTabId;
+          return { ...pane, tabs, activeTabId };
+        }
+        if (pane.id === toPaneId) {
+          // If the target pane already has the same path open, activate it.
+          const existing = pane.tabs.find((t) => t.path === tab.path);
+          if (existing) {
+            return { ...pane, activeTabId: existing.id };
+          }
+          const moved: Tab = { ...tab, id: generateId("tab") };
+          const tabs = [...pane.tabs];
+          tabs.splice(Math.min(toIndex, tabs.length), 0, moved);
+          return { ...pane, tabs, activeTabId: moved.id };
+        }
+        return pane;
+      });
+
+      const remaining = panes.filter((pane) => pane.tabs.length > 0);
+      const finalPanes = remaining.length > 0 ? remaining : [{ id: generateId("pane"), tabs: [] }];
+      const activePaneId = finalPanes.some((pane) => pane.id === toPaneId)
+        ? toPaneId
         : finalPanes[0].id;
       return { ...state, panes: finalPanes, activePaneId };
     }
