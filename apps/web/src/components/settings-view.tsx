@@ -48,6 +48,11 @@ export interface SettingsBodyProps {
   editorFontSize: number;
   onAppFontSizeChange: (size: number) => void;
   onEditorFontSizeChange: (size: number) => void;
+  appFontFamily: string;
+  editorFontFamily: string;
+  fontFamilyOptions: { id: string; label: string; value: string }[];
+  onAppFontFamilyChange: (family: string) => void;
+  onEditorFontFamilyChange: (family: string) => void;
   openInTab: boolean;
   onOpenInTabChange: (openInTab: boolean) => void;
   mediaDirectory: string;
@@ -151,6 +156,11 @@ export function SettingsBody(props: SettingsBodyProps) {
     editorFontSize,
     onAppFontSizeChange,
     onEditorFontSizeChange,
+    appFontFamily,
+    editorFontFamily,
+    fontFamilyOptions,
+    onAppFontFamilyChange,
+    onEditorFontFamilyChange,
     openInTab,
     onOpenInTabChange,
     mediaDirectory,
@@ -277,6 +287,22 @@ export function SettingsBody(props: SettingsBodyProps) {
           <span className="settings-value">{appFontSize}px</span>
         </div>
         <div className="settings-field">
+          <span className="settings-label">App font family</span>
+          <select
+            aria-label="App font family"
+            data-testid="app-font-family"
+            className="settings-select"
+            value={appFontFamily}
+            onChange={(event) => onAppFontFamilyChange(event.target.value)}
+          >
+            {fontFamilyOptions.map((option) => (
+              <option key={option.id} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="settings-field">
           <span className="settings-label">Editor font</span>
           <input
             type="range"
@@ -289,6 +315,23 @@ export function SettingsBody(props: SettingsBodyProps) {
             onChange={(event) => onEditorFontSizeChange(Number(event.target.value))}
           />
           <span className="settings-value">{editorFontSize}px</span>
+        </div>
+        <div className="settings-field">
+          <span className="settings-label">Editor font family</span>
+          <select
+            aria-label="Editor font family"
+            data-testid="editor-font-family"
+            className="settings-select"
+            value={editorFontFamily}
+            onChange={(event) => onEditorFontFamilyChange(event.target.value)}
+          >
+            <option value="__use_app__">Use app font</option>
+            {fontFamilyOptions.map((option) => (
+              <option key={option.id} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="settings-field">
           <span className="settings-label">Rendered note width</span>

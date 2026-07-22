@@ -28,6 +28,16 @@
           if (editorFont) {
             document.documentElement.style.setProperty("--editor-font-size", editorFont + "px");
           }
+          var appFontFamily = localStorage.getItem("notes.fontFamily.app");
+          if (appFontFamily) {
+            document.documentElement.style.setProperty("--app-font-family", appFontFamily);
+          }
+          var editorFontFamily = localStorage.getItem("notes.fontFamily.editor");
+          if (editorFontFamily && editorFontFamily !== "__use_app__") {
+            document.documentElement.style.setProperty("--editor-font-family", editorFontFamily);
+          } else if (editorFontFamily === "__use_app__" && appFontFamily) {
+            document.documentElement.style.setProperty("--editor-font-family", appFontFamily);
+          }
         } catch (error) {
           /* ignore storage access errors */
         }
