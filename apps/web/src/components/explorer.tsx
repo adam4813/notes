@@ -117,6 +117,7 @@ function TreeRow({
             className="tree-rename-input"
             value={handlers.renameDraft}
             autoFocus
+            onFocus={(event) => event.currentTarget.select()}
             onChange={(event) => handlers.onRenameDraftChange(event.target.value)}
             onBlur={() => handlers.onRenameCommit()}
             onKeyDown={(event) => {
@@ -174,6 +175,7 @@ function TreeRow({
           className="tree-rename-input"
           value={handlers.renameDraft}
           autoFocus
+          onFocus={(event) => event.currentTarget.select()}
           onChange={(event) => handlers.onRenameDraftChange(event.target.value)}
           onBlur={() => handlers.onRenameCommit()}
           onKeyDown={(event) => {
@@ -330,18 +332,6 @@ export function Explorer({
     cancelRename();
     await refresh();
   };
-
-  useEffect(() => {
-    if (!renamePath) {
-      return;
-    }
-    const node = findEntry(state.tree, renamePath);
-    if (!node) {
-      return;
-    }
-    setRenameDraft(node.name);
-    openAncestors(node.path);
-  }, [renamePath, state.tree]);
 
   useEffect(() => {
     if (!renameRequestPath) {
