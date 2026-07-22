@@ -91,7 +91,7 @@ body,
 
 body {
   /* prettier-ignore */
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--app-font-family, system-ui, -apple-system, "Segoe UI", sans-serif);
   font-size: var(--app-font-size);
   background: var(--bg-app);
   color: var(--fg);
@@ -964,6 +964,16 @@ button {
   padding: 6px 8px;
 }
 
+.settings-select {
+  width: min(420px, 100%);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
 .settings-import-btn {
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -1785,6 +1795,7 @@ button {
 .cm-content,
 .tiptap-host .ProseMirror {
   font-size: var(--editor-font-size);
+  font-family: var(--editor-font-family, inherit);
 }
 
 .cm-host {

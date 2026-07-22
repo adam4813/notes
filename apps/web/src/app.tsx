@@ -37,6 +37,9 @@ import {
   ACCENT_PRESETS,
   applyFontSizes,
   loadFontSizes,
+  applyFontFamilies,
+  loadFontFamilies,
+  FONT_FAMILY_OPTIONS,
 } from "./theme/theme";
 import { loadExternalThemes } from "./theme/theme-loader";
 import type { SettingsBodyProps } from "./components/settings-view";
@@ -103,6 +106,7 @@ export function App() {
   );
   const [accent, setAccentState] = useState(() => loadAccent());
   const [fontSizes, setFontSizes] = useState(() => loadFontSizes());
+  const [fontFamilies, setFontFamilies] = useState(() => loadFontFamilies());
   const [recentCommandIds, setRecentCommandIds] = useState<string[]>(() => loadRecentCommands());
   const [noteTypes, setNoteTypes] = useState<Record<string, string>>({});
   const [externalThemes, setExternalThemes] = useState<ThemeMeta[]>([]);
@@ -375,7 +379,17 @@ export function App() {
 
   useEffect(() => {
     applyTheme(state.theme);
-  }, [state.theme]);
+    // When switching to a custom theme that specifies default fonts, apply them.
+    const meta = externalThemes.find((t) => t.id === state.theme);
+    if (meta) {
+      if (meta.appFont !== undefined) {
+        setFontFamilies((prev) => ({ ...prev, app: meta.appFont! }));
+      }
+      if (meta.editorFont !== undefined) {
+        setFontFamilies((prev) => ({ ...prev, editor: meta.editorFont! }));
+      }
+    }
+  }, [state.theme, externalThemes]);
 
   // Listen for files opened via OS file association (Electron only).
   useEffect(() => {
@@ -439,6 +453,10 @@ export function App() {
     applyFontSizes(fontSizes.app, fontSizes.editor);
   }, [fontSizes]);
 
+  useEffect(() => {
+    applyFontFamilies(fontFamilies.app, fontFamilies.editor);
+  }, [fontFamilies]);
+
   const setAccent = useCallback((color: string) => setAccentState(color), []);
   const setAppFontSize = useCallback(
     (size: number) => setFontSizes((prev) => ({ ...prev, app: size })),
@@ -446,6 +464,14 @@ export function App() {
   );
   const setEditorFontSize = useCallback(
     (size: number) => setFontSizes((prev) => ({ ...prev, editor: size })),
+    [],
+  );
+  const setAppFontFamily = useCallback(
+    (family: string) => setFontFamilies((prev) => ({ ...prev, app: family })),
+    [],
+  );
+  const setEditorFontFamily = useCallback(
+    (family: string) => setFontFamilies((prev) => ({ ...prev, editor: family })),
     [],
   );
 
@@ -704,6 +730,11 @@ export function App() {
       editorFontSize: fontSizes.editor,
       onAppFontSizeChange: setAppFontSize,
       onEditorFontSizeChange: setEditorFontSize,
+      appFontFamily: fontFamilies.app,
+      editorFontFamily: fontFamilies.editor,
+      fontFamilyOptions: FONT_FAMILY_OPTIONS,
+      onAppFontFamilyChange: setAppFontFamily,
+      onEditorFontFamilyChange: setEditorFontFamily,
       openInTab: openSettingsInTab,
       onOpenInTabChange: setOpenSettingsInTab,
       mediaDirectory,
@@ -739,6 +770,9 @@ export function App() {
       fontSizes,
       setAppFontSize,
       setEditorFontSize,
+      fontFamilies,
+      setAppFontFamily,
+      setEditorFontFamily,
       openSettingsInTab,
       setOpenSettingsInTab,
       mediaDirectory,

@@ -11,6 +11,10 @@ export interface ThemeMeta {
   colorModes: ("light" | "dark")[];
   description?: string;
   author?: string;
+  /** Default font family the theme prescribes for the app UI. */
+  appFont?: string;
+  /** Default font family the theme prescribes for the editor/note content. */
+  editorFont?: string;
 }
 
 /** Product name (working title). */
