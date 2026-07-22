@@ -27,6 +27,14 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 8px;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.board-column--drag-over {
+  border-color: var(--accent, #4f8ef7);
+  background: color-mix(in srgb, var(--bg-elevated) 92%, var(--accent, #4f8ef7) 8%);
 }
 
 .board-column-head {
@@ -69,20 +77,33 @@
   padding: 2px;
 }
 
+/* Drop silhouette */
+.board-card-silhouette {
+  height: 58px;
+  border: 2px dashed var(--accent, #4f8ef7);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg) 90%, var(--accent, #4f8ef7) 10%);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
 .board-card {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px;
-  cursor: grab;
 }
 
 .board-card--done .board-card-title {
   text-decoration: line-through;
   color: var(--fg-muted);
+}
+
+.board-card--dragging {
+  opacity: 0.35;
+  border-style: dashed;
 }
 
 .board-card-del {
@@ -95,13 +116,47 @@
 .board-card--expanded {
   flex-direction: column;
   cursor: default;
+  padding: 0;
 }
 
+/* ── Expand/collapse toggle button ── */
+.board-card-toggle {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  font-size: 9px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.board-card-toggle:hover {
+  background: var(--hover);
+  color: var(--fg);
+}
+
+/* ── Collapsed layout ── */
 .board-card-collapsed {
   display: flex;
   align-items: flex-start;
   gap: 6px;
   width: 100%;
+  cursor: grab;
+}
+
+.board-card-collapsed:active {
+  cursor: grabbing;
+}
+
+.board-card-collapsed-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .board-card-title {
@@ -110,11 +165,32 @@
   font-size: 13px;
 }
 
-.board-card-chips {
+.board-card-title--heading {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  word-break: break-word;
+  min-width: 0;
+  padding: 2px 0;
+}
+
+.board-card-placeholder {
+  color: var(--fg-muted);
+  font-style: italic;
+}
+
+/* Tags + due date row */
+.board-card-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.board-card-label-group {
   display: flex;
   flex-wrap: wrap;
   gap: 3px;
-  margin-top: 4px;
 }
 
 .board-card-chip {
@@ -143,10 +219,11 @@
   background: var(--bg-elevated);
 }
 
+/* ── Expanded layout ── */
 .board-card-expanded {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
   width: 100%;
 }
 
@@ -154,6 +231,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  padding: 8px;
+  cursor: grab;
+  border-bottom: 1px solid var(--border);
+}
+
+.board-card-expand-header:active {
+  cursor: grabbing;
 }
 
 .board-card-title-input {
@@ -166,6 +250,14 @@
   font-weight: 600;
   outline: none;
   padding: 2px 0;
+  min-width: 0;
+}
+
+/* Inline input in collapsed view — normal weight to match the title */
+.board-card-title-input--inline {
+  font-weight: normal;
+  font-size: 13px;
+  width: 100%;
 }
 
 .board-card-collapse {
@@ -180,12 +272,28 @@
   background: var(--hover);
 }
 
+/* Open-in-modal button */
+.board-card-open-modal {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.board-card-open-modal:hover {
+  background: var(--hover);
+  color: var(--fg);
+}
+
 .board-card-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 4px 0;
-  border-top: 1px solid var(--border);
+  padding: 6px 8px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -216,13 +324,24 @@
   min-height: 80px;
   max-height: 300px;
   overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
+  background: var(--bg-sunken);
 
-.board-card-body-editor .markdown-editor {
-  height: auto;
-  min-height: 80px;
+  .markdown-editor {
+    height: auto;
+    min-height: 80px;
+  }
+
+  .editor-toolbar {
+    padding: 6px 8px 0;
+  }
+
+  .rendered-scroll {
+    margin: 0 6px 8px;
+  }
+
+  .tiptap-host .ProseMirror {
+    padding: 6px 8px;
+  }
 }
 
 .board-loading {
@@ -242,6 +361,11 @@
   padding: 6px 8px;
 }
 
+.board-add-card:hover {
+  color: var(--fg);
+  background: var(--hover);
+}
+
 .board-add-column {
   flex: 0 0 auto;
   align-self: flex-start;
@@ -255,4 +379,27 @@
 .board-add-column:hover {
   color: var(--fg);
   background: var(--hover);
+}
+
+/* ── Card modal (board-specific overrides on top of @notes/ui Modal) ── */
+.board-modal-title {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg);
+  outline: none;
+  padding: 4px 0;
+  min-width: 0;
+}
+
+.board-modal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
 }
