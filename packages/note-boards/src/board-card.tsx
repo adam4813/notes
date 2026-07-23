@@ -8,7 +8,6 @@ const LABEL_COLORS = ["#e2f0fb", "#fde8d8", "#d9f2e8", "#f5e6fb", "#fef9c3"];
 export function BoardCard({
   card,
   isNew,
-  isDragging,
   onDragStart,
   onDragEnd,
   onDropCard,
@@ -21,7 +20,6 @@ export function BoardCard({
 }: {
   card: RichCard;
   isNew?: boolean;
-  isDragging?: boolean;
   onDragStart: (e: DragEvent, cardId: string, columnName: string) => void;
   onDragEnd: () => void;
   onDropCard: (e: DragEvent, columnName: string, cardId: string) => void;
@@ -91,12 +89,9 @@ export function BoardCard({
     <div
       ref={cardRef}
       data-card-id={card.id}
-      className={`board-card${card.done ? " board-card--done" : ""}${expanded ? " board-card--expanded" : ""}${isDragging ? " board-card--dragging" : ""}`}
+      className={`board-card${card.done ? " board-card--done" : ""}${expanded ? " board-card--expanded" : ""}`}
       onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => {
-        onDropCard(e, column.name, card.id);
-        e.currentTarget.classList.remove("drag-hidden");
-      }}
+      onDrop={(e) => onDropCard(e, column.name, card.id)}
       onDragEnter={(e) => {
         if (isColumnDragActive) return;
         e.stopPropagation();
