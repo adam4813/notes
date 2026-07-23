@@ -118,11 +118,6 @@
   color: var(--fg-muted);
 }
 
-.board-card--dragging {
-  opacity: 0.35;
-  border-style: dashed;
-}
-
 .board-card-del {
   background: transparent;
   border: none;

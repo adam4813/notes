@@ -46,7 +46,6 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
   const [newCardId, setNewCardId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const [modalCard, setModalCard] = useState<RichCard | null>(null);
-  const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
 
   // Column drag state
   const [draggingColumnName, setDraggingColumnName] = useState<string | null>(null);
@@ -291,12 +290,10 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
     } catch (error) {
       console.error("Failed to set drag data:", error);
     }
-    setDraggingCardId(cardId);
   };
 
   const onDragEnd = () => {
     setDropTarget(null);
-    setDraggingCardId(null);
     dragRef.current = null;
   };
 
@@ -304,7 +301,6 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
     event.preventDefault();
     event.stopPropagation();
     setDropTarget(null);
-    setDraggingCardId(null);
     const drag = dragRef.current;
     dragRef.current = null;
     if (!drag || drag.cardId === beforeCardId) return;
@@ -504,8 +500,17 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
                   <header
                     className="board-column-head"
                     draggable
-                    onDragStart={(e) => onColumnDragStart(e, column.name)}
-                    onDragEnd={() => onColumnDragEnd()}
+                    onDragStart={(e) => {
+                      const parent = e.currentTarget.parentElement;
+                      setTimeout(() => {
+                        parent?.classList.add("drag-hidden");
+                      });
+                      onColumnDragStart(e, column.name);
+                    }}
+                    onDragEnd={(e) => {
+                      e.currentTarget.parentElement?.classList.remove("drag-hidden");
+                      onColumnDragEnd();
+                    }}
                   >
                     <span
                       className="board-column-name"
@@ -544,7 +549,6 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
                           <BoardCard
                             card={card}
                             isNew={card.id === newCardId}
-                            isDragging={card.id === draggingCardId}
                             onDragStart={onDragStart}
                             onDragEnd={onDragEnd}
                             onDropCard={onDropCard}
