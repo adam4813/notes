@@ -1,6 +1,6 @@
 {
   "name": "@notes/note-boards",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "Kanban board note type, markdown-backed (first-party plugin).",
   "type": "module",

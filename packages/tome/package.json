@@ -1,6 +1,6 @@
 {
   "name": "@notes/tome",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "File-system Tome: CRUD, path safety, atomic writes, and file watcher.",
   "type": "module",
