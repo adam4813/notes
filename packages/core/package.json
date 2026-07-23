@@ -1,6 +1,6 @@
 {
   "name": "@notes/core",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "Command bus, event bus, registries, and extension-point contracts (no I/O).",
   "type": "module",
