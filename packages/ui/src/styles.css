@@ -5,3 +5,8 @@
 @import "./tabs.css";
 @import "./panel.css";
 @import "./menu.css";
+@import "./modal.css";
+
+.drag-hidden {
+  display: none !important;
+}

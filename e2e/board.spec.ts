@@ -16,9 +16,9 @@ test("board note: create, add a card, and persist", async ({ page }) => {
   await expect(cards).toHaveCount(before + 1);
 
   const createdCard = cards.nth(before);
-  await createdCard.click();
-  await createdCard.locator(".board-card-title-input").fill("My new card");
-  await createdCard.getByRole("button", { name: "Collapse card" }).click();
+  const titleInput = createdCard.locator(".board-card-title-input");
+  await titleInput.fill("My new card");
+  await titleInput.blur();
   await expect(page.locator(".board-card-title", { hasText: "My new card" })).toBeVisible();
 
   // Confirm the card title persisted to the board card store.

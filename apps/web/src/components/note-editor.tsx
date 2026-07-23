@@ -12,7 +12,12 @@ import { GridView } from "@notes/note-grid";
 import { MermaidView } from "@notes/note-mermaid";
 import { TableGrid } from "@notes/note-tables";
 import type { FileTypeHandler } from "@notes/plugin-host";
-import { ContextMenu, ContextMenuEntry, useContextMenu } from "@notes/ui";
+import {
+  ContextMenu,
+  ContextMenuEntry,
+  type NoteViewContextMenuBuilder,
+  useContextMenu,
+} from "@notes/ui";
 import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/client";
 import { queueWrite } from "../api/offline-queue";
@@ -134,6 +139,12 @@ export function NoteEditor({
   const [findOpen, setFindOpen] = useState(false);
   const [splitScrollSync, setSplitScrollSync] = useState(initialSession.viewState.splitScrollSync);
   const ctxMenu = useContextMenu<HTMLElement | null>();
+  // Note-view components register a builder here to supply content-specific
+  // context menu items (e.g. board cards register Delete / Duplicate).
+  const noteViewCtxBuilderRef = useRef<NoteViewContextMenuBuilder | null>(null);
+  const onRegisterContextMenu = useCallback((builder: NoteViewContextMenuBuilder | null) => {
+    noteViewCtxBuilderRef.current = builder;
+  }, []);
   const regionRef = useRef<HTMLDivElement>(null);
   const dirtyRef = useRef(false);
   const contentRef = useRef("");
@@ -339,6 +350,12 @@ export function NoteEditor({
 
   const contextMenuItems = useMemo(() => {
     const target = ctxMenu.menu?.data ?? null;
+
+    // Let the active note view override with content-specific items (e.g. board cards).
+    const custom = noteViewCtxBuilderRef.current?.(target);
+    if (custom) return custom;
+
+    // Default: generic text-editing commands.
     const items: ContextMenuEntry[] = [];
     items.push(
       { label: "Undo", run: () => runEditCommand("undo", target) },
@@ -350,7 +367,7 @@ export function NoteEditor({
       { label: "Select All", run: () => runEditCommand("selectAll", target) },
     );
     return items;
-  }, [ctxMenu.menu?.data]);
+  }, [ctxMenu.menu]);
 
   if (saveState === "loading") {
     return <div className="note-loading">Loading…</div>;
@@ -379,6 +396,9 @@ export function NoteEditor({
           if (!target || target.closest(".context-menu")) {
             return;
           }
+          // If the note view's builder returns [] (empty), suppress the menu entirely.
+          const custom = noteViewCtxBuilderRef.current?.(target);
+          if (custom !== undefined && custom !== null && custom.length === 0) return;
           event.preventDefault();
           ctxMenu.open({ x: event.clientX, y: event.clientY }, target);
         }}
@@ -440,7 +460,12 @@ export function NoteEditor({
             }
           />
         ) : isBoard ? (
-          <BoardView value={content} onChange={handleChange} path={path} />
+          <BoardView
+            value={content}
+            onChange={handleChange}
+            path={path}
+            onRegisterContextMenu={onRegisterContextMenu}
+          />
         ) : isTable ? (
           <TableGrid value={content} onChange={handleChange} />
         ) : isMermaid ? (
