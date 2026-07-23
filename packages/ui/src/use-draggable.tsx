@@ -1,4 +1,4 @@
-﻿import { DragEvent } from "react";
+﻿import { DragEvent, useMemo } from "react";
 
 export function useDraggable<T>(
   {
@@ -12,16 +12,22 @@ export function useDraggable<T>(
   },
   ...data: T[]
 ) {
-  return {
-    draggable: isDraggable,
-    onDragStart: (event: DragEvent) => {
-      event.stopPropagation();
-      onDragStart(event, ...data);
-      event.currentTarget.classList.add("drag-hidden");
-    },
-    onDragEnd: (event: DragEvent) => {
-      event.currentTarget.classList.remove("drag-hidden");
-      onDragEnd();
-    },
-  };
+  return useMemo(
+    () => ({
+      draggable: isDraggable,
+      onDragStart: (event: DragEvent) => {
+        event.stopPropagation();
+        const parent = event.currentTarget.parentElement;
+        setTimeout(() => {
+          parent?.classList.add("drag-hidden");
+        });
+        onDragStart(event, ...data);
+      },
+      onDragEnd: (event: DragEvent) => {
+        event.currentTarget.parentElement?.classList.remove("drag-hidden");
+        onDragEnd();
+      },
+    }),
+    [isDraggable, onDragStart, onDragEnd, ...data],
+  );
 }
