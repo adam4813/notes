@@ -17,3 +17,5 @@ export { useTabOverflow } from "./use-tab-overflow";
 export type { OverflowableTab } from "./use-tab-overflow";
 export { useContextMenu, fitMenuToViewport } from "./use-context-menu";
 export type { MenuPosition, ContextMenuState } from "./use-context-menu";
+export { usePreventChildDrag } from "./use-prevent-child-drag";
+export { useDraggable } from "./use-draggable";

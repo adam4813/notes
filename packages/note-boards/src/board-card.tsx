@@ -1,7 +1,7 @@
-﻿import { DragEvent, useEffect, useRef, useState } from "react";
-import { MarkdownEditor } from "@notes/editor";
+﻿import { MarkdownEditor } from "@notes/editor";
+import { PopupMenu, useDraggable, usePreventChildDrag } from "@notes/ui";
+import { DragEvent, useEffect, useRef, useState } from "react";
 import type { BoardColumn, RichCard } from "./board-format";
-import { PopupMenu } from "@notes/ui";
 
 const LABEL_COLORS = ["#e2f0fb", "#fde8d8", "#d9f2e8", "#f5e6fb", "#fef9c3"];
 
@@ -77,13 +77,26 @@ export function BoardCard({
     }
   };
 
+  const dragHandle = useDraggable(
+    {
+      isDraggable: !editingTitle,
+      onDragStart,
+      onDragEnd,
+    },
+    card.id,
+    column.name,
+  );
+
   return (
     <div
       ref={cardRef}
       data-card-id={card.id}
       className={`board-card${card.done ? " board-card--done" : ""}${expanded ? " board-card--expanded" : ""}${isDragging ? " board-card--dragging" : ""}`}
       onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => onDropCard(e, column.name, card.id)}
+      onDrop={(e) => {
+        onDropCard(e, column.name, card.id);
+        e.currentTarget.classList.remove("drag-hidden");
+      }}
       onDragEnter={(e) => {
         if (isColumnDragActive) return;
         e.stopPropagation();
@@ -92,12 +105,7 @@ export function BoardCard({
     >
       {/* Collapsed view — the whole row is the drag handle */}
       {!expanded && (
-        <div
-          className="board-card-collapsed"
-          draggable={!editingTitle}
-          onDragStart={(e) => onDragStart(e, card.id, column.name)}
-          onDragEnd={onDragEnd}
-        >
+        <div className="board-card-collapsed" {...dragHandle}>
           <button
             className="board-card-toggle"
             aria-label="Expand card"
@@ -161,16 +169,8 @@ export function BoardCard({
 
       {/* Expanded view — only the header is the drag handle */}
       {expanded && (
-        <div className="board-card-expanded">
-          <div
-            className="board-card-expand-header"
-            draggable={!editingTitle}
-            onDragStart={(e) => {
-              e.stopPropagation();
-              onDragStart(e, card.id, column.name);
-            }}
-            onDragEnd={onDragEnd}
-          >
+        <div className="board-card-expanded" {...dragHandle}>
+          <div className="board-card-expand-header">
             <button
               className="board-card-toggle"
               aria-label="Collapse card"
@@ -237,7 +237,7 @@ export function BoardCard({
             </PopupMenu>
           </div>
 
-          <div className="board-card-meta">
+          <div className="board-card-meta" {...usePreventChildDrag()}>
             <label className="board-card-meta-field">
               <span>Due</span>
               <input
@@ -284,7 +284,7 @@ export function BoardCard({
             </label>
           </div>
 
-          <div className="board-card-body-editor" onDragStart={(e) => e.stopPropagation()}>
+          <div className="board-card-body-editor" {...usePreventChildDrag()}>
             <MarkdownEditor
               value={card.body}
               mode="rendered"
