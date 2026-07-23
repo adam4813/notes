@@ -500,8 +500,17 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
                   <header
                     className="board-column-head"
                     draggable
-                    onDragStart={(e) => onColumnDragStart(e, column.name)}
-                    onDragEnd={() => onColumnDragEnd()}
+                    onDragStart={(e) => {
+                      const parent = e.currentTarget.parentElement;
+                      setTimeout(() => {
+                        parent?.classList.add("drag-hidden");
+                      });
+                      onColumnDragStart(e, column.name);
+                    }}
+                    onDragEnd={(e) => {
+                      e.currentTarget.parentElement?.classList.remove("drag-hidden");
+                      onColumnDragEnd();
+                    }}
                   >
                     <span
                       className="board-column-name"
