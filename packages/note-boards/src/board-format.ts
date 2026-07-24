@@ -17,7 +17,7 @@ export interface RichCard {
   frontmatter?: FrontmatterProp[];
 }
 
-export interface BoardColumn {
+export interface IBoardColumn {
   name: string;
   /** Card IDs referencing files in the companion dot-folder. */
   cards: string[];
@@ -25,7 +25,7 @@ export interface BoardColumn {
 
 export interface BoardModel {
   frontmatter: FrontmatterProp[];
-  columns: BoardColumn[];
+  columns: IBoardColumn[];
 }
 
 let counter = 0;
@@ -41,7 +41,7 @@ export function newCardId(): string {
  */
 export function parseBoard(markdown: string): BoardModel {
   const parsed = parseFrontmatter(markdown);
-  const columns = getFrontmatterField<BoardColumn[]>(parsed.props, "columns") ?? [];
+  const columns = getFrontmatterField<IBoardColumn[]>(parsed.props, "columns") ?? [];
 
   if (columns.length === 0) {
     columns.push({ name: "Todo", cards: [] });
