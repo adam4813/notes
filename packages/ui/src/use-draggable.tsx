@@ -6,9 +6,9 @@ export function useDraggable<T>(
     onDragStart = () => {},
     onDragEnd = () => {},
   }: {
-    isDraggable: boolean;
-    onDragStart: (event: DragEvent, ...data: T[]) => void;
-    onDragEnd: () => void;
+    isDraggable?: boolean;
+    onDragStart?: (event: DragEvent, ...data: T[]) => void;
+    onDragEnd?: () => void;
   },
   ...data: T[]
 ) {

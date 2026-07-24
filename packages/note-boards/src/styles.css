@@ -32,11 +32,6 @@
     background 0.15s;
 }
 
-.board-column--drag-over {
-  border-color: var(--accent, #4f8ef7);
-  background: color-mix(in srgb, var(--bg-elevated) 92%, var(--accent, #4f8ef7) 8%);
-}
-
 .board-column-head {
   display: flex;
   align-items: center;
@@ -97,11 +92,6 @@
   background: color-mix(in srgb, var(--bg) 92%, var(--accent, #4f8ef7) 8%);
   opacity: 0.75;
   flex-shrink: 0;
-}
-
-.board-column--dragging {
-  opacity: 0.45;
-  border-style: dashed;
 }
 
 .board-card {

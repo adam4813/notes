@@ -1,10 +1,10 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { usePromptDialog } from "@notes/editor";
 import { type NoteViewContextMenuBuilder } from "@notes/ui";
-import { BoardCard } from "./board-card";
+import { BoardColumn } from "./board-column";
 import { BoardCardModal } from "./board-card-modal";
 import {
-  type BoardColumn,
+  type IBoardColumn,
   BoardModel,
   parseBoard,
   type RichCard,
@@ -49,9 +49,7 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
 
   // Column drag state
   const [draggingColumnName, setDraggingColumnName] = useState<string | null>(null);
-  const columnDragRef = useRef<string | null>(null);
   const [columnDropBefore, setColumnDropBefore] = useState<string | null>(null);
-  const columnRefs = useRef(new Map<string, HTMLElement | null>());
   const boardScrollRef = useRef<HTMLDivElement | null>(null);
 
   const lastValue = useRef(value);
@@ -92,7 +90,7 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
 
   // Persist column layout changes to the board file.
   const commitColumns = useCallback(
-    (newColumns: BoardColumn[]) => {
+    (newColumns: IBoardColumn[]) => {
       setModel((prev) => ({ ...prev, columns: newColumns }));
       const md = serializeBoard({ ...model, columns: newColumns });
       lastValue.current = md;
@@ -146,45 +144,90 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
     [apiSaveCard],
   );
 
-  const handleAddCard = async (colName: string) => {
-    const res = await fetch("/api/card/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ boardPath: path, column: colName }),
-    });
-    if (!res.ok) return;
-    const card = (await res.json()) as RichCard;
-    setCards((prev) => new Map(prev).set(card.id, card));
-    setModel((prev) => ({
-      ...prev,
-      columns: prev.columns.map((col) =>
-        col.name === colName ? { ...col, cards: [...col.cards, card.id] } : col,
-      ),
-    }));
-    setNewCardId(card.id);
-    // Clear the "new" marker after enough time for the card to mount and focus
-    setTimeout(() => setNewCardId(null), 600);
-  };
+  const handleAddCard = useCallback(
+    async (colName: string) => {
+      const res = await fetch("/api/card/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ boardPath: path, column: colName }),
+      });
+      if (!res.ok) return;
+      const card = (await res.json()) as RichCard;
+      setCards((prev) => new Map(prev).set(card.id, card));
+      setModel((prev) => ({
+        ...prev,
+        columns: prev.columns.map((col) =>
+          col.name === colName ? { ...col, cards: [...col.cards, card.id] } : col,
+        ),
+      }));
+      setNewCardId(card.id);
+      // Clear the "new" marker after enough time for the card to mount and focus
+      setTimeout(() => setNewCardId(null), 600);
+    },
+    [path],
+  );
 
-  const handleDeleteCard = async (cardId: string) => {
-    await fetch(
-      `/api/card?boardPath=${encodeURIComponent(path)}&cardId=${encodeURIComponent(cardId)}`,
-      { method: "DELETE" },
-    );
-    setCards((prev) => {
-      const next = new Map(prev);
-      next.delete(cardId);
-      return next;
-    });
-    setModel((prev) => ({
-      ...prev,
-      columns: prev.columns.map((col) => ({
-        ...col,
-        cards: col.cards.filter((id) => id !== cardId),
-      })),
-    }));
-    setModalCard((prev) => (prev?.id === cardId ? null : prev));
-  };
+  const handleDeleteCard = useCallback(
+    async (cardId: string) => {
+      await fetch(
+        `/api/card?boardPath=${encodeURIComponent(path)}&cardId=${encodeURIComponent(cardId)}`,
+        { method: "DELETE" },
+      );
+      setCards((prev) => {
+        const next = new Map(prev);
+        next.delete(cardId);
+        return next;
+      });
+      setModel((prev) => ({
+        ...prev,
+        columns: prev.columns.map((col) => ({
+          ...col,
+          cards: col.cards.filter((id) => id !== cardId),
+        })),
+      }));
+      setModalCard((prev) => (prev?.id === cardId ? null : prev));
+    },
+    [path],
+  );
+
+  const handleMoveCard = useCallback(
+    async (drag: CardDrag, toColumn: string, beforeCardId: string | null) => {
+      const targetCol = model.columns.find((c) => c.name === toColumn);
+      let toIndex =
+        beforeCardId && targetCol
+          ? targetCol.cards.indexOf(beforeCardId)
+          : (targetCol?.cards.length ?? 0);
+      if (toIndex === -1) {
+        toIndex = targetCol?.cards.length ?? 0;
+      }
+      await fetch("/api/card/move", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ boardPath: path, cardId: drag.cardId, toColumn, toIndex }),
+      });
+      setModel((prev) => {
+        const stripped = prev.columns.map((col) => ({
+          ...col,
+          cards: col.cards.filter((id) => id !== drag.cardId),
+        }));
+        return {
+          ...prev,
+          columns: stripped.map((col) => {
+            if (col.name !== toColumn) return col;
+            const clampedIdx = Math.max(0, Math.min(toIndex, col.cards.length));
+            const next = [...col.cards];
+            next.splice(clampedIdx, 0, drag.cardId);
+            return { ...col, cards: next };
+          }),
+        };
+      });
+      const card = cards.get(drag.cardId);
+      if (card && card.column !== toColumn) {
+        setCards((prev) => new Map(prev).set(drag.cardId, { ...card, column: toColumn }));
+      }
+    },
+    [path, model, cards],
+  );
 
   const duplicateCard = useCallback(
     async (original: RichCard) => {
@@ -253,69 +296,6 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
     return () => onRegisterContextMenu(null);
   }, [onRegisterContextMenu]);
 
-  const handleMoveCard = async (drag: CardDrag, toColumn: string, toIndex: number) => {
-    await fetch("/api/card/move", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ boardPath: path, cardId: drag.cardId, toColumn, toIndex }),
-    });
-    setModel((prev) => {
-      const stripped = prev.columns.map((col) => ({
-        ...col,
-        cards: col.cards.filter((id) => id !== drag.cardId),
-      }));
-      return {
-        ...prev,
-        columns: stripped.map((col) => {
-          if (col.name !== toColumn) return col;
-          const clampedIdx = Math.max(0, Math.min(toIndex, col.cards.length));
-          const next = [...col.cards];
-          next.splice(clampedIdx, 0, drag.cardId);
-          return { ...col, cards: next };
-        }),
-      };
-    });
-    const card = cards.get(drag.cardId);
-    if (card && card.column !== toColumn) {
-      setCards((prev) => new Map(prev).set(drag.cardId, { ...card, column: toColumn }));
-    }
-  };
-
-  const onDragStart = (event: DragEvent, cardId: string, fromColumn: string) => {
-    dragRef.current = { cardId, fromColumn };
-    event.dataTransfer.effectAllowed = "move";
-    // Mark this drag as a card drag so nested elements can distinguish it
-    try {
-      event.dataTransfer.setData("application/x-notes-board-card", cardId);
-    } catch (error) {
-      console.error("Failed to set drag data:", error);
-    }
-  };
-
-  const onDragEnd = () => {
-    setDropTarget(null);
-    dragRef.current = null;
-  };
-
-  const onDropCard = (event: DragEvent, toColumn: string, beforeCardId: string | null) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setDropTarget(null);
-    const drag = dragRef.current;
-    dragRef.current = null;
-    if (!drag || drag.cardId === beforeCardId) return;
-    const targetCol = model.columns.find((c) => c.name === toColumn);
-    const toIndex =
-      beforeCardId && targetCol
-        ? targetCol.cards.indexOf(beforeCardId)
-        : (targetCol?.cards.length ?? 0);
-    void handleMoveCard(drag, toColumn, toIndex === -1 ? (targetCol?.cards.length ?? 0) : toIndex);
-  };
-
-  const onCardDragEnter = (cardId: string, columnName: string) => {
-    setDropTarget({ column: columnName, beforeCardId: cardId });
-  };
-
   const addColumn = async () => {
     const values = await openPrompt({
       title: "Add column",
@@ -354,7 +334,6 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
 
   // Column drag handlers
   const onColumnDragStart = (event: DragEvent, columnName: string) => {
-    columnDragRef.current = columnName;
     event.dataTransfer.effectAllowed = "move";
     try {
       event.dataTransfer.setData("application/x-notes-board-column", columnName);
@@ -367,14 +346,12 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
   const onColumnDragEnd = () => {
     setColumnDropBefore(null);
     setDraggingColumnName(null);
-    columnDragRef.current = null;
   };
 
   const onDropColumn = (event: DragEvent, beforeColumnName: string | null) => {
     event.preventDefault();
     event.stopPropagation();
-    const from = columnDragRef.current ?? draggingColumnName;
-    columnDragRef.current = null;
+    const from = draggingColumnName;
     setDraggingColumnName(null);
     setColumnDropBefore(null);
     if (!from) return;
@@ -397,202 +374,52 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
         <div
           className="board-scroll"
           ref={boardScrollRef}
-          onDragEnter={(e) => {
-            // If a column is being dragged, treat entering the scroll area as a drop-at-end
-            if (columnDragRef.current || draggingColumnName) {
-              e.preventDefault();
-              setColumnDropBefore(null);
-            }
-          }}
-          onDragOver={(e) => {
-            if (!(columnDragRef.current || draggingColumnName)) return;
-            e.preventDefault();
-            const x = e.clientX;
-            let foundBefore: string | null = null;
-            for (const col of model.columns) {
-              const el = columnRefs.current.get(col.name);
-              if (!el) continue;
-              const rect = el.getBoundingClientRect();
-              // choose before if cursor is left of column midpoint
-              if (x < rect.left + rect.width / 2) {
-                foundBefore = col.name;
-                break;
-              }
-            }
-            setColumnDropBefore(foundBefore);
-          }}
+          onDragEnter={(e) => e.stopPropagation()}
+          onDragOver={(e) => e.preventDefault()}
         >
-          {model.columns.map((column) => {
-            const isDragOver = dropTarget?.column === column.name;
-            const isDraggingColumn = draggingColumnName === column.name;
-            return (
-              <Fragment key={column.name}>
-                {columnDropBefore === column.name &&
-                  (columnDragRef.current || draggingColumnName) && (
-                    <div
-                      className="board-column-silhouette"
-                      onDragEnter={(e) => {
-                        e.stopPropagation();
-                        setColumnDropBefore(column.name);
-                      }}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDragLeave={(e) => {
-                        if (!e.currentTarget.contains(e.relatedTarget as Node))
-                          setColumnDropBefore(null);
-                      }}
-                      onDrop={(e) => onDropColumn(e, column.name)}
-                    />
-                  )}
-
-                <section
-                  key={column.name}
-                  ref={(el) => {
-                    if (el) columnRefs.current.set(column.name, el);
-                    else columnRefs.current.delete(column.name);
-                  }}
-                  className={`board-column${isDragOver ? " board-column--drag-over" : ""}${isDraggingColumn ? " board-column--dragging" : ""}`}
-                  onDragEnter={(e) => {
-                    if (columnDragRef.current || draggingColumnName) {
-                      e.preventDefault();
-                      setColumnDropBefore(column.name);
-                      return;
-                    }
-                    // Only fires when cursor enters column area not covered by a card or silhouette
-                    // (those stop propagation). Set drop to end-of-column.
-                    e.preventDefault();
-                    setDropTarget({ column: column.name, beforeCardId: null });
-                  }}
-                  onDragOver={(e) => {
-                    if (columnDragRef.current || draggingColumnName) {
-                      e.preventDefault();
-                      return;
-                    }
-                    e.preventDefault();
-                  }}
-                  onDrop={(e) => {
-                    if (columnDragRef.current || draggingColumnName) {
-                      onDropColumn(e, column.name);
-                      return;
-                    }
-                    // Use the tracked dropTarget so drops on silhouette land in the right spot
-                    const beforeId =
-                      dropTarget?.column === column.name ? dropTarget.beforeCardId : null;
-                    onDropCard(e, column.name, beforeId);
-                  }}
+          {model.columns.map((column) => (
+            <Fragment key={column.name}>
+              {columnDropBefore === column.name && draggingColumnName && (
+                <div
+                  className="board-column-silhouette"
+                  onDragEnter={(e) => e.stopPropagation()}
+                  onDragOver={(e) => e.preventDefault()}
                   onDragLeave={(e) => {
                     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                      if (!(columnDragRef.current || draggingColumnName)) {
-                        setDropTarget(null);
-                      }
-                      // If column drag left the column entirely, clear the column drop indicator
-                      if (columnDragRef.current || draggingColumnName) {
-                        if (
-                          !e.currentTarget
-                            .closest(".board-scroll")
-                            ?.contains(e.relatedTarget as Node)
-                        ) {
-                          setColumnDropBefore(null);
-                        }
-                      }
+                      setColumnDropBefore(null);
                     }
                   }}
-                >
-                  <header
-                    className="board-column-head"
-                    draggable
-                    onDragStart={(e) => {
-                      const parent = e.currentTarget.parentElement;
-                      setTimeout(() => {
-                        parent?.classList.add("drag-hidden");
-                      });
-                      onColumnDragStart(e, column.name);
-                    }}
-                    onDragEnd={(e) => {
-                      e.currentTarget.parentElement?.classList.remove("drag-hidden");
-                      onColumnDragEnd();
-                    }}
-                  >
-                    <span
-                      className="board-column-name"
-                      onDoubleClick={() => void renameColumn(column.name)}
-                    >
-                      {column.name}
-                    </span>
-                    <span className="board-column-count">{column.cards.length}</span>
-                    <button
-                      className="board-column-del"
-                      aria-label={`Delete column ${column.name}`}
-                      onClick={() => deleteColumn(column.name)}
-                    >
-                      ×
-                    </button>
-                  </header>
-
-                  <div className="board-cards">
-                    {column.cards.map((cardId) => {
-                      const card = cards.get(cardId);
-                      if (!card) return null;
-                      const isDraggedCard = dragRef.current?.cardId === cardId;
-                      const showSilhouette =
-                        !isDraggedCard &&
-                        dropTarget?.column === column.name &&
-                        dropTarget.beforeCardId === cardId;
-                      return (
-                        <Fragment key={cardId}>
-                          {showSilhouette && (
-                            <div
-                              className="board-card-silhouette"
-                              onDragEnter={(e) => e.stopPropagation()}
-                              onDragOver={(e) => e.preventDefault()}
-                            />
-                          )}
-                          <BoardCard
-                            card={card}
-                            isNew={card.id === newCardId}
-                            onDragStart={onDragStart}
-                            onDragEnd={onDragEnd}
-                            onDropCard={onDropCard}
-                            onDragEnter={onCardDragEnter}
-                            updateCardState={updateCardState}
-                            handleDeleteCard={handleDeleteCard}
-                            column={column}
-                            onOpenModal={setModalCard}
-                            isColumnDragActive={Boolean(
-                              columnDragRef.current || draggingColumnName,
-                            )}
-                          />
-                        </Fragment>
-                      );
-                    })}
-                    {/* Silhouette at end of column */}
-                    {dropTarget?.column === column.name && dropTarget.beforeCardId === null && (
-                      <div
-                        className="board-card-silhouette"
-                        onDragEnter={(e) => e.stopPropagation()}
-                        onDragOver={(e) => e.preventDefault()}
-                      />
-                    )}
-                  </div>
-
-                  <button
-                    className="board-add-card"
-                    onClick={() => void handleAddCard(column.name)}
-                  >
-                    ＋ Add card
-                  </button>
-                </section>
-              </Fragment>
-            );
-          })}
+                  onDrop={(e) => onDropColumn(e, column.name)}
+                />
+              )}
+              <BoardColumn
+                column={column}
+                cards={cards}
+                onRenameColumn={renameColumn}
+                onDeleteColumn={deleteColumn}
+                onColumnDragStart={onColumnDragStart}
+                onColumnDragEnd={onColumnDragEnd}
+                draggingColumnName={draggingColumnName}
+                setColumnDropBefore={setColumnDropBefore}
+                onDropColumn={onDropColumn}
+                dropTarget={dropTarget}
+                setDropTarget={setDropTarget}
+                onAddCard={handleAddCard}
+                onMoveCard={handleMoveCard}
+                newCardId={newCardId}
+                updateCardState={updateCardState}
+                handleDeleteCard={handleDeleteCard}
+                setModalCard={setModalCard}
+                dragRef={dragRef}
+              />
+            </Fragment>
+          ))}
 
           {/* Silhouette at end of board for dropping columns at the end */}
-          {(columnDragRef.current || draggingColumnName) && columnDropBefore === null && (
+          {draggingColumnName && columnDropBefore === null && (
             <div
               className="board-column-silhouette"
-              onDragEnter={(e) => {
-                e.stopPropagation();
-                setColumnDropBefore(null);
-              }}
+              onDragEnter={(e) => e.stopPropagation()}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => onDropColumn(e, null)}
             />

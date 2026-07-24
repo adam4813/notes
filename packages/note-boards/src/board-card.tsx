@@ -1,7 +1,7 @@
 ﻿import { MarkdownEditor } from "@notes/editor";
 import { PopupMenu, useDraggable, usePreventChildDrag } from "@notes/ui";
 import { DragEvent, useEffect, useRef, useState } from "react";
-import type { BoardColumn, RichCard } from "./board-format";
+import type { IBoardColumn, RichCard } from "./board-format";
 
 const LABEL_COLORS = ["#e2f0fb", "#fde8d8", "#d9f2e8", "#f5e6fb", "#fef9c3"];
 
@@ -26,7 +26,7 @@ export function BoardCard({
   onDragEnter: (cardId: string, columnName: string) => void;
   handleDeleteCard: (cardId: string) => void;
   updateCardState: (card: RichCard) => void;
-  column: BoardColumn;
+  column: IBoardColumn;
   onOpenModal: (card: RichCard) => void;
   isColumnDragActive?: boolean;
 }) {
