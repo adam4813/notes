@@ -1,7 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const WEB_URL = "http://localhost:5173";
-const SERVER_HEALTH = "http://127.0.0.1:8787/health";
+const WEB_PORT = "5175";
+const WEB_URL = `http://localhost:${WEB_PORT}`;
+const SERVER_PORT = "8789";
+const SERVER_HEALTH = `http://127.0.0.1:${SERVER_PORT}/health`;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -18,17 +20,18 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
     {
-      command: "npm run dev:server",
+      command: "npm --workspace @notes/server run dev",
       url: SERVER_HEALTH,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
-      env: { NOTES_TOME: "e2e-tome" },
+      env: { NOTES_TOME: "e2e-tome", NOTES_PORT: SERVER_PORT },
     },
     {
-      command: "npm run dev:web",
+      command: "npm --workspace @notes/web run dev",
       url: WEB_URL,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
+      env: { WEB_PORT, NOTES_PORT: SERVER_PORT },
     },
   ],
 });

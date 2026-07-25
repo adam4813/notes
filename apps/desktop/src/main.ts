@@ -6,7 +6,8 @@ import { buildMenu } from "./menu";
 import { setupAutoUpdater } from "./updater";
 
 const DEV = process.env["ELECTRON_DEV"] === "1";
-const WEB_DEV_URL = "http://localhost:5173";
+const WEB_PORT = Number(process.env["WEB_PORT"] ?? "5173");
+const WEB_DEV_URL = `http://localhost:${WEB_PORT}`;
 
 /**
  * Returns the persisted tome path, or prompts the user to choose one on first launch.
