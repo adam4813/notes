@@ -12,9 +12,9 @@
   ],
   "scripts": {
     "dev": "concurrently -n server,web -c blue,green \"npm:dev:server\" \"npm:dev:web\"",
-    "dev:server": "npm --workspace @notes/server run dev",
-    "dev:web": "npm --workspace @notes/web run dev",
-    "dev:desktop": "npm --workspace @notes/desktop run dev",
+    "dev:server": "cross-env NOTES_PORT=8788 npm --workspace @notes/server run dev",
+    "dev:web": "cross-env WEB_PORT=5174 NOTES_PORT=8788 npm --workspace @notes/web run dev",
+    "dev:desktop": "cross-env WEB_PORT=5174 NOTES_PORT=8788 npm --workspace @notes/desktop run dev",
     "dev:all": "concurrently -n server,web,electron -c blue,green,yellow \"npm:dev:server\" \"npm:dev:web\" \"npm:dev:desktop\"",
     "build": "npm --workspace @notes/web run build",
     "build:server-bundle": "npm --workspace @notes/desktop run build:server-bundle",
