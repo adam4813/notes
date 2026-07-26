@@ -361,6 +361,7 @@
   color: var(--fg-muted);
   border-radius: 8px;
   padding: 6px 8px;
+  user-select: none;
 }
 
 .board-add-card:hover {
@@ -376,6 +377,7 @@
   border-radius: 10px;
   color: var(--fg-muted);
   padding: 8px 14px;
+  user-select: none;
 }
 
 .board-add-column:hover {
