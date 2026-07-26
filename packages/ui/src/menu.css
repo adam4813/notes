@@ -16,6 +16,7 @@
   min-width: 168px;
   display: flex;
   flex-direction: column;
+  user-select: none;
 }
 
 /* Popup menu — relative-anchored dropdown (e.g. overflow, status-bar theme picker) */

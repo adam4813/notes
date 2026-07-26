@@ -30,6 +30,7 @@
   gap: 2px;
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
+  user-select: none;
 }
 
 /* Island body — scrollable or flex content area */

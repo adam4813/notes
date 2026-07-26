@@ -130,6 +130,7 @@
   border-left: 1px solid var(--border);
   padding: 8px;
   overflow: auto;
+  user-select: none;
 }
 
 .grid-layers-head {
