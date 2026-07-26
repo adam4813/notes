@@ -1,3 +1,4 @@
+import { useUndoStack } from "@notes/web/src/state/undo-context";
 import {
   useCallback,
   useEffect,
@@ -38,6 +39,7 @@ function compareValues(a: string, b: string, type: ColumnType): number {
 
 export function TableGrid({ value, onChange }: TableGridProps) {
   const { openPrompt, promptDialog } = usePromptDialog();
+  const undoStack = useUndoStack();
   const [model, setModel] = useState<TableModel>(() => parseTable(value));
   const lastSerialized = useRef(value);
   const [sel, setSel] = useState<CellPos>({ r: 0, c: 0 });
@@ -56,9 +58,27 @@ export function TableGrid({ value, onChange }: TableGridProps) {
   const commit = useCallback(
     (next: TableModel) => {
       setModel(next);
+      const previous = model;
+      const previousMarkdown = serializeTable(previous);
       const markdown = serializeTable(next);
       lastSerialized.current = markdown;
       onChange(markdown);
+
+      undoStack.push({
+        label: "Update table",
+        undo: () => {
+          setModel(previous);
+          lastSerialized.current = previousMarkdown;
+          onChange(previousMarkdown);
+          return Promise.resolve();
+        },
+        redo: () => {
+          setModel(next);
+          lastSerialized.current = markdown;
+          onChange(markdown);
+          return Promise.resolve();
+        },
+      });
     },
     [onChange],
   );

@@ -4,6 +4,7 @@ import { App } from "./app";
 import { ErrorBoundary } from "./components/error-boundary";
 import { WorkspaceProvider } from "./state/app-context";
 import { ToastProvider } from "./state/toast";
+import { UndoStackProvider } from "./state/undo-context";
 import "./styles.css";
 import "@notes/ui/src/styles.css";
 import "@notes/note-mermaid/src/styles.css";
@@ -32,7 +33,9 @@ createRoot(container).render(
     <ErrorBoundary>
       <ToastProvider>
         <WorkspaceProvider>
-          <App />
+          <UndoStackProvider>
+            <App />
+          </UndoStackProvider>
         </WorkspaceProvider>
       </ToastProvider>
     </ErrorBoundary>

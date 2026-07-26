@@ -1,3 +1,4 @@
+import { useUndoStack } from "@notes/web/src/state/undo-context";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MarkdownEditor, NoteToolbar } from "@notes/editor";
 import { CalendarModel, parseCalendar, type RichEvent } from "./calendar-format";
@@ -61,6 +62,7 @@ function debounce<T extends (...args: Parameters<T>) => void>(fn: T, ms: number)
 }
 
 export function CalendarView({ value, path }: CalendarViewProps) {
+  const undoStack = useUndoStack();
   const [model, setModel] = useState<CalendarModel>(() => parseCalendar(value));
   const [events, setEvents] = useState<Map<string, RichEvent>>(new Map());
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -116,6 +118,20 @@ export function CalendarView({ value, path }: CalendarViewProps) {
   );
 
   const updateEventState = (updated: RichEvent) => {
+    const previous = events.get(updated.id);
+    undoStack.push({
+      label: `Update event "${updated.title}"`,
+      undo: async () => {
+        if (previous) {
+          setEvents((prev) => new Map(prev).set(previous.id, previous));
+          void apiSaveEvent(previous);
+        }
+      },
+      redo: async () => {
+        setEvents((prev) => new Map(prev).set(updated.id, updated));
+        void apiSaveEvent(updated);
+      },
+    });
     setEvents((prev) => new Map(prev).set(updated.id, updated));
     void apiSaveEvent(updated);
   };
@@ -131,20 +147,88 @@ export function CalendarView({ value, path }: CalendarViewProps) {
     setEvents((prev) => new Map(prev).set(event.id, event));
     setModel((prev) => ({ ...prev, events: [...prev.events, event.id] }));
     setSelectedId(event.id);
+
+    undoStack.push({
+      label: `Create event "${event.title}"`,
+      undo: async () => {
+        await fetch(
+          `/api/event?calendarPath=${encodeURIComponent(path)}&eventId=${encodeURIComponent(event.id)}`,
+          { method: "DELETE" },
+        );
+        await fetchEvents();
+        setSelectedId(null);
+      },
+      redo: async () => {
+        await fetch("/api/event/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ calendarPath: path, date }),
+        });
+        await fetchEvents();
+        setSelectedId(event.id);
+      },
+    });
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    await fetch(
+    const res = await fetch(
       `/api/event?calendarPath=${encodeURIComponent(path)}&eventId=${encodeURIComponent(eventId)}`,
       { method: "DELETE" },
     );
+    if (!res.ok) return;
+
+    const previous = events.get(eventId);
     setEvents((prev) => {
       const next = new Map(prev);
       next.delete(eventId);
       return next;
     });
     setModel((prev) => ({ ...prev, events: prev.events.filter((id) => id !== eventId) }));
+
     if (selectedId === eventId) setSelectedId(null);
+
+    undoStack.push({
+      label: `Delete event "${previous?.title}"`,
+      undo: async () => {
+        const res = await fetch("/api/event/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ calendarPath: path, date: events.get(eventId)?.date }),
+        });
+        if (!res.ok) return;
+        const event = (await res.json()) as RichEvent;
+
+        setEvents((prev) => {
+          const next = new Map(prev);
+          next.set(event.id, { ...event, ...(previous ?? {}), id: event.id });
+          return next;
+        });
+        setModel((prev) => ({ ...prev, events: [...prev.events, event.id] }));
+        setSelectedId(event.id);
+
+        if (previous) void apiSaveEvent({ ...previous, id: event.id });
+
+        return {
+          label: `Delete event "${event.title}"`,
+          redo: async () => {
+            const res = await fetch(
+              `/api/event?calendarPath=${encodeURIComponent(path)}&eventId=${encodeURIComponent(event.id)}`,
+              { method: "DELETE" },
+            );
+            if (!res.ok) return;
+
+            setEvents((prev) => {
+              const next = new Map(prev);
+              next.delete(event.id);
+              return next;
+            });
+            setModel((prev) => ({ ...prev, events: prev.events.filter((id) => id !== event.id) }));
+
+            if (selectedId === event.id) setSelectedId(null);
+          },
+        };
+      },
+    });
   };
 
   const selectedEvent = selectedId ? events.get(selectedId) : null;

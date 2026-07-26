@@ -1,5 +1,6 @@
 import { PopupMenu } from "@notes/ui";
 import { useCallback, useEffect, useState } from "react";
+import { useUndoState, useUndoStack } from "../state/undo-context";
 
 interface RibbonProps {
   newActions: Array<{ id: string; label: string; run: () => void }>;
@@ -86,6 +87,8 @@ export function Ribbon({
   const isMac = electronApi?.platform === "darwin";
   const [maximized, setMaximized] = useState(false);
   const [openMenu, setOpenMenu] = useState<"file" | "edit" | "new" | null>(null);
+  const undoStack = useUndoStack();
+  const { canUndo, canRedo, undoLabel, redoLabel } = useUndoState();
 
   useEffect(() => {
     if (!electronApi) {
@@ -135,11 +138,16 @@ export function Ribbon({
             items={[
               {
                 type: "item",
-                label: "Undo",
-                onClick: () => document.execCommand("undo"),
-                disabled: true,
+                label: undoLabel ? `Undo ${undoLabel}` : "Undo",
+                onClick: () => void undoStack.undo(),
+                disabled: !canUndo,
               },
-              { type: "item", label: "Redo", onClick: () => document.execCommand("redo") },
+              {
+                type: "item",
+                label: redoLabel ? `Redo ${redoLabel}` : "Redo",
+                onClick: () => void undoStack.redo(),
+                disabled: !canRedo,
+              },
               { type: "separator" },
               { type: "item", label: "Cut", onClick: () => document.execCommand("cut") },
               { type: "item", label: "Copy", onClick: () => document.execCommand("copy") },

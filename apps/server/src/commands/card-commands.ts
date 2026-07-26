@@ -3,7 +3,7 @@ import type { RichCard } from "@notes/note-boards";
 import { parseBoard, serializeBoard } from "@notes/note-boards";
 import type { Tome } from "@notes/tome";
 import { renameCompanionFolder } from "./companion-folder-rename";
-import type { NoteLifecycleEventMap } from "./note-lifecycle";
+import type { ServerEventMap } from "./server-events";
 import { cardDotFolder, deleteCard, listCards, readCard, writeCard } from "./card-store";
 
 interface GetTome {
@@ -30,7 +30,7 @@ async function saveBoardModel(
 export function registerCardCommands(
   bus: CommandBus,
   getTome: GetTome,
-  events?: EventBus<NoteLifecycleEventMap>,
+  events?: EventBus<ServerEventMap>,
 ): void {
   events?.on("note.path-moved", async ({ fromPath, toPath, noteType }) => {
     if (noteType !== "board") {
@@ -73,6 +73,7 @@ export function registerCardCommands(
   // ------------------------------------------------------------------
   bus.register<{ boardPath: string; column: string }, RichCard>({
     name: "card.create",
+    mutates: true,
     handler: async ({ boardPath, column }) => {
       const tome = getTome();
       const model = await readBoardModel(boardPath, tome);
@@ -97,6 +98,7 @@ export function registerCardCommands(
   // ------------------------------------------------------------------
   bus.register<{ boardPath: string; card: RichCard }, RichCard>({
     name: "card.update",
+    mutates: true,
     handler: async ({ boardPath, card }) => {
       const tome = getTome();
       await writeCard(boardPath, card, tome);
@@ -129,6 +131,7 @@ export function registerCardCommands(
   // ------------------------------------------------------------------
   bus.register<{ boardPath: string; cardId: string }, { cardId: string }>({
     name: "card.delete",
+    mutates: true,
     handler: async ({ boardPath, cardId }) => {
       const tome = getTome();
       await deleteCard(boardPath, cardId, tome);
@@ -149,6 +152,7 @@ export function registerCardCommands(
   // ------------------------------------------------------------------
   bus.register<{ boardPath: string; cardId: string }, RichCard>({
     name: "card.duplicate",
+    mutates: true,
     handler: async ({ boardPath, cardId }) => {
       const tome = getTome();
       const source = await readCard(boardPath, cardId, tome);
@@ -182,6 +186,7 @@ export function registerCardCommands(
     { cardId: string; toColumn: string; toIndex: number }
   >({
     name: "card.move",
+    mutates: true,
     handler: async ({ boardPath, cardId, toColumn, toIndex }) => {
       const tome = getTome();
       const model = await readBoardModel(boardPath, tome);

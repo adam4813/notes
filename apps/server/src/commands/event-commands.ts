@@ -3,7 +3,7 @@ import type { RichEvent } from "@notes/note-calendar";
 import { newEventId, parseCalendar, serializeCalendar } from "@notes/note-calendar";
 import type { Tome } from "@notes/tome";
 import { renameCompanionFolder } from "./companion-folder-rename";
-import type { NoteLifecycleEventMap } from "./note-lifecycle";
+import type { ServerEventMap } from "./server-events";
 import { deleteEvent, eventDotFolder, listEvents, readEvent, writeEvent } from "./event-store";
 
 interface GetTome {
@@ -30,7 +30,7 @@ async function saveCalendarModel(
 export function registerEventCommands(
   bus: CommandBus,
   getTome: GetTome,
-  events?: EventBus<NoteLifecycleEventMap>,
+  events?: EventBus<ServerEventMap>,
 ): void {
   events?.on("note.path-moved", async ({ fromPath, toPath, noteType }) => {
     if (noteType !== "calendar") {
@@ -71,6 +71,7 @@ export function registerEventCommands(
   // ------------------------------------------------------------------
   bus.register<{ calendarPath: string; date: string }, RichEvent>({
     name: "event.create",
+    mutates: true,
     handler: async ({ calendarPath, date }) => {
       const tome = getTome();
       const model = await readCalendarModel(calendarPath, tome);
@@ -88,6 +89,7 @@ export function registerEventCommands(
   // ------------------------------------------------------------------
   bus.register<{ calendarPath: string; event: RichEvent }, RichEvent>({
     name: "event.update",
+    mutates: true,
     handler: async ({ calendarPath, event }) => {
       await writeEvent(calendarPath, event, getTome());
       return event;
@@ -99,6 +101,7 @@ export function registerEventCommands(
   // ------------------------------------------------------------------
   bus.register<{ calendarPath: string; eventId: string }, { eventId: string }>({
     name: "event.delete",
+    mutates: true,
     handler: async ({ calendarPath, eventId }) => {
       const tome = getTome();
       await deleteEvent(calendarPath, eventId, tome);

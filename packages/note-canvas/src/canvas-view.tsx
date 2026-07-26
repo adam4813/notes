@@ -1,5 +1,6 @@
 import { connectTomeChanges } from "@notes/web/src/api/ws";
 import { getFrontmatterField, parseFrontmatter } from "@notes/web/src/lib/frontmatter";
+import { useUndoStack } from "@notes/web/src/state/undo-context";
 import {
   useCallback,
   useEffect,
@@ -266,6 +267,7 @@ function center(node: CanvasNode): { x: number; y: number } {
 
 export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProps) {
   const { openPrompt, promptDialog } = usePromptDialog();
+  const undoStack = useUndoStack();
   const [data, setData] = useState<CanvasData>(() => parseCanvas(value));
   const [viewport, setViewport] = useState<Viewport>({ x: 40, y: 40, scale: 1 });
   const [selection, setSelection] = useState<Selection>(null);
@@ -329,17 +331,40 @@ export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProp
     setViewport(computeFit(dataRef.current.nodes, rect?.width ?? 800, rect?.height ?? 600));
   };
 
+  // TODO: Not all paths go through here to setData, so the internal state isn't always synced
   const pushChange = useCallback(
     (next: CanvasData) => {
-      lastSerialized.current = serializeCanvas(next);
-      onChange(lastSerialized.current);
+      setData(next);
+      const previous = dataRef.current;
+      const previousMarkdown = serializeCanvas(previous);
+      dataRef.current = next;
+      const markdown = serializeCanvas(next);
+      lastSerialized.current = markdown;
+
+      undoStack.push({
+        label: "Update canvas",
+        undo: () => {
+          setData(previous);
+          dataRef.current = previous;
+          lastSerialized.current = previousMarkdown;
+          onChange(previousMarkdown);
+          return Promise.resolve();
+        },
+        redo: () => {
+          setData(next);
+          dataRef.current = next;
+          lastSerialized.current = markdown;
+          onChange(markdown);
+          return Promise.resolve();
+        },
+      });
+      onChange(markdown);
     },
     [onChange],
   );
 
   const commit = useCallback(
     (next: CanvasData) => {
-      setData(next);
       pushChange(next);
     },
     [pushChange],

@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { usePromptDialog } from "@notes/editor";
 import { type NoteViewContextMenuBuilder } from "@notes/ui";
+import { useUndoStack } from "@notes/web/src/state/undo-context";
 import { BoardColumn } from "./board-column";
 import { BoardCardModal } from "./board-card-modal";
 import {
@@ -40,6 +41,7 @@ function debounce<T extends (...args: Parameters<T>) => void>(fn: T, ms: number)
 
 export function BoardView({ value, onChange, path, onRegisterContextMenu }: BoardViewProps) {
   const { openPrompt, promptDialog } = usePromptDialog();
+  const undoStack = useUndoStack();
   const [model, setModel] = useState<BoardModel>(() => parseBoard(value));
   const [cards, setCards] = useState<Map<string, RichCard>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -161,14 +163,32 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
         ),
       }));
       setNewCardId(card.id);
-      // Clear the "new" marker after enough time for the card to mount and focus
       setTimeout(() => setNewCardId(null), 600);
+      undoStack.push({
+        label: `Create card in "${colName}"`,
+        undo: async () => {
+          await fetch(
+            `/api/card?boardPath=${encodeURIComponent(path)}&cardId=${encodeURIComponent(card.id)}`,
+            { method: "DELETE" },
+          );
+          await fetchCards();
+        },
+        redo: async () => {
+          await fetch("/api/card/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ boardPath: path, column: colName, id: card.id }),
+          });
+          await fetchCards();
+        },
+      });
     },
-    [path],
+    [path, undoStack, fetchCards],
   );
 
   const handleDeleteCard = useCallback(
     async (cardId: string) => {
+      const cardData = cards.get(cardId);
       await fetch(
         `/api/card?boardPath=${encodeURIComponent(path)}&cardId=${encodeURIComponent(cardId)}`,
         { method: "DELETE" },
@@ -186,12 +206,36 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
         })),
       }));
       setModalCard((prev) => (prev?.id === cardId ? null : prev));
+      if (cardData) {
+        const cardLabel = cardData.title?.trim() ? `"${cardData.title}"` : "card";
+        undoStack.push({
+          label: `Delete ${cardLabel}`,
+          undo: async () => {
+            await fetch("/api/card/update", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ boardPath: path, card: cardData }),
+            });
+            await fetchCards();
+          },
+          redo: async () => {
+            await fetch(
+              `/api/card?boardPath=${encodeURIComponent(path)}&cardId=${encodeURIComponent(cardId)}`,
+              { method: "DELETE" },
+            );
+            await fetchCards();
+          },
+        });
+      }
     },
-    [path],
+    [path, cards, undoStack, fetchCards],
   );
 
   const handleMoveCard = useCallback(
     async (drag: CardDrag, toColumn: string, beforeCardId: string | null) => {
+      const fromColumn = drag.fromColumn;
+      const fromCol = model.columns.find((c) => c.name === fromColumn);
+      const fromIndex = fromCol?.cards.indexOf(drag.cardId) ?? 0;
       const targetCol = model.columns.find((c) => c.name === toColumn);
       let toIndex =
         beforeCardId && targetCol
@@ -225,8 +269,32 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
       if (card && card.column !== toColumn) {
         setCards((prev) => new Map(prev).set(drag.cardId, { ...card, column: toColumn }));
       }
+      undoStack.push({
+        label: `Move card to "${toColumn}"`,
+        undo: async () => {
+          await fetch("/api/card/move", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              boardPath: path,
+              cardId: drag.cardId,
+              toColumn: fromColumn,
+              toIndex: fromIndex,
+            }),
+          });
+          await fetchCards();
+        },
+        redo: async () => {
+          await fetch("/api/card/move", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ boardPath: path, cardId: drag.cardId, toColumn, toIndex }),
+          });
+          await fetchCards();
+        },
+      });
     },
-    [path, model, cards],
+    [path, model, cards, undoStack, fetchCards],
   );
 
   const duplicateCard = useCallback(
@@ -281,11 +349,8 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
         },
         { separator: true as const },
         {
-          label: "Delete card…",
+          label: "Delete card",
           run: () => {
-            const title = cardsRef.current.get(cardId)?.title;
-            const label = title?.trim() ? `"${title}"` : "this card";
-            if (!window.confirm(`Delete ${label}? This cannot be undone.`)) return;
             void handleDeleteCardRef.current(cardId);
           },
           danger: true,

@@ -28,6 +28,8 @@ import { useWorkspace } from "./state/app-context";
 import { useToasts } from "./state/toast";
 import { usePlugins } from "./state/use-plugins";
 import { useHotkeys } from "./state/use-hotkeys";
+import { useUndoStack } from "./state/undo-context";
+import { makeUndoableFileOps } from "./api/undoable-file-ops";
 import { loadRecentCommands, pushRecentCommand, type AppCommand } from "./state/commands";
 import { flattenFiles } from "./state/selectors";
 import {
@@ -122,6 +124,37 @@ export function App() {
   // Paths of freshly-created notes not yet modified/named (discarded on close).
   const provisionalRef = useRef<Set<string>>(new Set());
 
+  const undoStack = useUndoStack();
+  const undoableFileOps = useMemo(() => makeUndoableFileOps(undoStack), [undoStack]);
+
+  // Global undo/redo hotkeys. We deliberately skip contentEditable targets so
+  // TipTap and CodeMirror can handle Ctrl+Z within editor windows themselves.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      const key = e.key.toLowerCase();
+      const target = e.target as HTMLElement | null;
+      const inEditable = Boolean(
+        target && (target.isContentEditable || /^(input|textarea|select)$/i.test(target.tagName)),
+      );
+      if (inEditable) return;
+      if (key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        void undoStack.undo().then((label) => {
+          if (label) notify(`Undone: ${label}`, { kind: "info" });
+        });
+      } else if (key === "y" || (key === "z" && e.shiftKey)) {
+        e.preventDefault();
+        void undoStack.redo().then((label) => {
+          if (label) notify(`Redone: ${label}`, { kind: "info" });
+        });
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [undoStack, notify]);
+
   const refreshTree = useCallback(async () => {
     const [{ entries }, { notes }] = await Promise.all([api.files(), api.notes()]);
     dispatch({ type: "setTree", tree: entries });
@@ -132,13 +165,14 @@ export function App() {
     (base: string, ext: string, contentFor: (name: string) => string, dir?: string) => {
       void (async () => {
         const path = nextName(dir ?? "", base, ext, treeRef.current);
-        await api.create(path, contentFor(baseNoExt(path)));
+        const content = contentFor(baseNoExt(path));
+        await undoableFileOps.createFile(path, content);
         provisionalRef.current.add(path);
         await refreshTree();
         dispatch({ type: "openFile", path, title: baseNoExt(path) });
       })();
     },
-    [dispatch, refreshTree],
+    [dispatch, refreshTree, undoableFileOps],
   );
 
   const createNote = useCallback(
@@ -259,39 +293,17 @@ export function App() {
   const deletePath = useCallback(
     async (path: string) => {
       const name = path.split("/").pop() ?? path;
-      // Read the content first so the delete can be undone from the toast.
-      let previous = "";
-      try {
-        previous = (await api.read(path)).content;
-      } catch {
-        previous = "";
-      }
       try {
         markModified(path);
-        await api.remove(path);
+        await undoableFileOps.deleteFile(path);
         dispatch({ type: "closePath", path });
         await refreshTree();
-        notify(`Deleted "${name}"`, {
-          kind: "info",
-          action: {
-            label: "Undo",
-            run: () => {
-              void (async () => {
-                try {
-                  await api.create(path, previous);
-                  await refreshTree();
-                } catch {
-                  notify(`Couldn't restore "${name}"`, { kind: "error" });
-                }
-              })();
-            },
-          },
-        });
+        notify(`Deleted "${name}" (Ctrl+Z to undo)`, { kind: "info" });
       } catch {
         notify(`Couldn't delete "${name}"`, { kind: "error" });
       }
     },
-    [dispatch, refreshTree, markModified, notify],
+    [dispatch, refreshTree, markModified, notify, undoableFileOps],
   );
 
   const openSettings = useCallback(() => {
@@ -821,6 +833,7 @@ export function App() {
         plugins.documentSignal.set(doc),
       fileHandlers: plugins.fileHandlers,
       settings: settingsProps,
+      undoableFileOps,
     }),
     [
       markModified,
@@ -838,6 +851,7 @@ export function App() {
       plugins.documentSignal,
       plugins.fileHandlers,
       settingsProps,
+      undoableFileOps,
     ],
   );
 
