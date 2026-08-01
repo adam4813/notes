@@ -104,24 +104,18 @@ export function CalendarView({ value, path }: CalendarViewProps) {
 
   const handleCreateEvent = useCallback(
     async (date: string) => {
-      await createEvent(date, {
-        onSuccess: (event) => {
-          setSelectedEvent(event);
+      const event = await createEvent(date);
+      setSelectedEvent(event);
 
-          undoStack.push({
-            label: `Create event "${event.title}"`,
-            undo: async () => {
-              await deleteEvent(event.id);
-              setSelectedEvent((curr) => (curr?.id === event.id ? null : curr));
-            },
-            redo: async () => {
-              await createEvent(date, {
-                onSuccess: (restoredEvent) => {
-                  setSelectedEvent(restoredEvent);
-                },
-              });
-            },
-          });
+      undoStack.push({
+        label: `Create event "${event.title}"`,
+        undo: async () => {
+          await deleteEvent(event.id);
+          setSelectedEvent((curr) => (curr?.id === event.id ? null : curr));
+        },
+        redo: async () => {
+          const restoredEvent = await createEvent(date);
+          setSelectedEvent(restoredEvent);
         },
       });
     },
@@ -131,34 +125,28 @@ export function CalendarView({ value, path }: CalendarViewProps) {
   const handleDeleteEvent = useCallback(
     async (eventId: string) => {
       const previous = data?.events.find((e) => e.id === eventId);
-      await deleteEvent(eventId, {
-        onSuccess: () => {
-          setSelectedEvent((curr) => (curr?.id === eventId ? null : curr));
+      await deleteEvent(eventId);
+      setSelectedEvent((curr) => (curr?.id === eventId ? null : curr));
 
-          undoStack.push({
-            label: `Delete event "${previous?.title}"`,
-            undo: async () => {
-              const event = await createEvent(previous?.date ?? "");
+      undoStack.push({
+        label: `Delete event "${previous?.title}"`,
+        undo: async () => {
+          const event = await createEvent(previous?.date ?? "");
 
-              const restoredEvent = previous ? { ...previous, id: event.id } : event;
-              setSelectedEvent(restoredEvent);
+          const restoredEvent = previous ? { ...previous, id: event.id } : event;
+          setSelectedEvent(restoredEvent);
 
-              if (previous) {
-                await updateEvent(restoredEvent);
-              }
+          if (previous) {
+            await updateEvent(restoredEvent);
+          }
 
-              return {
-                label: `Delete event "${restoredEvent.title}"`,
-                redo: async () => {
-                  await deleteEvent(restoredEvent.id, {
-                    onSuccess: () => {
-                      setSelectedEvent((curr) => (curr?.id === restoredEvent.id ? null : curr));
-                    },
-                  });
-                },
-              };
+          return {
+            label: `Delete event "${restoredEvent.title}"`,
+            redo: async () => {
+              await deleteEvent(restoredEvent.id);
+              setSelectedEvent((curr) => (curr?.id === restoredEvent.id ? null : curr));
             },
-          });
+          };
         },
       });
     },
@@ -184,9 +172,9 @@ export function CalendarView({ value, path }: CalendarViewProps) {
 
   const sortedEvents = useMemo(
     () =>
-      [...(data?.events ?? [])].sort((a, b) =>
+      data?.events?.toSorted((a, b) =>
         (a.date + (a.time ?? "")).localeCompare(b.date + (b.time ?? "")),
-      ),
+      ) ?? [],
     [data?.events],
   );
 
