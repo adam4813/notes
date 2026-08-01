@@ -20,6 +20,8 @@
     "@notes/plugin-host": "*",
     "@notes/shared": "*",
     "@notes/ui": "*",
+    "@tanstack/react-query": "^5.101.4",
+    "@tanstack/react-query-devtools": "^5.101.4",
     "buffer": "6.0.3",
     "gray-matter": "^4.0.3",
     "react": "^18.3.1",

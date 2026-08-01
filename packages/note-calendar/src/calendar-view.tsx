@@ -1,7 +1,11 @@
 import { useUndoStack } from "@notes/web/src/state/undo-context";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { MarkdownEditor, NoteToolbar } from "@notes/editor";
-import { CalendarModel, parseCalendar, type RichEvent } from "./calendar-format";
+import { useUpdateEvent } from "./use-update-event";
+import { useCreateEvent } from "./use-create-event";
+import { useDeleteEvent } from "./use-delete-event";
+import { useGetEvents } from "./use-get-events";
+import { type RichEvent } from "./calendar-format";
 
 interface CalendarViewProps {
   value: string;
@@ -63,187 +67,115 @@ function debounce<T extends (...args: Parameters<T>) => void>(fn: T, ms: number)
 
 export function CalendarView({ value, path }: CalendarViewProps) {
   const undoStack = useUndoStack();
-  const [model, setModel] = useState<CalendarModel>(() => parseCalendar(value));
-  const [events, setEvents] = useState<Map<string, RichEvent>>(new Map());
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<RichEvent | null>(null);
   const [mode, setMode] = useState<CalendarMode>("month");
   const [cursor, setCursor] = useState(() => new Date());
-  const [loading, setLoading] = useState(true);
-  const lastValue = useRef(value);
 
-  // Sync event IDs when value changes from file watcher
-  useEffect(() => {
-    if (value !== lastValue.current) {
-      lastValue.current = value;
-      setModel(parseCalendar(value));
-    }
-  }, [value]);
+  const { data, isLoading } = useGetEvents(path, value);
+  const { mutateAsync: deleteEvent } = useDeleteEvent(path);
+  const { mutateAsync: createEvent } = useCreateEvent(path);
+  const { mutateAsync: updateEvent } = useUpdateEvent(path);
 
-  const fetchEvents = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/events?calendarPath=${encodeURIComponent(path)}`);
-      if (!res.ok) throw new Error("fetch failed");
-      const data = (await res.json()) as { events: RichEvent[] };
-      setEvents(new Map(data.events.map((e) => [e.id, e])));
-      // Re-read calendar file to pick up any migration changes
-      const fileRes = await fetch(`/api/file?path=${encodeURIComponent(path)}`);
-      if (fileRes.ok) {
-        const fileData = (await fileRes.json()) as { content: string };
-        const model = parseCalendar(fileData.content);
-        setModel(model);
-        lastValue.current = fileData.content;
-      }
-    } catch {
-      // Swallow — keep whatever state we have
-    } finally {
-      setLoading(false);
-    }
-  }, [path]);
+  const apiSaveEvent = useMemo(() => debounce(updateEvent, 200), [updateEvent]);
 
-  useEffect(() => {
-    void fetchEvents();
-  }, [fetchEvents]);
+  const updateEventState = useCallback(
+    (updated: RichEvent) => {
+      const previous = data?.events.find((e) => e.id === updated.id);
 
-  const apiSaveEvent = useMemo(
-    () =>
-      debounce(async (event: RichEvent) => {
-        await fetch("/api/event/update", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ calendarPath: path, event }),
-        });
-      }, 800),
-    [path],
+      void apiSaveEvent(updated);
+      setSelectedEvent(updated);
+
+      undoStack.push({
+        label: `Update event "${updated.title}"`,
+        undo: async () => {
+          if (previous) {
+            void apiSaveEvent(previous);
+            setSelectedEvent((curr) => (curr?.id === previous.id ? previous : curr));
+          }
+        },
+        redo: async () => {
+          void apiSaveEvent(updated);
+          setSelectedEvent((curr) => (curr?.id === updated.id ? updated : curr));
+        },
+      });
+    },
+    [data?.events, apiSaveEvent, undoStack],
   );
 
-  const updateEventState = (updated: RichEvent) => {
-    const previous = events.get(updated.id);
-    undoStack.push({
-      label: `Update event "${updated.title}"`,
-      undo: async () => {
-        if (previous) {
-          setEvents((prev) => new Map(prev).set(previous.id, previous));
-          void apiSaveEvent(previous);
-        }
-      },
-      redo: async () => {
-        setEvents((prev) => new Map(prev).set(updated.id, updated));
-        void apiSaveEvent(updated);
-      },
-    });
-    setEvents((prev) => new Map(prev).set(updated.id, updated));
-    void apiSaveEvent(updated);
-  };
+  const handleCreateEvent = useCallback(
+    async (date: string) => {
+      await createEvent(date, {
+        onSuccess: (event) => {
+          setSelectedEvent(event);
 
-  const handleCreateEvent = async (date: string) => {
-    const res = await fetch("/api/event/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ calendarPath: path, date }),
-    });
-    if (!res.ok) return;
-    const event = (await res.json()) as RichEvent;
-    setEvents((prev) => new Map(prev).set(event.id, event));
-    setModel((prev) => ({ ...prev, events: [...prev.events, event.id] }));
-    setSelectedId(event.id);
+          undoStack.push({
+            label: `Create event "${event.title}"`,
+            undo: async () => {
+              await deleteEvent(event.id);
+              setSelectedEvent((curr) => (curr?.id === event.id ? null : curr));
+            },
+            redo: async () => {
+              await createEvent(date, {
+                onSuccess: (restoredEvent) => {
+                  setSelectedEvent(restoredEvent);
+                },
+              });
+            },
+          });
+        },
+      });
+    },
+    [undoStack, deleteEvent, createEvent],
+  );
 
-    undoStack.push({
-      label: `Create event "${event.title}"`,
-      undo: async () => {
-        await fetch(
-          `/api/event?calendarPath=${encodeURIComponent(path)}&eventId=${encodeURIComponent(event.id)}`,
-          { method: "DELETE" },
-        );
-        await fetchEvents();
-        setSelectedId(null);
-      },
-      redo: async () => {
-        await fetch("/api/event/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ calendarPath: path, date }),
-        });
-        await fetchEvents();
-        setSelectedId(event.id);
-      },
-    });
-  };
+  const handleDeleteEvent = useCallback(
+    async (eventId: string) => {
+      const previous = data?.events.find((e) => e.id === eventId);
+      await deleteEvent(eventId, {
+        onSuccess: () => {
+          setSelectedEvent((curr) => (curr?.id === eventId ? null : curr));
 
-  const handleDeleteEvent = async (eventId: string) => {
-    const res = await fetch(
-      `/api/event?calendarPath=${encodeURIComponent(path)}&eventId=${encodeURIComponent(eventId)}`,
-      { method: "DELETE" },
-    );
-    if (!res.ok) return;
+          undoStack.push({
+            label: `Delete event "${previous?.title}"`,
+            undo: async () => {
+              const event = await createEvent(previous?.date ?? "");
 
-    const previous = events.get(eventId);
-    setEvents((prev) => {
-      const next = new Map(prev);
-      next.delete(eventId);
-      return next;
-    });
-    setModel((prev) => ({ ...prev, events: prev.events.filter((id) => id !== eventId) }));
+              const restoredEvent = previous ? { ...previous, id: event.id } : event;
+              setSelectedEvent(restoredEvent);
 
-    if (selectedId === eventId) setSelectedId(null);
+              if (previous) {
+                await updateEvent(restoredEvent);
+              }
 
-    undoStack.push({
-      label: `Delete event "${previous?.title}"`,
-      undo: async () => {
-        const res = await fetch("/api/event/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ calendarPath: path, date: events.get(eventId)?.date }),
-        });
-        if (!res.ok) return;
-        const event = (await res.json()) as RichEvent;
-
-        setEvents((prev) => {
-          const next = new Map(prev);
-          next.set(event.id, { ...event, ...(previous ?? {}), id: event.id });
-          return next;
-        });
-        setModel((prev) => ({ ...prev, events: [...prev.events, event.id] }));
-        setSelectedId(event.id);
-
-        if (previous) void apiSaveEvent({ ...previous, id: event.id });
-
-        return {
-          label: `Delete event "${event.title}"`,
-          redo: async () => {
-            const res = await fetch(
-              `/api/event?calendarPath=${encodeURIComponent(path)}&eventId=${encodeURIComponent(event.id)}`,
-              { method: "DELETE" },
-            );
-            if (!res.ok) return;
-
-            setEvents((prev) => {
-              const next = new Map(prev);
-              next.delete(event.id);
-              return next;
-            });
-            setModel((prev) => ({ ...prev, events: prev.events.filter((id) => id !== event.id) }));
-
-            if (selectedId === event.id) setSelectedId(null);
-          },
-        };
-      },
-    });
-  };
-
-  const selectedEvent = selectedId ? events.get(selectedId) : null;
+              return {
+                label: `Delete event "${restoredEvent.title}"`,
+                redo: async () => {
+                  await deleteEvent(restoredEvent.id, {
+                    onSuccess: () => {
+                      setSelectedEvent((curr) => (curr?.id === restoredEvent.id ? null : curr));
+                    },
+                  });
+                },
+              };
+            },
+          });
+        },
+      });
+    },
+    [data?.events, undoStack, deleteEvent, createEvent, updateEvent],
+  );
 
   const byDate = useMemo(() => {
     const map = new Map<string, RichEvent[]>();
-    for (const id of model.events) {
-      const event = events.get(id);
+    for (const id of data?.model.events ?? []) {
+      const event = data?.events.find((e) => e.id === id);
       if (!event) continue;
       const list = map.get(event.date) ?? [];
       list.push(event);
       map.set(event.date, list);
     }
     return map;
-  }, [events, model]);
+  }, [data?.events, data?.model]);
 
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
@@ -252,10 +184,10 @@ export function CalendarView({ value, path }: CalendarViewProps) {
 
   const sortedEvents = useMemo(
     () =>
-      [...events.values()].sort((a, b) =>
+      [...(data?.events ?? [])].sort((a, b) =>
         (a.date + (a.time ?? "")).localeCompare(b.date + (b.time ?? "")),
       ),
-    [events],
+    [data?.events],
   );
 
   return (
@@ -305,7 +237,7 @@ export function CalendarView({ value, path }: CalendarViewProps) {
           )}
         </NoteToolbar>
 
-        {loading ? (
+        {isLoading ? (
           <div className="calendar-loading">Loading events…</div>
         ) : mode === "month" ? (
           <div className="calendar-grid" data-testid="calendar-grid">
@@ -331,11 +263,11 @@ export function CalendarView({ value, path }: CalendarViewProps) {
                     <span
                       key={event.id}
                       className={`calendar-event ${event.body ? "calendar-event--has-notes" : ""} ${
-                        selectedId === event.id ? "calendar-event--selected" : ""
+                        selectedEvent?.id === event.id ? "calendar-event--selected" : ""
                       }`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedId(selectedId === event.id ? null : event.id);
+                        setSelectedEvent(selectedEvent?.id === event.id ? null : event);
                       }}
                       title={event.time ? `${event.time} — ${event.title}` : event.title}
                     >
@@ -352,8 +284,8 @@ export function CalendarView({ value, path }: CalendarViewProps) {
             {sortedEvents.map((event) => (
               <li
                 key={event.id}
-                className={`calendar-agenda-row ${selectedId === event.id ? "calendar-agenda-row--selected" : ""}`}
-                onClick={() => setSelectedId(selectedId === event.id ? null : event.id)}
+                className={`calendar-agenda-row ${selectedEvent?.id === event.id ? "calendar-agenda-row--selected" : ""}`}
+                onClick={() => setSelectedEvent(selectedEvent?.id === event.id ? null : event)}
               >
                 <span className="calendar-agenda-date">
                   {event.date}
@@ -377,7 +309,7 @@ export function CalendarView({ value, path }: CalendarViewProps) {
             <button
               className="calendar-event-panel-close"
               aria-label="Close event editor"
-              onClick={() => setSelectedId(null)}
+              onClick={() => setSelectedEvent(null)}
             >
               ×
             </button>

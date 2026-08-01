@@ -1,3 +1,5 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app";
@@ -28,15 +30,20 @@ if (!container) {
   throw new Error("Root container #root not found");
 }
 
+const queryClient = new QueryClient();
+
 createRoot(container).render(
   <StrictMode>
     <ErrorBoundary>
       <ToastProvider>
-        <WorkspaceProvider>
-          <UndoStackProvider>
-            <App />
-          </UndoStackProvider>
-        </WorkspaceProvider>
+        <QueryClientProvider client={queryClient}>
+          <ReactQueryDevtools />
+          <WorkspaceProvider>
+            <UndoStackProvider>
+              <App />
+            </UndoStackProvider>
+          </WorkspaceProvider>
+        </QueryClientProvider>
       </ToastProvider>
     </ErrorBoundary>
   </StrictMode>,
