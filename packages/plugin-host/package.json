@@ -1,6 +1,6 @@
 {
   "name": "@notes/plugin-host",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "private": true,
   "description": "Plugin manifest, lifecycle, and local loader (client + server halves).",
   "type": "module",

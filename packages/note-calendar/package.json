@@ -1,6 +1,6 @@
 {
   "name": "@notes/note-calendar",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "private": true,
   "description": "Calendar note type, markdown-backed (first-party plugin).",
   "type": "module",
