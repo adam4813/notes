@@ -65,7 +65,7 @@ layout experience while deferring the interaction-boundary complexity.
 
 ### Task: Fallback — side-panel edit mode  `Wave 3` (contingency)
 If Tasks 1–3 reveal insurmountable interaction conflicts (e.g., Safari pointer-events
-bugs, CodeMirror conflicting with canvas drag), implement the fallback:
+bugs, textarea conflicting with canvas drag), implement the fallback:
 - Double-click `FileNode` → splits the current pane: canvas on the left, the note's
   full editor on the right (or bottom on narrow viewports).
 - Canvas highlights the active note's card with a colored border.

@@ -237,28 +237,11 @@
 }
 
 /* ── Editor ──────────────────────────────────────────────── */
-:root[data-theme="vim"] .cm-host .cm-editor {
+:root[data-theme="vim"] .source-editor {
   background: var(--bg-sunken);
   font-family: var(--vim-font);
-}
-
-:root[data-theme="vim"] .cm-host .cm-content {
   caret-color: var(--accent);
-}
-
-:root[data-theme="vim"] .cm-host .cm-activeLine {
   background: rgba(0, 175, 255, 0.06);
-}
-
-:root[data-theme="vim"] .cm-host .cm-gutters {
-  background: var(--bg-elevated);
-  color: var(--fg-muted);
-  border-right: 1px solid var(--border);
-}
-
-:root[data-theme="vim"] .cm-host .cm-activeLineGutter {
-  background: rgba(0, 175, 255, 0.1);
-  color: var(--fg);
 }
 
 :root[data-theme="vim"] .tiptap-host {

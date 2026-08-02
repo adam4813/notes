@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode, useMemo } from "react";
 import { api } from "@notes/web/src/api/client";
 import { EmbedWidget } from "@notes/web/src/components/embed-widget";
 import {
@@ -10,9 +9,10 @@ import {
 import { useWorkspace } from "@notes/web/src/state/app-context";
 import { useAppServices } from "@notes/web/src/state/app-services";
 import { useToasts } from "@notes/web/src/state/toast";
-import { EditorToolbar } from "./toolbar";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { NativeSourceEditor } from "./native-source-editor";
 import { RenderedEditor } from "./rendered-editor";
-import { SourceEditor } from "./source-editor";
+import { EditorToolbar } from "./toolbar";
 import type {
   CursorRequest,
   EditorCallbacks,
@@ -55,9 +55,8 @@ interface MarkdownEditorProps {
 }
 
 /**
- * Hybrid markdown editor. A single `value` (markdown) drives both a CodeMirror
- * source view and a TipTap rendered view; in split mode both are shown and stay
- * in sync through the shared value.
+ * Hybrid markdown editor. A single `value` (markdown) drives both a source view and a TipTap
+ * rendered view; in split mode both are shown and stay in sync through the shared value.
  */
 export function MarkdownEditor({
   value,
@@ -274,17 +273,17 @@ export function MarkdownEditor({
       )}
       <div className={`markdown-editor markdown-editor--${mode}`}>
         {showSource && (
-          <div className="editor-column editor-column--source">
-            <SourceEditor
+          <div className="editor-column editor-column--split">
+            <NativeSourceEditor
               value={value}
               onChange={onChange}
               callbacks={callbacks}
-              cursorRequest={sourceCursorRequest}
-              scrollRequest={sourceScrollRequest}
-              onFocus={handleSourceFocus}
-              onCursorChange={handleSourceCursorChange}
-              onScrollChange={handleSourceScrollChange}
               focusRequest={sourceFocusRequest}
+              onFocus={handleSourceFocus}
+              scrollRequest={sourceScrollRequest}
+              onScrollChange={handleSourceScrollChange}
+              cursorRequest={sourceCursorRequest}
+              onCursorChange={handleSourceCursorChange}
             />
           </div>
         )}

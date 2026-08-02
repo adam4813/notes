@@ -128,7 +128,7 @@ export function App() {
   const undoableFileOps = useMemo(() => makeUndoableFileOps(undoStack), [undoStack]);
 
   // Global undo/redo hotkeys. We deliberately skip contentEditable targets so
-  // TipTap and CodeMirror can handle Ctrl+Z within editor windows themselves.
+  // TipTap can handle Ctrl+Z within editor windows themselves.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey;
