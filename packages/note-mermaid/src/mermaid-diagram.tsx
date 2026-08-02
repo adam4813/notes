@@ -8,12 +8,13 @@ interface MermaidDiagramProps {
 export function MermaidDiagram({ source }: MermaidDiagramProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
-  const idRef = useRef(`mermaid-${Math.random().toString(36).slice(2)}`);
+  const [id] = useState(() => `mermaid-${Math.random().toString(36).slice(2)}`);
 
   useEffect(() => {
     let cancelled = false;
     const code = source.trim();
     if (!code) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(null);
       if (hostRef.current) {
         hostRef.current.replaceChildren();
@@ -30,7 +31,7 @@ export function MermaidDiagram({ source }: MermaidDiagramProps) {
             securityLevel: "strict",
             theme: dark ? "dark" : "default",
           });
-          const { svg } = await mermaid.render(idRef.current, code);
+          const { svg } = await mermaid.render(id, code);
           if (!cancelled) {
             setError(null);
             if (hostRef.current) {
@@ -56,7 +57,7 @@ export function MermaidDiagram({ source }: MermaidDiagramProps) {
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [source]);
+  }, [id, source]);
 
   return (
     <div className="mermaid-diagram">

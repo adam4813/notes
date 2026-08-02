@@ -90,16 +90,7 @@ export function RenderedEditor({
   focusRequest,
 }: RenderedEditorProps) {
   const currentParts = parseFrontmatter(value);
-  const frontmatterRef = useRef(currentParts.props);
-  frontmatterRef.current = currentParts.props;
   const renderedValue = currentParts.body;
-  const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
-  const callbacksRef = useRef(callbacks);
-  callbacksRef.current = callbacks;
-  const onCursorChangeRef = useRef(onCursorChange);
-  const onScrollChangeRef = useRef(onScrollChange);
-  const onFocusRef = useRef(onFocus);
   const suppressScrollRef = useRef(false);
   const didInitialValueSyncRef = useRef(false);
   const pendingCursorRestoreRef = useRef<{
@@ -111,25 +102,54 @@ export function RenderedEditor({
     desiredPosition: 1,
     attempts: 0,
   });
-  onCursorChangeRef.current = onCursorChange;
-  onScrollChangeRef.current = onScrollChange;
-  onFocusRef.current = onFocus;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollHostRef = useRef<HTMLDivElement>(null);
   const [suggest, setSuggest] = useState<SuggestState | null>(null);
-  const suggestRef = useRef<SuggestState | null>(null);
-  suggestRef.current = suggest;
-  const actionsRef = useRef<{
-    move: (delta: number) => void;
-    apply: () => void;
-    close: () => void;
-  }>({ move: () => {}, apply: () => {}, close: () => {} });
 
   const notesCacheRef = useRef<WikiSuggestion[]>([]);
   const tagsCacheRef = useRef<string[]>([]);
   const fetchKeyRef = useRef("");
   const recomputeRef = useRef<() => void>(() => {});
+
+  const applySuggest = useCallback(
+    (editor: Editor | null, pickIndex?: number) => {
+      const current = suggest;
+      if (!editor || !current) {
+        return;
+      }
+      const item = current.items[pickIndex ?? current.index];
+      if (item === undefined) {
+        return;
+      }
+      const insert =
+        current.kind === "wikilink"
+          ? current.embed
+            ? `![[${item}]]`
+            : `[[${item}]]`
+          : `#${item} `;
+      editor.chain().focus().insertContentAt({ from: current.from, to: current.to }, insert).run();
+      setSuggest(null);
+      fetchKeyRef.current = "";
+    },
+    [suggest],
+  );
+
+  const moveSuggest = useCallback(
+    (delta: number) => {
+      setSuggest((prev) =>
+        prev
+          ? { ...prev, index: (prev.index + delta + prev.items.length) % prev.items.length }
+          : prev,
+      );
+    },
+    [setSuggest],
+  );
+
+  const closeSuggest = useCallback(() => {
+    setSuggest(null);
+    fetchKeyRef.current = "";
+  }, [setSuggest]);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -146,33 +166,33 @@ export function RenderedEditor({
       StyledTextMark,
       Markdown.configure({ html: true, tightLists: true, transformPastedText: true }),
       WikilinkDecorator,
-      ...(callbacksRef.current?.renderEmbed
+      ...(callbacks?.renderEmbed
         ? [
             Embed.configure({
-              renderEmbed: (target: string) => callbacksRef.current?.renderEmbed?.(target) ?? null,
+              renderEmbed: (target: string) => callbacks?.renderEmbed?.(target) ?? null,
             }),
           ]
         : []),
     ],
     editorProps: {
       handleKeyDown(_view, event) {
-        const current = suggestRef.current;
+        const current = suggest;
         if (!current || current.items.length === 0) {
           return false;
         }
         switch (event.key) {
           case "ArrowDown":
-            actionsRef.current.move(1);
+            moveSuggest(1);
             return true;
           case "ArrowUp":
-            actionsRef.current.move(-1);
+            moveSuggest(-1);
             return true;
           case "Enter":
           case "Tab":
-            actionsRef.current.apply();
+            applySuggest(editor);
             return true;
           case "Escape":
-            actionsRef.current.close();
+            closeSuggest();
             return true;
           default:
             return false;
@@ -180,7 +200,7 @@ export function RenderedEditor({
       },
     },
     onUpdate: ({ editor: instance }) => {
-      onChangeRef.current(buildContent(frontmatterRef.current, readMarkdown(instance)));
+      onChange(buildContent(currentParts.props, readMarkdown(instance)));
     },
   });
 
@@ -213,14 +233,13 @@ export function RenderedEditor({
 
   // Prefetch suggestion sources so the first trigger has data.
   useEffect(() => {
-    const callbacks = callbacksRef.current;
     void callbacks?.listNotes?.().then((notes) => {
       notesCacheRef.current = notes;
     });
     void callbacks?.listTags?.().then((tags) => {
       tagsCacheRef.current = tags;
     });
-  }, []);
+  }, [callbacks]);
 
   const computeSuggest = useCallback(() => {
     if (!editor || !containerRef.current) {
@@ -261,7 +280,6 @@ export function RenderedEditor({
     const fetchKey = `${kind}:${from}`;
     if (fetchKeyRef.current !== fetchKey) {
       fetchKeyRef.current = fetchKey;
-      const callbacks = callbacksRef.current;
       const refresh =
         kind === "wikilink"
           ? callbacks?.listNotes?.().then((notes) => {
@@ -299,8 +317,9 @@ export function RenderedEditor({
       left: coords.left - rect.left,
       top: coords.bottom - rect.top + 4,
     });
-  }, [editor]);
+  }, [callbacks, editor]);
 
+  // eslint-disable-next-line react-hooks/refs
   recomputeRef.current = computeSuggest;
 
   useEffect(() => {
@@ -308,8 +327,8 @@ export function RenderedEditor({
       return;
     }
     const handler = () => computeSuggest();
-    const cursorHandler = () => onCursorChangeRef.current?.(editor.state.selection.from);
-    const focusHandler = () => onFocusRef.current?.();
+    const cursorHandler = () => onCursorChange?.(editor.state.selection.from);
+    const focusHandler = () => onFocus?.();
     editor.on("selectionUpdate", handler);
     editor.on("selectionUpdate", cursorHandler);
     editor.on("update", handler);
@@ -320,7 +339,7 @@ export function RenderedEditor({
       editor.off("update", handler);
       editor.off("focus", focusHandler);
     };
-  }, [editor, computeSuggest]);
+  }, [editor, computeSuggest, onCursorChange, onFocus]);
 
   useEffect(() => {
     if (!cursorRequest) {
@@ -331,7 +350,7 @@ export function RenderedEditor({
       desiredPosition: Math.max(1, cursorRequest.position),
       attempts: 0,
     };
-  }, [cursorRequest?.token]);
+  }, [cursorRequest, cursorRequest?.token]);
 
   const tryRestorePendingCursor = useCallback(() => {
     if (!editor) {
@@ -389,7 +408,7 @@ export function RenderedEditor({
     window.requestAnimationFrame(() => {
       suppressScrollRef.current = false;
     });
-  }, [scrollRequest?.token]);
+  }, [scrollRequest, scrollRequest?.token]);
 
   useEffect(() => {
     if (!editor || !focusRequest) {
@@ -403,52 +422,14 @@ export function RenderedEditor({
       return;
     }
     editor.commands.focus();
-  }, [editor, focusRequest?.token]);
-
-  const applySuggest = useCallback(
-    (pickIndex?: number) => {
-      const current = suggestRef.current;
-      if (!editor || !current) {
-        return;
-      }
-      const item = current.items[pickIndex ?? current.index];
-      if (item === undefined) {
-        return;
-      }
-      const insert =
-        current.kind === "wikilink"
-          ? current.embed
-            ? `![[${item}]]`
-            : `[[${item}]]`
-          : `#${item} `;
-      editor.chain().focus().insertContentAt({ from: current.from, to: current.to }, insert).run();
-      setSuggest(null);
-      fetchKeyRef.current = "";
-    },
-    [editor],
-  );
-
-  const moveSuggest = useCallback((delta: number) => {
-    setSuggest((prev) =>
-      prev
-        ? { ...prev, index: (prev.index + delta + prev.items.length) % prev.items.length }
-        : prev,
-    );
-  }, []);
-
-  const closeSuggest = useCallback(() => {
-    setSuggest(null);
-    fetchKeyRef.current = "";
-  }, []);
-
-  actionsRef.current = { move: moveSuggest, apply: () => applySuggest(), close: closeSuggest };
+  }, [editor, focusRequest, focusRequest?.token]);
 
   const handleDrop = useCallback(
     (event: ReactDragEvent<HTMLDivElement>) => {
       if (!editor) {
         return;
       }
-      if (callbacksRef.current?.disableFileDrop) {
+      if (callbacks?.disableFileDrop) {
         return;
       }
       const path = event.dataTransfer.getData(NOTES_PATH_MIME);
@@ -464,7 +445,7 @@ export function RenderedEditor({
         return;
       }
       const file = event.dataTransfer.files[0];
-      const onImportFile = callbacksRef.current?.onImportFile;
+      const onImportFile = callbacks?.onImportFile;
       if (!file || !onImportFile) {
         return;
       }
@@ -481,33 +462,36 @@ export function RenderedEditor({
         }
       });
     },
-    [editor],
+    [callbacks?.disableFileDrop, callbacks?.onImportFile, editor],
   );
 
-  const handleClick = useCallback((event: MouseEvent<HTMLDivElement>) => {
-    const anchor = (event.target as HTMLElement).closest(".wikilink");
-    if (!anchor) {
-      return;
-    }
-    const name = anchor.getAttribute("data-wikilink");
-    if (name && callbacksRef.current?.onOpenWikilink) {
-      event.preventDefault();
-      callbacksRef.current.onOpenWikilink(name);
-    }
-  }, []);
+  const handleClick = useCallback(
+    (event: MouseEvent<HTMLDivElement>) => {
+      const anchor = (event.target as HTMLElement).closest(".wikilink");
+      if (!anchor) {
+        return;
+      }
+      const name = anchor.getAttribute("data-wikilink");
+      if (name && callbacks?.onOpenWikilink) {
+        event.preventDefault();
+        callbacks.onOpenWikilink(name);
+      }
+    },
+    [callbacks],
+  );
 
   const handlePaste = useCallback(
     (event: ReactClipboardEvent<HTMLDivElement>) => {
       if (!editor) {
         return;
       }
-      if (callbacksRef.current?.disableFileDrop) {
+      if (callbacks?.disableFileDrop) {
         return;
       }
       const file = Array.from(event.clipboardData.items)
         .find((item) => item.kind === "file")
         ?.getAsFile();
-      const onImportFile = callbacksRef.current?.onImportFile;
+      const onImportFile = callbacks?.onImportFile;
       if (!file || !onImportFile) {
         return;
       }
@@ -519,7 +503,7 @@ export function RenderedEditor({
         editor.chain().focus().insertContent(insert).run();
       });
     },
-    [editor],
+    [callbacks?.disableFileDrop, callbacks?.onImportFile, editor],
   );
 
   return (
@@ -535,13 +519,13 @@ export function RenderedEditor({
           }
           const max = Math.max(0, host.scrollHeight - host.clientHeight);
           const ratio = max === 0 ? 0 : host.scrollTop / max;
-          onScrollChangeRef.current?.(ratio);
+          onScrollChange?.(ratio);
         }}
         onClick={handleClick}
         onPaste={handlePaste}
         onDragOver={(event) => {
           if (
-            !callbacksRef.current?.disableFileDrop &&
+            !callbacks?.disableFileDrop &&
             (event.dataTransfer.types.includes(NOTES_PATH_MIME) ||
               event.dataTransfer.files.length > 0)
           ) {
@@ -558,7 +542,7 @@ export function RenderedEditor({
           activeIndex={suggest.index}
           left={suggest.left}
           top={suggest.top}
-          onPick={(index) => applySuggest(index)}
+          onPick={(index) => applySuggest(editor, index)}
         />
       )}
     </div>

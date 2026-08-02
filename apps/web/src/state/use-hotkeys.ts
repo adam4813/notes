@@ -5,7 +5,7 @@ import {
   type KeyChord,
   type Platform,
 } from "@notes/core";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AppCommand } from "./commands";
 
 const OVERRIDE_KEY = "notes.hotkeys";
@@ -52,19 +52,17 @@ export interface HotkeysApi {
  * exposes rebind/reset/conflict data (persisted as user overrides).
  */
 export function useHotkeys(commands: AppCommand[]): HotkeysApi {
-  const platform = useMemo(detectPlatform, []);
+  const platform = useMemo(() => detectPlatform(), []);
   const [overrides, setOverrides] = useState<Record<string, string>>(loadOverrides);
-  const commandsRef = useRef(commands);
-  commandsRef.current = commands;
 
   const comboFor = useCallback(
     (commandId: string): string | undefined => {
       if (commandId in overrides) {
         return overrides[commandId] || undefined;
       }
-      return commandsRef.current.find((command) => command.id === commandId)?.defaultHotkey;
+      return commands.find((command) => command.id === commandId)?.defaultHotkey;
     },
-    [overrides],
+    [overrides, commands],
   );
 
   const bindings = useMemo<HotkeyBinding[]>(
@@ -74,8 +72,6 @@ export function useHotkeys(commands: AppCommand[]): HotkeysApi {
         .filter((binding): binding is HotkeyBinding => Boolean(binding.combo)),
     [commands, comboFor],
   );
-  const bindingsRef = useRef(bindings);
-  bindingsRef.current = bindings;
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -86,7 +82,7 @@ export function useHotkeys(commands: AppCommand[]): HotkeysApi {
         shift: event.shiftKey,
         key: event.key,
       };
-      const commandId = resolveCommand(bindingsRef.current, chord, platform);
+      const commandId = resolveCommand(bindings, chord, platform);
       if (!commandId) {
         return;
       }
@@ -99,7 +95,7 @@ export function useHotkeys(commands: AppCommand[]): HotkeysApi {
       if (editable && !hasModifier) {
         return;
       }
-      const command = commandsRef.current.find((candidate) => candidate.id === commandId);
+      const command = commands.find((candidate) => candidate.id === commandId);
       if (command) {
         event.preventDefault();
         command.run();
@@ -107,7 +103,7 @@ export function useHotkeys(commands: AppCommand[]): HotkeysApi {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [platform]);
+  }, [platform, commands, bindings]);
 
   const rebind = useCallback((commandId: string, combo: string) => {
     setOverrides((prev) => {

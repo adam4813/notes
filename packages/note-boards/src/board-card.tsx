@@ -85,6 +85,8 @@ export function BoardCard({
     column.name,
   );
 
+  const preventChildDrag = usePreventChildDrag();
+
   return (
     <div
       ref={cardRef}
@@ -232,7 +234,7 @@ export function BoardCard({
             </PopupMenu>
           </div>
 
-          <div className="board-card-meta" {...usePreventChildDrag()}>
+          <div className="board-card-meta" {...preventChildDrag}>
             <label className="board-card-meta-field">
               <span>Due</span>
               <input
@@ -279,7 +281,7 @@ export function BoardCard({
             </label>
           </div>
 
-          <div className="board-card-body-editor" {...usePreventChildDrag()}>
+          <div className="board-card-body-editor" {...preventChildDrag}>
             <MarkdownEditor
               value={card.body}
               mode="rendered"

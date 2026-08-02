@@ -132,7 +132,9 @@ export function NoteEditor({
     mode: defaultMode,
     viewState: { ...DEFAULT_MARKDOWN_VIEW_STATE },
   };
-  const markdownViewStateRef = useRef<MarkdownViewState>(initialSession.viewState);
+  const [markdownViewState, setMarkdownViewState] = useState<MarkdownViewState>(
+    initialSession.viewState,
+  );
   const [content, setContent] = useState("");
   const [mode, setMode] = useState<EditorMode>(initialSession.mode);
   const [saveState, setSaveState] = useState<SaveState>("loading");
@@ -141,20 +143,14 @@ export function NoteEditor({
   const ctxMenu = useContextMenu<HTMLElement | null>();
   // Note-view components register a builder here to supply content-specific
   // context menu items (e.g. board cards register Delete / Duplicate).
-  const noteViewCtxBuilderRef = useRef<NoteViewContextMenuBuilder | null>(null);
-  const onRegisterContextMenu = useCallback((builder: NoteViewContextMenuBuilder | null) => {
-    noteViewCtxBuilderRef.current = builder;
-  }, []);
+  const [noteViewCtxBuilder, setNoteViewCtxBuilder] = useState<NoteViewContextMenuBuilder | null>(
+    null,
+  );
   const regionRef = useRef<HTMLDivElement>(null);
   const dirtyRef = useRef(false);
   const contentRef = useRef("");
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const lastWriteAtRef = useRef(0);
-  // Always-current refs so the unmount cleanup can flush the right path/content.
-  const pathRef = useRef(path);
-  pathRef.current = path;
-  const writeFnRef = useRef(writeFn);
-  writeFnRef.current = writeFn;
   const isImage = isImagePath(path);
 
   const persistSession = useCallback(
@@ -165,8 +161,8 @@ export function NoteEditor({
   );
 
   useEffect(() => {
-    persistSession(mode, markdownViewStateRef.current);
-  }, [mode, persistSession]);
+    persistSession(mode, markdownViewState);
+  }, [mode, markdownViewState, persistSession]);
 
   // Flush any unsaved edit when the component unmounts (tab switch / close).
   useEffect(() => {
@@ -175,18 +171,18 @@ export function NoteEditor({
         clearTimeout(saveTimer.current);
       }
       if (!isImage && dirtyRef.current) {
-        const flush = writeFnRef.current;
-        if (flush) {
-          void flush(contentRef.current).catch(() => undefined);
+        if (writeFn) {
+          void writeFn(contentRef.current).catch(() => undefined);
         } else {
-          void api.write(pathRef.current, contentRef.current).catch(() => undefined);
+          void api.write(path, contentRef.current).catch(() => undefined);
         }
       }
     };
-  }, [isImage]); // empty deps: runs only on unmount
+  }, [isImage, path, writeFn]); // empty deps: runs only on unmount
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSaveState("loading");
     if (isImage) {
       setContent("");
@@ -336,24 +332,23 @@ export function NoteEditor({
   const renderedWidth: RenderedWidthMode = renderedWidthOverride ?? defaultRenderedWidth;
   const selectedRenderedWidthOverride: RenderedWidthOverride = renderedWidthOverride ?? "unset";
 
-  useEffect(() => {
-    if (!canFind && findOpen) {
-      setFindOpen(false);
-    }
-  }, [canFind, findOpen]);
-
-  const runEditCommand = (command: string, target: HTMLElement | null) => {
-    target?.focus();
-    document.execCommand(command);
-    ctxMenu.close();
-  };
+  const runEditCommand = useCallback(
+    (command: string, target: HTMLElement | null) => {
+      target?.focus();
+      document.execCommand(command);
+      ctxMenu.close();
+    },
+    [ctxMenu],
+  );
 
   const contextMenuItems = useMemo(() => {
     const target = ctxMenu.menu?.data ?? null;
 
-    // Let the active note view override with content-specific items (e.g. board cards).
-    const custom = noteViewCtxBuilderRef.current?.(target);
-    if (custom) return custom;
+    // FIXME: noteViewCtxBuilder is an array
+    if (typeof noteViewCtxBuilder === "function") {
+      const custom = noteViewCtxBuilder?.(target);
+      if (custom) return custom;
+    }
 
     // Default: generic text-editing commands.
     const items: ContextMenuEntry[] = [];
@@ -367,7 +362,7 @@ export function NoteEditor({
       { label: "Select All", run: () => runEditCommand("selectAll", target) },
     );
     return items;
-  }, [ctxMenu.menu]);
+  }, [ctxMenu.menu?.data, noteViewCtxBuilder, runEditCommand]);
 
   if (saveState === "loading") {
     return <div className="note-loading">Loading…</div>;
@@ -397,7 +392,7 @@ export function NoteEditor({
             return;
           }
           // If the note view's builder returns [] (empty), suppress the menu entirely.
-          const custom = noteViewCtxBuilderRef.current?.(target);
+          const custom = noteViewCtxBuilder?.(target);
           if (custom !== undefined && custom !== null && custom.length === 0) return;
           event.preventDefault();
           ctxMenu.open({ x: event.clientX, y: event.clientY }, target);
@@ -407,18 +402,21 @@ export function NoteEditor({
           <ModeToggle
             onChangeMode={(nextMode) => {
               setMode(nextMode);
-              persistSession(nextMode, markdownViewStateRef.current);
+              persistSession(nextMode, markdownViewState);
             }}
             mode={mode}
             splitScrollSync={splitScrollSync}
             onToggleSyncScroll={() =>
               setSplitScrollSync((prev) => {
                 const next = !prev;
-                markdownViewStateRef.current = {
-                  ...markdownViewStateRef.current,
-                  splitScrollSync: next,
-                };
-                persistSession(mode, markdownViewStateRef.current);
+                setMarkdownViewState((prevState) => {
+                  const nextState = {
+                    ...prevState,
+                    splitScrollSync: next,
+                  };
+                  persistSession(mode, nextState);
+                  return nextState;
+                });
                 return next;
               })
             }
@@ -464,7 +462,7 @@ export function NoteEditor({
             value={content}
             onChange={handleChange}
             path={path}
-            onRegisterContextMenu={onRegisterContextMenu}
+            onRegisterContextMenu={setNoteViewCtxBuilder}
           />
         ) : isTable ? (
           <TableGrid value={content} onChange={handleChange} />
@@ -484,11 +482,14 @@ export function NoteEditor({
             value={content}
             mode={mode}
             onChange={handleChange}
-            viewState={markdownViewStateRef.current}
+            viewState={markdownViewState}
             syncSplitScroll={splitScrollSync}
             onViewStateChange={(patch) => {
-              markdownViewStateRef.current = { ...markdownViewStateRef.current, ...patch };
-              persistSession(mode, markdownViewStateRef.current);
+              setMarkdownViewState((prevState) => {
+                const nextState = { ...prevState, ...patch };
+                persistSession(mode, nextState);
+                return nextState;
+              });
             }}
             disableToolbarInEdit
             disableFileDrop={isStandalone}
@@ -522,7 +523,13 @@ export function NoteEditor({
                       title="Find in note (Ctrl/Cmd+F)"
                       aria-label="Find in note"
                       aria-expanded={findOpen}
-                      onClick={() => setFindOpen((open) => !open)}
+                      onClick={() => {
+                        if (canFind) {
+                          setFindOpen((open) => !open);
+                          return;
+                        }
+                        setFindOpen(false);
+                      }}
                     >
                       🔍 Find
                     </button>

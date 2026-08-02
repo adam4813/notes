@@ -37,6 +37,7 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
   const undoStack = useUndoStack();
   const [model, setModel] = useState<BoardModel>(() => parseBoard(value));
   const [cards, setCards] = useState<Map<string, RichCard>>(new Map());
+  const cardsRef = useRef(cards);
   const [loading, setLoading] = useState(true);
   const [newCardId, setNewCardId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
@@ -64,7 +65,9 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
       const res = await fetch(`/api/cards?boardPath=${encodeURIComponent(path)}`);
       if (!res.ok) throw new Error("fetch failed");
       const data = (await res.json()) as { cards: RichCard[] };
-      setCards(new Map(data.cards.map((c) => [c.id, c])));
+      const nextCards = new Map(data.cards.map((c) => [c.id, c]));
+      setCards(nextCards);
+      cardsRef.current = nextCards;
       const fileRes = await fetch(`/api/file?path=${encodeURIComponent(path)}`);
       if (fileRes.ok) {
         const fileData = (await fileRes.json()) as { content: string };
@@ -80,6 +83,7 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
   }, [path]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchCards();
   }, [fetchCards]);
 
@@ -130,6 +134,7 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
       setCards((prev) => {
         const next = new Map(prev);
         next.set(updated.id, updated);
+        cardsRef.current = next;
         return next;
       });
       // Keep modal in sync if it's showing this card
@@ -148,7 +153,11 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
       });
       if (!res.ok) return;
       const card = (await res.json()) as RichCard;
-      setCards((prev) => new Map(prev).set(card.id, card));
+      setCards((prev) => {
+        const next = new Map(prev).set(card.id, card);
+        cardsRef.current = next;
+        return next;
+      });
       setModel((prev) => ({
         ...prev,
         columns: prev.columns.map((col) =>
@@ -189,6 +198,7 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
       setCards((prev) => {
         const next = new Map(prev);
         next.delete(cardId);
+        cardsRef.current = next;
         return next;
       });
       setModel((prev) => ({
@@ -260,7 +270,11 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
       });
       const card = cards.get(drag.cardId);
       if (card && card.column !== toColumn) {
-        setCards((prev) => new Map(prev).set(drag.cardId, { ...card, column: toColumn }));
+        setCards((prev) => {
+          const next = new Map(prev).set(drag.cardId, { ...card, column: toColumn });
+          cardsRef.current = next;
+          return next;
+        });
       }
       undoStack.push({
         label: `Move card to "${toColumn}"`,
@@ -299,7 +313,11 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
       });
       if (!res.ok) return;
       const copy = (await res.json()) as RichCard;
-      setCards((prev) => new Map(prev).set(copy.id, copy));
+      setCards((prev) => {
+        const next = new Map(prev).set(copy.id, copy);
+        cardsRef.current = next;
+        return next;
+      });
       setModel((prev) => ({
         ...prev,
         columns: prev.columns.map((col) => {
@@ -313,14 +331,6 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
     },
     [path],
   );
-
-  // Keep always-current refs so the context menu builder never captures stale closures.
-  const cardsRef = useRef(cards);
-  cardsRef.current = cards;
-  const handleDeleteCardRef = useRef(handleDeleteCard);
-  handleDeleteCardRef.current = handleDeleteCard;
-  const duplicateCardRef = useRef(duplicateCard);
-  duplicateCardRef.current = duplicateCard;
 
   // Register a context menu builder with the parent NoteEditor so right-clicking
   // a card shows card-specific actions instead of the generic edit menu.
@@ -338,13 +348,13 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
       return [
         {
           label: "Duplicate card",
-          run: () => void duplicateCardRef.current(card),
+          run: () => void duplicateCard(card),
         },
         { separator: true as const },
         {
           label: "Delete card",
           run: () => {
-            void handleDeleteCardRef.current(cardId);
+            void handleDeleteCard(cardId);
           },
           danger: true,
         },
@@ -352,7 +362,7 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
     };
     onRegisterContextMenu(builder);
     return () => onRegisterContextMenu(null);
-  }, [onRegisterContextMenu]);
+  }, [duplicateCard, handleDeleteCard, onRegisterContextMenu]);
 
   const addColumn = async () => {
     const values = await openPrompt({

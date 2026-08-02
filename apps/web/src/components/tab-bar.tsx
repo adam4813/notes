@@ -165,7 +165,7 @@ export function TabBar({ pane }: { pane: Pane }) {
     }
 
     return items;
-  }, [ctxMenu.menu?.data]);
+  }, [ctxMenu.menu?.data, dispatch, pane, services, state.panes.length]);
 
   return (
     <>

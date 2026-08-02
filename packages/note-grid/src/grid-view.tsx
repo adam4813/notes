@@ -41,7 +41,6 @@ export function GridView({ value, onChange }: GridViewProps) {
   const [tokenLabel, setTokenLabel] = useState("●");
   const painting = useRef(false);
   const modelRef = useRef(model);
-  modelRef.current = model;
   const lastSerialized = useRef(value);
   const history = useRef<{ past: GridModel[]; future: GridModel[] }>({ past: [], future: [] });
 
@@ -271,7 +270,7 @@ export function GridView({ value, onChange }: GridViewProps) {
             <button
               className="tb-btn"
               aria-label="Undo"
-              disabled={history.current.past.length === 0}
+              disabled={!undoStack.canUndo}
               onClick={undoStack.undo}
             >
               ↶
@@ -279,7 +278,7 @@ export function GridView({ value, onChange }: GridViewProps) {
             <button
               className="tb-btn"
               aria-label="Redo"
-              disabled={history.current.future.length === 0}
+              disabled={!undoStack.canRedo}
               onClick={undoStack.redo}
             >
               ↷

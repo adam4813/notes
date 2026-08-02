@@ -97,8 +97,9 @@ export function Palette({
   ]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActive(0);
-  }, [query, mode]);
+  }, [mode]);
 
   const runAt = (index: number) => {
     const result = results[index];
@@ -117,7 +118,10 @@ export function Palette({
           data-testid="palette-input"
           placeholder={mode === "commands" ? "Run a command…" : "Open or create a note…"}
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setActive(0);
+            setQuery(event.target.value);
+          }}
           onKeyDown={(event) => {
             if (event.key === "ArrowDown") {
               event.preventDefault();

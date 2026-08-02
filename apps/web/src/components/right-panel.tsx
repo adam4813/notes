@@ -74,6 +74,7 @@ export function RightPanel() {
 
   useEffect(() => {
     if (!path || !isNote) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBacklinks([]);
       setHeadings([]);
       setContent("");

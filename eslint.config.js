@@ -49,16 +49,4 @@ export default tseslint.config(
     ],
     rules: { "import/no-default-export": "off" },
   },
-  {
-    files: ["**/*.tsx", "**/*.ts"],
-    rules: {
-      "react-hooks/exhaustive-deps": ["warn"],
-      "react-hooks/refs": ["off"],
-      "react-hooks/purity": ["off"],
-      "react-hooks/preserve-manual-memoization": ["off"],
-      "react-hooks/set-state-in-effect": ["off"],
-      "react-hooks/use-memo": ["off"],
-      "react-hooks/rules-of-hooks": ["off"],
-    },
-  },
 );

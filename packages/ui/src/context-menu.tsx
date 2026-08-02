@@ -55,7 +55,7 @@ export function ContextMenu({ position, items, onClose, menuRef }: ContextMenuPr
     if (ref.current) {
       setPos(fitMenuToViewport(position, ref.current));
     }
-  }, [position.x, position.y]);
+  }, [position, ref]);
 
   return (
     <div
