@@ -7,13 +7,13 @@ import type {
 } from "@notes/shared";
 import type { Tome } from "@notes/tome";
 import { rewriteEmbeddedReferences } from "../rename-references";
-import { emitNotePathMoved, type NoteLifecycleEventMap } from "./note-lifecycle";
+import type { ServerEventMap } from "./server-events";
 
 /** Registers the core `file.*` commands, backed by the active Tome. */
 export function registerFileCommands(
   bus: CommandBus,
   getTome: () => Tome,
-  events: EventBus<NoteLifecycleEventMap>,
+  events: EventBus<ServerEventMap>,
 ): void {
   bus.register({
     name: "file.tree",
@@ -38,6 +38,7 @@ export function registerFileCommands(
 
   bus.register<FileWritePayload, { path: string }>({
     name: "file.write",
+    mutates: true,
     handler: async (payload) => {
       await getTome().write(payload.path, payload.content);
       return { path: payload.path };
@@ -46,6 +47,7 @@ export function registerFileCommands(
 
   bus.register<FileWritePayload, { path: string }>({
     name: "file.create",
+    mutates: true,
     handler: async (payload) => {
       await getTome().create(payload.path, payload.content);
       return { path: payload.path };
@@ -54,6 +56,7 @@ export function registerFileCommands(
 
   bus.register<FileBinaryPayload, { path: string }>({
     name: "file.createBinary",
+    mutates: true,
     handler: async (payload) => {
       await getTome().createBinary(payload.path, Buffer.from(payload.contentBase64, "base64"));
       return { path: payload.path };
@@ -63,6 +66,7 @@ export function registerFileCommands(
   for (const name of ["file.rename", "file.move"] as const) {
     bus.register<FileMovePayload, FileMovePayload>({
       name,
+      mutates: true,
       handler: async (payload, ctx) => {
         const tome = getTome();
         const noteTypeResult = (await bus.dispatch(
@@ -71,7 +75,7 @@ export function registerFileCommands(
           ctx,
         )) as { type: string | null };
         await tome.move(payload.from, payload.to);
-        await emitNotePathMoved(events, {
+        await events.emit("note.path-moved", {
           fromPath: payload.from,
           toPath: payload.to,
           noteType: noteTypeResult.type,
@@ -106,6 +110,7 @@ export function registerFileCommands(
 
   bus.register<FilePathPayload, { path: string }>({
     name: "file.mkdir",
+    mutates: true,
     handler: async (payload) => {
       await getTome().mkdir(payload.path);
       return { path: payload.path };
@@ -114,6 +119,7 @@ export function registerFileCommands(
 
   bus.register<FilePathPayload, { path: string }>({
     name: "file.delete",
+    mutates: true,
     handler: async (payload) => {
       await getTome().delete(payload.path);
       return { path: payload.path };

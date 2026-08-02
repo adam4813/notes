@@ -1,3 +1,4 @@
+import { useUndoStack } from "@notes/web/src/state/undo-context";
 import { useEffect, useRef, useState } from "react";
 import { NoteToolbar, usePromptDialog } from "@notes/editor";
 import {
@@ -33,6 +34,7 @@ function topColor(model: GridModel, x: number, y: number): string | undefined {
 
 export function GridView({ value, onChange }: GridViewProps) {
   const { openPrompt, promptDialog } = usePromptDialog();
+  const undoStack = useUndoStack();
   const [model, setModel] = useState<GridModel>(() => parseGrid(value));
   const [tool, setTool] = useState<Tool>("paint");
   const [color, setColor] = useState(PALETTE[3]);
@@ -63,9 +65,29 @@ export function GridView({ value, onChange }: GridViewProps) {
 
   const update = (next: GridModel) => {
     setModel(next);
+    const previous = modelRef.current;
+    const previousMarkdown = serializeGrid(previous);
     modelRef.current = next;
     const markdown = serializeGrid(next);
     lastSerialized.current = markdown;
+
+    undoStack.push({
+      label: "Updated grid",
+      undo: () => {
+        setModel(previous);
+        modelRef.current = previous;
+        lastSerialized.current = previousMarkdown;
+        onChange(previousMarkdown);
+        return Promise.resolve();
+      },
+      redo: () => {
+        setModel(next);
+        modelRef.current = next;
+        lastSerialized.current = markdown;
+        onChange(markdown);
+        return Promise.resolve();
+      },
+    });
     onChange(markdown);
   };
 
@@ -76,24 +98,6 @@ export function GridView({ value, onChange }: GridViewProps) {
       history.current.past.shift();
     }
     history.current.future = [];
-  };
-
-  const undo = () => {
-    const previous = history.current.past.pop();
-    if (!previous) {
-      return;
-    }
-    history.current.future.push(modelRef.current);
-    update(previous);
-  };
-
-  const redo = () => {
-    const next = history.current.future.pop();
-    if (!next) {
-      return;
-    }
-    history.current.past.push(modelRef.current);
-    update(next);
   };
 
   const floodFill = (x: number, y: number) => {
@@ -242,23 +246,7 @@ export function GridView({ value, onChange }: GridViewProps) {
 
   return (
     <>
-      <div
-        className="grid-note"
-        tabIndex={0}
-        onKeyDown={(event) => {
-          const mod = event.ctrlKey || event.metaKey;
-          if (mod && event.key.toLowerCase() === "z" && !event.shiftKey) {
-            event.preventDefault();
-            undo();
-          } else if (
-            mod &&
-            (event.key.toLowerCase() === "y" || (event.shiftKey && event.key.toLowerCase() === "z"))
-          ) {
-            event.preventDefault();
-            redo();
-          }
-        }}
-      >
+      <div className="grid-note" tabIndex={0}>
         <NoteToolbar label="Grid tools" className="grid-toolbar">
           <div className="grid-tools" role="radiogroup" aria-label="Tool">
             {(["paint", "erase", "fill", "token"] as Tool[]).map((option) => (
@@ -284,7 +272,7 @@ export function GridView({ value, onChange }: GridViewProps) {
               className="tb-btn"
               aria-label="Undo"
               disabled={history.current.past.length === 0}
-              onClick={undo}
+              onClick={undoStack.undo}
             >
               ↶
             </button>
@@ -292,7 +280,7 @@ export function GridView({ value, onChange }: GridViewProps) {
               className="tb-btn"
               aria-label="Redo"
               disabled={history.current.future.length === 0}
-              onClick={redo}
+              onClick={undoStack.redo}
             >
               ↷
             </button>

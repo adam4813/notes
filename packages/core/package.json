@@ -1,6 +1,6 @@
 {
   "name": "@notes/core",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "private": true,
   "description": "Command bus, event bus, registries, and extension-point contracts (no I/O).",
   "type": "module",
@@ -11,5 +11,8 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.101.4"
   }
 }

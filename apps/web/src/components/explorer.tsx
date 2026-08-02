@@ -308,7 +308,7 @@ export function Explorer({
     const dir = dirOf(node.path);
     const to = dir ? `${dir}/${nextName}` : nextName;
     services.markModified(node.path);
-    await api.rename(node.path, to);
+    await services.undoableFileOps.renameFile(node.path, to);
     if (node.type === "file") {
       dispatch({ type: "renamePath", from: node.path, to, title: baseNoExt(nextName) });
     } else {
@@ -367,7 +367,9 @@ export function Explorer({
       await services.deletePath(node.path);
       return;
     }
-    if (!window.confirm(`Delete folder "${node.name}" and its contents? This cannot be undone.`)) {
+    if (
+      !window.confirm(`Delete folder "${node.name}" and all its contents? This cannot be undone.`)
+    ) {
       return;
     }
     await api.remove(node.path);
@@ -387,7 +389,7 @@ export function Explorer({
     }
     const isDir = findEntry(state.tree, fromPath)?.type === "directory";
     services.markModified(fromPath);
-    await api.rename(fromPath, to);
+    await services.undoableFileOps.renameFile(fromPath, to);
     dispatch(
       isDir
         ? { type: "renamePrefix", from: fromPath, to }

@@ -25,6 +25,12 @@ export type CommandHandler<TPayload = unknown, TResult = unknown> = (
 export interface CommandDefinition<TPayload = unknown, TResult = unknown> {
   readonly name: string;
   readonly handler: CommandHandler<TPayload, TResult>;
+  /**
+   * When true, this command is a mutation (creates, deletes, or modifies data).
+   * The command event middleware uses this flag to emit domain events after success.
+   * Read-only queries should omit this (defaults to false).
+   */
+  readonly mutates?: boolean;
 }
 
 export type CommandNext = () => Promise<unknown>;

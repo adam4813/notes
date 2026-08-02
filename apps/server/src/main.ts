@@ -7,12 +7,13 @@ import { TomeWatcher, type TomeEventMap } from "@notes/tome";
 import Fastify from "fastify";
 import fastifyStatic from "@fastify/static";
 import fastifyRateLimit from "@fastify/rate-limit";
-import { NoteLifecycleEventMap } from "./commands/note-lifecycle";
 import { registerFileCommands } from "./commands/file-commands";
 import { registerCardCommands } from "./commands/card-commands";
 import { registerEventCommands } from "./commands/event-commands";
 import { registerIndexCommands } from "./commands/index-commands";
 import { registerNoteTypeCommands } from "./commands/note-type-commands";
+import { createCommandEventMiddleware } from "./commands/command-event-middleware";
+import type { ServerEventMap } from "./commands/server-events";
 import { loadConfig, type ServerConfig } from "./config";
 import { registerErrorHandler } from "./errors";
 import { IndexService } from "./index-service";
@@ -54,16 +55,17 @@ export async function startServer(overrides?: Partial<ServerConfig>): Promise<St
   await app.register(fastifyRateLimit, { max: 10000, timeWindow: "1 minute" });
 
   const tomeEvents = new EventBus<TomeEventMap>();
-  const noteEvents = new EventBus<NoteLifecycleEventMap>();
+  const serverEvents = new EventBus<ServerEventMap>();
   const tower = new Tower();
   tower.openTome("default", config.tomePath);
 
   const bus = new CommandBus();
   bus.use(validationMiddleware);
   bus.use(createLoggingMiddleware((message) => app.log.debug(message)));
-  registerFileCommands(bus, () => tower.active, noteEvents);
-  registerCardCommands(bus, () => tower.active, noteEvents);
-  registerEventCommands(bus, () => tower.active, noteEvents);
+  bus.use(createCommandEventMiddleware(serverEvents));
+  registerFileCommands(bus, () => tower.active, serverEvents);
+  registerCardCommands(bus, () => tower.active, serverEvents);
+  registerEventCommands(bus, () => tower.active, serverEvents);
   registerNoteTypeCommands(bus, () => tower.active);
 
   const ctx = { tomePath: config.tomePath };

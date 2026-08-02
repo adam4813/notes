@@ -1,18 +1,16 @@
-import type { EventBus } from "@notes/core";
-
-export interface NotePathMovedPayload {
-  fromPath: string;
-  toPath: string;
-  noteType: string | null;
-}
+import { EventBus } from "@notes/core";
 
 export type NoteLifecycleEventMap = {
-  "note.path-moved": NotePathMovedPayload;
+  "note.path-moved": {
+    fromPath: string;
+    toPath: string;
+    noteType: string | null;
+  };
 };
 
 export function emitNotePathMoved(
   events: EventBus<NoteLifecycleEventMap>,
-  payload: NotePathMovedPayload,
+  payload: NoteLifecycleEventMap["note.path-moved"],
 ): Promise<void> {
   return events.emit("note.path-moved", payload);
 }

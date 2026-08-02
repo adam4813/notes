@@ -2,6 +2,8 @@ import js from "@eslint/js";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 import importPlugin from "eslint-plugin-import";
+import reactHooks from "eslint-plugin-react-hooks";
+import pluginQuery from "@tanstack/eslint-plugin-query";
 
 export default tseslint.config(
   {
@@ -22,6 +24,8 @@ export default tseslint.config(
     ],
   },
   js.configs.recommended,
+  reactHooks.configs.flat.recommended,
+  ...pluginQuery.configs["flat/recommended"],
   ...tseslint.configs.recommended,
   {
     languageOptions: {
@@ -44,5 +48,17 @@ export default tseslint.config(
       "**/eslint.config.js",
     ],
     rules: { "import/no-default-export": "off" },
+  },
+  {
+    files: ["**/*.tsx", "**/*.ts"],
+    rules: {
+      "react-hooks/exhaustive-deps": ["warn"],
+      "react-hooks/refs": ["off"],
+      "react-hooks/purity": ["off"],
+      "react-hooks/preserve-manual-memoization": ["off"],
+      "react-hooks/set-state-in-effect": ["off"],
+      "react-hooks/use-memo": ["off"],
+      "react-hooks/rules-of-hooks": ["off"],
+    },
   },
 );

@@ -1,6 +1,7 @@
 import { createContext, useContext, type ReactNode } from "react";
 import type { FileTypeHandler } from "@notes/plugin-host";
 import type { SettingsBodyProps } from "../components/settings-view";
+import type { UndoableFileOps } from "../api/undoable-file-ops";
 
 export interface AppServices {
   /** Marks a note as modified so it is no longer a discardable provisional note. */
@@ -26,6 +27,8 @@ export interface AppServices {
   fileHandlers: FileTypeHandler[];
   /** Everything the settings surface needs, so a settings tab can render. */
   settings: SettingsBodyProps;
+  /** File-level undoable operations (create, delete, rename). */
+  undoableFileOps: UndoableFileOps;
 }
 
 const noop = () => {};
@@ -86,6 +89,11 @@ const AppServicesContext = createContext<AppServices>({
   setActiveDocument: noop,
   fileHandlers: [],
   settings: defaultSettings,
+  undoableFileOps: {
+    createFile: async () => {},
+    deleteFile: async () => {},
+    renameFile: async () => {},
+  },
 });
 
 export function AppServicesProvider({

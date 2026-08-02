@@ -66,6 +66,7 @@ export function registerIndexCommands(bus: CommandBus, service: IndexService): v
 
   bus.register({
     name: "index.rebuild",
+    mutates: true,
     handler: async () => {
       await service.buildFromTome();
       return { rebuilt: true, notes: service.index.noteCount() };

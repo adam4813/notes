@@ -1,9 +1,12 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app";
 import { ErrorBoundary } from "./components/error-boundary";
 import { WorkspaceProvider } from "./state/app-context";
 import { ToastProvider } from "./state/toast";
+import { UndoStackProvider } from "./state/undo-context";
 import "./styles.css";
 import "@notes/ui/src/styles.css";
 import "@notes/note-mermaid/src/styles.css";
@@ -27,13 +30,20 @@ if (!container) {
   throw new Error("Root container #root not found");
 }
 
+const queryClient = new QueryClient();
+
 createRoot(container).render(
   <StrictMode>
     <ErrorBoundary>
       <ToastProvider>
-        <WorkspaceProvider>
-          <App />
-        </WorkspaceProvider>
+        <QueryClientProvider client={queryClient}>
+          <ReactQueryDevtools />
+          <WorkspaceProvider>
+            <UndoStackProvider>
+              <App />
+            </UndoStackProvider>
+          </WorkspaceProvider>
+        </QueryClientProvider>
       </ToastProvider>
     </ErrorBoundary>
   </StrictMode>,
