@@ -412,7 +412,7 @@
 }
 
 /* ── Editor ─────────────────────────────────────────────── */
-:root[data-theme="win98"] .cm-content,
+:root[data-theme="win98"] .source-editor,
 :root[data-theme="win98"] .tiptap-host .ProseMirror {
   font-family: "Courier New", monospace;
   font-size: 12px;

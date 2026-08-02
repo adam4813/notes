@@ -62,24 +62,24 @@ user via **git** (the app only guarantees git-friendly formats).
 
 ## 3. Key Decisions (locked from planning Q&A)
 
-| Area | Decision |
-|------|----------|
-| Source of truth | Files on disk; SQLite is a rebuildable **index** (gitignored) |
-| Database | **SQLite** via `better-sqlite3` (embedded, synchronous) |
-| Frontend | **React + TypeScript + Vite** |
-| Backend | **Fastify** behind a thin, swappable HTTP adapter; the real server contract is a **command bus** that plugins hook into |
-| Monorepo | **npm workspaces** — `apps/*` + `packages/*`, scope `@notes/*` |
+| Area | Decision                                                                                                                                                                                                        |
+|------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Source of truth | Files on disk; SQLite is a rebuildable **index** (gitignored)                                                                                                                                                   |
+| Database | **SQLite** via `better-sqlite3` (embedded, synchronous)                                                                                                                                                         |
+| Frontend | **React + TypeScript + Vite**                                                                                                                                                                                   |
+| Backend | **Fastify** behind a thin, swappable HTTP adapter; the real server contract is a **command bus** that plugins hook into                                                                                         |
+| Monorepo | **npm workspaces** — `apps/*` + `packages/*`, scope `@notes/*`                                                                                                                                                  |
 | Container model | **Tower ▸ Tome**: a Tome is one committable folder (git unit); a Tower is a local session referencing one or more Tomes. MVP = single Tome, multi future-proofed; user-facing terms centralized for re-skinning |
-| Editor | Hybrid: **ProseMirror/TipTap** for rendered/WYSIWYG editing + **CodeMirror 6** for source; markdown round-trip kept clean for git |
-| Global state | **React Context + reducers**; heavy widgets (editor, canvas, table) own encapsulated local stores inside their packages |
-| Desktop wrapper | **Wrapper-agnostic**; decided later |
-| Obsidian compat | **Format-compatible** (YAML frontmatter, `[[wikilinks]]`, JSONCanvas) — not a drop-in |
-| Canvas format | **JSONCanvas** (`.canvas`) |
-| Board format | **Markdown-backed** kanban (columns = headings, cards = list items) |
-| Table format | **Markdown file**: `type: table` frontmatter carries the **column schema**; body holds an **embedded CSV** block. Single git-friendly file; plain-CSV import/export for migration |
-| Git | **Git-friendly formats only** for MVP; user runs git themselves |
-| Plugins | **Dogfood-local**: define extension points, build canvas/boards/tables *as* first-party plugins, load local trusted plugins in-process (sandboxing later) |
-| Quality tooling | **Vitest** (unit/integration), **Playwright** (e2e), **ESLint + Prettier** |
+| Editor | Hybrid: **ProseMirror/TipTap** for rendered/WYSIWYG editing + textarea for source; markdown round-trip kept clean for git                                                                                       |
+| Global state | **React Context + reducers**; heavy widgets (editor, canvas, table) own encapsulated local stores inside their packages                                                                                         |
+| Desktop wrapper | **Wrapper-agnostic**; decided later                                                                                                                                                                             |
+| Obsidian compat | **Format-compatible** (YAML frontmatter, `[[wikilinks]]`, JSONCanvas) — not a drop-in                                                                                                                           |
+| Canvas format | **JSONCanvas** (`.canvas`)                                                                                                                                                                                      |
+| Board format | **Markdown-backed** kanban (columns = headings, cards = list items)                                                                                                                                             |
+| Table format | **Markdown file**: `type: table` frontmatter carries the **column schema**; body holds an **embedded CSV** block. Single git-friendly file; plain-CSV import/export for migration                               |
+| Git | **Git-friendly formats only** for MVP; user runs git themselves                                                                                                                                                 |
+| Plugins | **Dogfood-local**: define extension points, build canvas/boards/tables *as* first-party plugins, load local trusted plugins in-process (sandboxing later)                                                       |
+| Quality tooling | **Vitest** (unit/integration), **Playwright** (e2e), **ESLint + Prettier**                                                                                                                                      |
 
 ---
 
@@ -246,15 +246,15 @@ Within a phase, `### Task` items may carry `Wave N` annotations for intra-phase 
 
 ## 9. Decisions & Tuning History
 
-| Date | Decision / Change | Rationale |
-|------|-------------------|-----------|
-| Planning | Files = source of truth, SQLite = index | Git-friendly, portable, resilient |
-| Planning | Hybrid ProseMirror + CodeMirror editor | Rendered-mode editing + clean markdown diffs |
-| Planning | Note types built as first-party plugins | Dogfoods the plugin API, prevents rework |
-| Planning | Table note = md frontmatter schema + embedded CSV | Single git-friendly file; easy migration |
+| Date | Decision / Change                                                          | Rationale |
+|------|----------------------------------------------------------------------------|-----------|
+| Planning | Files = source of truth, SQLite = index                                    | Git-friendly, portable, resilient |
+| Planning | Hybrid ProseMirror + textarea editor                                       | Rendered-mode editing + clean markdown diffs |
+| Planning | Note types built as first-party plugins                                    | Dogfoods the plugin API, prevents rework |
+| Planning | Table note = md frontmatter schema + embedded CSV                          | Single git-friendly file; easy migration |
 | 2026-07-08 | Board cards / calendar entries → hidden dotfolder files (`.<Name>.cards/`) | Full editor support requires real files; hashed names + dot-prefix discourage hand-editing while keeping FTS indexing |
-| 2026-07-08 | Cards/entries: FTS indexed, NOT wikilink-linkable, NOT embeddable | Prevents accidental note-ception; board/calendar UI is the intentional entry point |
-| 2026-07-08 | type:board, type:calendar, type:canvas excluded from `![[…]]` embed | Prevents infinite embed recursion and note-ception |
-| 2026-07-08 | Desktop wrapper → Electron (not Tauri) | Node.js built-in; server runs in-process; no sidecar needed |
-| 2026-07-08 | Electron window → chromeless, custom React titlebar | Consistent cross-platform look; macOS uses `hiddenInset` to keep native traffic lights |
-| 2026-07-08 | Auto-update provider → GitHub Releases | Zero-cost hosting; `electron-updater` has first-class support |
+| 2026-07-08 | Cards/entries: FTS indexed, NOT wikilink-linkable, NOT embeddable          | Prevents accidental note-ception; board/calendar UI is the intentional entry point |
+| 2026-07-08 | type:board, type:calendar, type:canvas excluded from `![[…]]` embed        | Prevents infinite embed recursion and note-ception |
+| 2026-07-08 | Desktop wrapper → Electron (not Tauri)                                     | Node.js built-in; server runs in-process; no sidecar needed |
+| 2026-07-08 | Electron window → chromeless, custom React titlebar                        | Consistent cross-platform look; macOS uses `hiddenInset` to keep native traffic lights |
+| 2026-07-08 | Auto-update provider → GitHub Releases                                     | Zero-cost hosting; `electron-updater` has first-class support |

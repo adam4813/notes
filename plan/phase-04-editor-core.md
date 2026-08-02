@@ -6,14 +6,14 @@
 ## Goal
 
 The crown-jewel editor foundation: a markdown note view with **Edit / Split / Rendered**
-modes, a hybrid engine (ProseMirror/TipTap for rendered editing + CodeMirror 6 for source),
+modes, a hybrid engine (ProseMirror/TipTap for rendered editing + textarea for source),
 and a **clean, git-safe markdown round-trip**. Rich UX (toolbar, list/checkbox behavior,
 autocomplete) lands in Phase 5; this phase nails the architecture and fidelity.
 
 ## Tasks
 
 ### Task: Editor package & engine selection  `Wave 1`
-`packages/editor`: set up the hybrid engine — **CodeMirror 6** for the source view and
+`packages/editor`: set up the hybrid engine — textarea for the source view and
 **ProseMirror/TipTap** for the rendered/WYSIWYG view. Define the editor's document model and
 a stable extension seam (so Phase 9 plugins can add editor extensions).
 
@@ -69,7 +69,7 @@ Commit message:
 **2026-07-06 — Implementation complete; awaiting user GATE (critical decision).**
 
 Built the hybrid editor in `@notes/editor`:
-- **CodeMirror 6** source view + **TipTap/ProseMirror** rendered (WYSIWYG) view, driven by a
+- Textarea source view + **TipTap/ProseMirror** rendered (WYSIWYG) view, driven by a
   single markdown `value`. `tiptap-markdown` handles serialization; StarterKit v3 bundles
   `list-keymap` (Tab/Shift-Tab list indent) and TaskList/TaskItem give checkboxes.
 - **Modes:** Edit / Split / Rendered via a segmented switch; **Split** shows both editors kept
@@ -79,7 +79,7 @@ Built the hybrid editor in `@notes/editor`:
   "Changed on disk" (non-destructive).
 
 Verified: `typecheck`, `lint`, `test` (41), `build`, and **Playwright** — typing in rendered
-mode round-trips into the CodeMirror source; split shows both editors.
+mode round-trips into the textarea source; split shows both editors.
 
 **Deferred to Phase 5 (per plan):** formatting toolbar, wikilink/tag autocomplete + rendering
 inside the editor (currently `[[links]]` show as literal text in the editor), and refined

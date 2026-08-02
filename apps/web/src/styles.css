@@ -1849,44 +1849,20 @@ button {
   border-right: none;
 }
 
-/* CodeMirror */
-.cm-content,
+.source-editor,
 .tiptap-host .ProseMirror {
   font-size: var(--editor-font-size);
   font-family: var(--editor-font-family, inherit);
 }
 
-.cm-host {
+.source-editor {
   width: 100%;
-}
-.cm-host,
-.cm-host .cm-editor {
   height: 100%;
-}
-
-.cm-host .cm-editor {
   background: var(--bg);
   color: var(--fg);
-  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
-  font-size: 13px;
-}
-
-.cm-host .cm-content {
   padding: 16px;
-}
-
-.cm-host .cm-focused {
-  outline: none;
-}
-
-.cm-host .cm-gutters {
-  background: var(--bg-elevated);
-  border-right: 1px solid var(--border);
-  color: var(--fg-muted);
-}
-
-.cm-host .cm-activeLine {
-  background: var(--hover);
+  border: none;
+  line-height: 22px;
 }
 
 /* TipTap rendered view */

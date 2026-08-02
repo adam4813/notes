@@ -1,7 +1,6 @@
 export * from "./types";
 export * from "./markdown-editor";
 export * from "./rendered-editor";
-export * from "./source-editor";
 export * from "./toolbar";
 export * from "./note-toolbar";
 export * from "./suggestion-popup";
@@ -9,3 +8,4 @@ export * from "./wikilink-decorator";
 export * from "./embed-extension";
 export * from "./image-node";
 export * from "./prompt-dialog";
+export * from "./native-source-editor";

@@ -32,7 +32,7 @@ test("note editor context menu is available in rendered and edit modes", async (
 
   await page.keyboard.press("Escape");
   await page.getByRole("tab", { name: "Edit", exact: true }).click();
-  await page.locator(".cm-content").first().click({ button: "right" });
+  await page.locator(".source-editor").first().click({ button: "right" });
   await expect(menu).toBeVisible();
   await expect(menu.getByRole("menuitem", { name: "Undo" })).toBeVisible();
 });
@@ -42,7 +42,7 @@ test("manually authored img tag renders in rendered mode", async ({ page }) => {
   await createNewNote(page);
   await page.getByRole("tab", { name: "Edit", exact: true }).click();
 
-  const source = page.locator(".cm-content");
+  const source = page.locator(".source-editor");
   await expect(source).toBeVisible();
   await source.click();
   await page.keyboard.press("Control+End");
@@ -99,7 +99,7 @@ test("wikilink autocomplete inserts a link from the index", async ({ page }) => 
   await page.keyboard.press("Enter");
 
   await page.getByRole("tab", { name: "Edit", exact: true }).click();
-  await expect(page.locator(".cm-content")).toContainText("[[New");
+  await expect(page.locator(".source-editor")).toContainText("[[New");
 });
 
 test("tab indents a list item into a nested list", async ({ page }) => {
