@@ -269,6 +269,10 @@
   font-size: 13px;
 }
 
+.calendar-agenda-date--today {
+  color: var(--accent);
+}
+
 .calendar-agenda-title {
   flex: 1;
   display: flex;

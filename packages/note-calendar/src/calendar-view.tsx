@@ -1,61 +1,22 @@
+import { NoteToolbar } from "@notes/editor";
 import { useUndoStack } from "@notes/web/src/state/undo-context";
 import { useCallback, useMemo, useState } from "react";
-import { MarkdownEditor, NoteToolbar } from "@notes/editor";
-import { useUpdateEvent } from "./use-update-event";
+import { EventDetails } from "./event-details";
+import { AgendaList } from "./agenda-list";
+import { type RichEvent } from "./calendar-format";
+import { MonthGrid } from "./month-grid";
 import { useCreateEvent } from "./use-create-event";
 import { useDeleteEvent } from "./use-delete-event";
 import { useGetEvents } from "./use-get-events";
-import { type RichEvent } from "./calendar-format";
+import { useUpdateEvent } from "./use-update-event";
+import { MONTHS, toIso } from "./utils";
 
 interface CalendarViewProps {
   value: string;
   onChange?: (markdown: string) => void;
   path: string;
 }
-
 type CalendarMode = "month" | "agenda";
-
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-
-const DURATION_OPTIONS = [
-  { value: 15, label: "15 min" },
-  { value: 30, label: "30 min" },
-  { value: 60, label: "1 hour" },
-  { value: 90, label: "1.5 hours" },
-  { value: 120, label: "2 hours" },
-  { value: 0, label: "All day" },
-];
-
-function toIso(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function monthGrid(year: number, month: number): Date[] {
-  const first = new Date(year, month, 1);
-  const start = new Date(year, month, 1 - first.getDay());
-  return Array.from({ length: 42 }, (_, index) => {
-    const date = new Date(start);
-    date.setDate(start.getDate() + index);
-    return date;
-  });
-}
 
 function debounce<T extends (...args: Parameters<T>) => void>(fn: T, ms: number): T {
   let timer: ReturnType<typeof setTimeout>;
@@ -153,30 +114,10 @@ export function CalendarView({ value, path }: CalendarViewProps) {
     [data?.events, undoStack, deleteEvent, createEvent, updateEvent],
   );
 
-  const byDate = useMemo(() => {
-    const map = new Map<string, RichEvent[]>();
-    for (const id of data?.model.events ?? []) {
-      const event = data?.events.find((e) => e.id === id);
-      if (!event) continue;
-      const list = map.get(event.date) ?? [];
-      list.push(event);
-      map.set(event.date, list);
-    }
-    return map;
-  }, [data?.events, data?.model]);
-
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
   const todayIso = toIso(new Date());
   const step = (delta: number) => setCursor(new Date(year, month + delta, 1));
-
-  const sortedEvents = useMemo(
-    () =>
-      data?.events?.toSorted((a, b) =>
-        (a.date + (a.time ?? "")).localeCompare(b.date + (b.time ?? "")),
-      ) ?? [],
-    [data?.events],
-  );
 
   return (
     <div className={`calendar-note ${selectedEvent ? "calendar-note--split" : ""}`}>
@@ -228,169 +169,32 @@ export function CalendarView({ value, path }: CalendarViewProps) {
         {isLoading ? (
           <div className="calendar-loading">Loading events…</div>
         ) : mode === "month" ? (
-          <div className="calendar-grid" data-testid="calendar-grid">
-            {WEEKDAYS.map((day) => (
-              <div key={day} className="calendar-weekday">
-                {day}
-              </div>
-            ))}
-            {monthGrid(year, month).map((date) => {
-              const iso = toIso(date);
-              const inMonth = date.getMonth() === month;
-              const dayEvents = byDate.get(iso) ?? [];
-              return (
-                <button
-                  key={iso}
-                  className={`calendar-cell ${inMonth ? "" : "calendar-cell--muted"} ${
-                    iso === todayIso ? "calendar-cell--today" : ""
-                  }`}
-                  onClick={() => void handleCreateEvent(iso)}
-                >
-                  <span className="calendar-daynum">{date.getDate()}</span>
-                  {dayEvents.map((event) => (
-                    <span
-                      key={event.id}
-                      className={`calendar-event ${event.body ? "calendar-event--has-notes" : ""} ${
-                        selectedEvent?.id === event.id ? "calendar-event--selected" : ""
-                      }`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedEvent(selectedEvent?.id === event.id ? null : event);
-                      }}
-                      title={event.time ? `${event.time} — ${event.title}` : event.title}
-                    >
-                      {event.time ? `${event.time} ` : ""}
-                      {event.title}
-                    </span>
-                  ))}
-                </button>
-              );
-            })}
-          </div>
+          <MonthGrid
+            year={year}
+            month={month}
+            todayIso={todayIso}
+            events={data?.events}
+            onCreateEvent={handleCreateEvent}
+            selectedEvent={selectedEvent}
+            setSelectedEvent={setSelectedEvent}
+          />
         ) : (
-          <ul className="calendar-agenda" data-testid="calendar-agenda">
-            {sortedEvents.map((event) => (
-              <li
-                key={event.id}
-                className={`calendar-agenda-row ${selectedEvent?.id === event.id ? "calendar-agenda-row--selected" : ""}`}
-                onClick={() => setSelectedEvent(selectedEvent?.id === event.id ? null : event)}
-              >
-                <span className="calendar-agenda-date">
-                  {event.date}
-                  {event.time ? ` ${event.time}` : ""}
-                </span>
-                <span className="calendar-agenda-title">
-                  {event.title}
-                  {event.body && <span className="calendar-event-dot" title="Has notes" />}
-                </span>
-              </li>
-            ))}
-            {sortedEvents.length === 0 && <li className="panel-empty">No events yet.</li>}
-          </ul>
+          <AgendaList
+            todayIso={todayIso}
+            events={data?.events}
+            selectedEvent={selectedEvent}
+            setSelectedEvent={setSelectedEvent}
+          />
         )}
       </div>
 
       {selectedEvent && (
-        <div className="calendar-event-panel">
-          <div className="calendar-event-panel-header">
-            <span className="calendar-event-panel-title">Edit Event</span>
-            <button
-              className="calendar-event-panel-close"
-              aria-label="Close event editor"
-              onClick={() => setSelectedEvent(null)}
-            >
-              ×
-            </button>
-          </div>
-
-          <div className="calendar-event-fields">
-            <label className="calendar-event-field">
-              <span>Title</span>
-              <input
-                className="calendar-event-title-input"
-                value={selectedEvent.title}
-                onChange={(e) => updateEventState({ ...selectedEvent, title: e.target.value })}
-                placeholder="Event title"
-              />
-            </label>
-
-            <label className="calendar-event-field">
-              <span>Date</span>
-              <input
-                type="date"
-                value={selectedEvent.date}
-                onChange={(e) => updateEventState({ ...selectedEvent, date: e.target.value })}
-              />
-            </label>
-
-            <label className="calendar-event-field">
-              <span>Time</span>
-              <input
-                type="time"
-                value={selectedEvent.time ?? ""}
-                onChange={(e) =>
-                  updateEventState({
-                    ...selectedEvent,
-                    time: e.target.value || undefined,
-                    allDay: !e.target.value,
-                  })
-                }
-              />
-            </label>
-
-            <label className="calendar-event-field">
-              <span>Duration</span>
-              <select
-                value={selectedEvent.duration ?? 60}
-                onChange={(e) =>
-                  updateEventState({
-                    ...selectedEvent,
-                    duration: Number(e.target.value) || undefined,
-                    allDay: Number(e.target.value) === 0,
-                  })
-                }
-              >
-                {DURATION_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="calendar-event-field">
-              <span>Location</span>
-              <input
-                type="text"
-                value={selectedEvent.location ?? ""}
-                onChange={(e) =>
-                  updateEventState({
-                    ...selectedEvent,
-                    location: e.target.value || undefined,
-                  })
-                }
-                placeholder="Location or URL"
-              />
-            </label>
-          </div>
-
-          <div className="calendar-event-body">
-            <MarkdownEditor
-              value={selectedEvent.body}
-              mode="rendered"
-              onChange={(body) => updateEventState({ ...selectedEvent, body })}
-            />
-          </div>
-
-          <div className="calendar-event-panel-footer">
-            <button
-              className="calendar-event-delete"
-              onClick={() => void handleDeleteEvent(selectedEvent.id)}
-            >
-              🗑 Delete event
-            </button>
-          </div>
-        </div>
+        <EventDetails
+          selectedEvent={selectedEvent}
+          setSelectedEvent={setSelectedEvent}
+          onUpdateEvent={updateEventState}
+          onDeleteEvent={handleDeleteEvent}
+        />
       )}
     </div>
   );
