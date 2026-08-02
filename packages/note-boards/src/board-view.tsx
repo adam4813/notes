@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { usePromptDialog } from "@notes/editor";
+import { debounce } from "@notes/core";
 import { type NoteViewContextMenuBuilder } from "@notes/ui";
 import { useUndoStack } from "@notes/web/src/state/undo-context";
 import { BoardColumn } from "./board-column";
@@ -29,14 +30,6 @@ interface DropTarget {
   column: string;
   /** Card that will follow the dropped card; null means end of column. */
   beforeCardId: string | null;
-}
-
-function debounce<T extends (...args: Parameters<T>) => void>(fn: T, ms: number): T {
-  let timer: ReturnType<typeof setTimeout>;
-  return ((...args: Parameters<T>) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), ms);
-  }) as T;
 }
 
 export function BoardView({ value, onChange, path, onRegisterContextMenu }: BoardViewProps) {

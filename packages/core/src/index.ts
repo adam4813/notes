@@ -6,3 +6,4 @@ export * from "./note-type-registry";
 export * from "./markdown-note-type";
 export * from "./hotkeys";
 export * from "./undo-stack";
+export * from "./debounce";

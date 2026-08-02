@@ -1,9 +1,10 @@
 import { NoteToolbar } from "@notes/editor";
 import { useUndoStack } from "@notes/web/src/state/undo-context";
+import { debounce } from "@notes/core";
 import { useCallback, useMemo, useState } from "react";
-import { EventDetails } from "./event-details";
 import { AgendaList } from "./agenda-list";
 import { type RichEvent } from "./calendar-format";
+import { EventDetails } from "./event-details";
 import { MonthGrid } from "./month-grid";
 import { useCreateEvent } from "./use-create-event";
 import { useDeleteEvent } from "./use-delete-event";
@@ -17,14 +18,6 @@ interface CalendarViewProps {
   path: string;
 }
 type CalendarMode = "month" | "agenda";
-
-function debounce<T extends (...args: Parameters<T>) => void>(fn: T, ms: number): T {
-  let timer: ReturnType<typeof setTimeout>;
-  return ((...args: Parameters<T>) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), ms);
-  }) as T;
-}
 
 export function CalendarView({ value, path }: CalendarViewProps) {
   const undoStack = useUndoStack();
