@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent, useCallback } from "react";
 import { usePromptDialog } from "@notes/editor";
 import { ContextMenu, ContextMenuEntry, useContextMenu } from "@notes/ui";
 import { api, type FileEntry } from "../api/client";
@@ -267,22 +267,25 @@ export function Explorer({
     });
   };
 
-  const beginRename = (node: FileEntry) => {
-    ctxMenu.close();
-    setRenamePath(node.path);
-    const { stem, ext } =
-      node.type === "file" ? splitName(node.name) : { stem: node.name, ext: "" };
-    setRenameDraft(stem);
-    setRenameExt(ext);
-    openAncestors(node.path);
-    if (node.type === "directory") {
-      setOpenDirs((prev) => {
-        const next = new Set(prev);
-        next.add(node.path);
-        return next;
-      });
-    }
-  };
+  const beginRename = useCallback(
+    (node: FileEntry) => {
+      ctxMenu.close();
+      setRenamePath(node.path);
+      const { stem, ext } =
+        node.type === "file" ? splitName(node.name) : { stem: node.name, ext: "" };
+      setRenameDraft(stem);
+      setRenameExt(ext);
+      openAncestors(node.path);
+      if (node.type === "directory") {
+        setOpenDirs((prev) => {
+          const next = new Set(prev);
+          next.add(node.path);
+          return next;
+        });
+      }
+    },
+    [ctxMenu],
+  );
 
   const cancelRename = () => {
     setRenamePath(null);
@@ -341,9 +344,10 @@ export function Explorer({
     if (!node) {
       return;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     beginRename(node);
     onRenameRequestHandled();
-  }, [renameRequestPath, state.tree, onRenameRequestHandled]);
+  }, [renameRequestPath, state.tree, onRenameRequestHandled, beginRename]);
 
   const rows = useMemo(() => {
     const out: FlatRow[] = [];
@@ -353,64 +357,76 @@ export function Explorer({
 
   const virtual = useVirtual(rows.length, ROW_HEIGHT, scrollRef);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     const { entries } = await api.files();
     dispatch({ type: "setTree", tree: entries });
-  };
+  }, [dispatch]);
 
-  const openNode = (node: FileEntry) =>
-    dispatch({ type: "openFile", path: node.path, title: baseNoExt(node.name) });
+  const openNode = useCallback(
+    (node: FileEntry) =>
+      dispatch({ type: "openFile", path: node.path, title: baseNoExt(node.name) }),
+    [dispatch],
+  );
 
-  const removeNode = async (node: FileEntry) => {
-    if (node.type === "file") {
-      // Files use the app-level delete which offers an Undo toast.
-      await services.deletePath(node.path);
-      return;
-    }
-    if (
-      !window.confirm(`Delete folder "${node.name}" and all its contents? This cannot be undone.`)
-    ) {
-      return;
-    }
-    await api.remove(node.path);
-    dispatch({ type: "closePrefix", path: node.path });
-    await refresh();
-  };
+  const removeNode = useCallback(
+    async (node: FileEntry) => {
+      if (node.type === "file") {
+        // Files use the app-level delete which offers an Undo toast.
+        await services.deletePath(node.path);
+        return;
+      }
+      if (
+        !window.confirm(`Delete folder "${node.name}" and all its contents? This cannot be undone.`)
+      ) {
+        return;
+      }
+      await api.remove(node.path);
+      dispatch({ type: "closePrefix", path: node.path });
+      await refresh();
+    },
+    [dispatch, refresh, services],
+  );
 
-  const move = async (fromPath: string, toDir: string) => {
-    const base = fromPath.split("/").pop() ?? fromPath;
-    const to = toDir ? `${toDir}/${base}` : base;
-    if (to === fromPath) {
-      return;
-    }
-    // Don't move a folder into itself or one of its descendants.
-    if (toDir === fromPath || toDir.startsWith(`${fromPath}/`)) {
-      return;
-    }
-    const isDir = findEntry(state.tree, fromPath)?.type === "directory";
-    services.markModified(fromPath);
-    await services.undoableFileOps.renameFile(fromPath, to);
-    dispatch(
-      isDir
-        ? { type: "renamePrefix", from: fromPath, to }
-        : { type: "renamePath", from: fromPath, to, title: baseNoExt(base) },
-    );
-    await refresh();
-  };
+  const move = useCallback(
+    async (fromPath: string, toDir: string) => {
+      const base = fromPath.split("/").pop() ?? fromPath;
+      const to = toDir ? `${toDir}/${base}` : base;
+      if (to === fromPath) {
+        return;
+      }
+      // Don't move a folder into itself or one of its descendants.
+      if (toDir === fromPath || toDir.startsWith(`${fromPath}/`)) {
+        return;
+      }
+      const isDir = findEntry(state.tree, fromPath)?.type === "directory";
+      services.markModified(fromPath);
+      await services.undoableFileOps.renameFile(fromPath, to);
+      dispatch(
+        isDir
+          ? { type: "renamePrefix", from: fromPath, to }
+          : { type: "renamePath", from: fromPath, to, title: baseNoExt(base) },
+      );
+      await refresh();
+    },
+    [dispatch, refresh, services, state.tree],
+  );
 
-  const newFolder = async (dir: string) => {
-    const values = await openPrompt({
-      title: "New folder",
-      fields: [{ key: "name", label: "Folder name", required: true }],
-      confirmLabel: "Create",
-    });
-    const input = values?.name.trim();
-    if (!input) {
-      return;
-    }
-    await api.mkdir(dir ? `${dir}/${input}` : input);
-    await refresh();
-  };
+  const newFolder = useCallback(
+    async (dir: string) => {
+      const values = await openPrompt({
+        title: "New folder",
+        fields: [{ key: "name", label: "Folder name", required: true }],
+        confirmLabel: "Create",
+      });
+      const input = values?.name.trim();
+      if (!input) {
+        return;
+      }
+      await api.mkdir(dir ? `${dir}/${input}` : input);
+      await refresh();
+    },
+    [openPrompt, refresh],
+  );
 
   const openMenu = (event: MouseEvent, node?: FileEntry) => {
     event.preventDefault();
@@ -481,7 +497,7 @@ export function Explorer({
       );
     }
     return items;
-  }, [ctxMenu.menu?.data]);
+  }, [ctxMenu.menu?.data, services, newFolder, openNode, notify, beginRename, removeNode]);
 
   return (
     <div

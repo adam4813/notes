@@ -80,7 +80,7 @@ export function TableGrid({ value, onChange }: TableGridProps) {
         },
       });
     },
-    [onChange],
+    [model, onChange, undoStack],
   );
 
   const setCell = useCallback(

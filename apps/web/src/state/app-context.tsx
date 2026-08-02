@@ -103,7 +103,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     saveLayout(state);
-  }, [state.panes, state.activePaneId]);
+  }, [state.panes, state.activePaneId, state]);
 
   return (
     <WorkspaceContext.Provider value={{ state, dispatch }}>{children}</WorkspaceContext.Provider>

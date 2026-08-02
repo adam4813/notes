@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs */
 import { connectTomeChanges } from "@notes/web/src/api/ws";
 import { getFrontmatterField, parseFrontmatter } from "@notes/web/src/lib/frontmatter";
 import { useUndoStack } from "@notes/web/src/state/undo-context";
@@ -109,6 +110,7 @@ function FileNodeCard({
   // Only fetch when the node is visible (or editing).
   useEffect(() => {
     if (isVisible) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       void load();
     }
   }, [load, isVisible]);
@@ -276,16 +278,15 @@ export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProp
 
   const containerRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
-  dataRef.current = data;
-  const viewportRef = useRef(viewport);
-  viewportRef.current = viewport;
   const lastSerialized = useRef(value);
   const dragRef = useRef<DragState>(null);
   const didInit = useRef(false);
 
   useEffect(() => {
     if (value !== lastSerialized.current) {
-      setData(parseCanvas(value));
+      const parsed = parseCanvas(value);
+      setData(parsed);
+      dataRef.current = parsed;
       lastSerialized.current = value;
     }
   }, [value]);
@@ -360,7 +361,7 @@ export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProp
       });
       onChange(markdown);
     },
-    [onChange],
+    [onChange, undoStack],
   );
 
   const commit = useCallback(
@@ -370,13 +371,15 @@ export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProp
     [pushChange],
   );
 
-  const screenToWorld = (clientX: number, clientY: number) => {
-    const rect = containerRef.current?.getBoundingClientRect();
-    const vp = viewportRef.current;
-    const sx = clientX - (rect?.left ?? 0);
-    const sy = clientY - (rect?.top ?? 0);
-    return { x: (sx - vp.x) / vp.scale, y: (sy - vp.y) / vp.scale };
-  };
+  const screenToWorld = useCallback(
+    (clientX: number, clientY: number) => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      const sx = clientX - (rect?.left ?? 0);
+      const sy = clientY - (rect?.top ?? 0);
+      return { x: (sx - viewport.x) / viewport.scale, y: (sy - viewport.y) / viewport.scale };
+    },
+    [viewport],
+  );
 
   const hitNode = (wx: number, wy: number): CanvasNode | undefined => {
     const nodes = dataRef.current.nodes;
@@ -395,7 +398,7 @@ export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProp
       if (!drag) {
         return;
       }
-      const scale = viewportRef.current.scale;
+      const scale = viewport.scale;
       if (drag.type === "pan") {
         setViewport((vp) => ({
           ...vp,
@@ -405,27 +408,35 @@ export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProp
       } else if (drag.type === "move") {
         const dx = (event.clientX - drag.startX) / scale;
         const dy = (event.clientY - drag.startY) / scale;
-        setData((d) => ({
-          ...d,
-          nodes: d.nodes.map((n) =>
-            n.id === drag.id ? { ...n, x: drag.origX + dx, y: drag.origY + dy } : n,
-          ),
-        }));
+        setData((d) => {
+          const next = {
+            ...d,
+            nodes: d.nodes.map((n) =>
+              n.id === drag.id ? { ...n, x: drag.origX + dx, y: drag.origY + dy } : n,
+            ),
+          };
+          dataRef.current = next;
+          return next;
+        });
       } else if (drag.type === "resize") {
         const dw = (event.clientX - drag.startX) / scale;
         const dh = (event.clientY - drag.startY) / scale;
-        setData((d) => ({
-          ...d,
-          nodes: d.nodes.map((n) =>
-            n.id === drag.id
-              ? {
-                  ...n,
-                  width: Math.max(80, drag.origW + dw),
-                  height: Math.max(40, drag.origH + dh),
-                }
-              : n,
-          ),
-        }));
+        setData((d) => {
+          const next = {
+            ...d,
+            nodes: d.nodes.map((n) =>
+              n.id === drag.id
+                ? {
+                    ...n,
+                    width: Math.max(80, drag.origW + dw),
+                    height: Math.max(40, drag.origH + dh),
+                  }
+                : n,
+            ),
+          };
+          dataRef.current = next;
+          return next;
+        });
       } else if (drag.type === "connect") {
         setConnectPos(screenToWorld(event.clientX, event.clientY));
       }
@@ -461,7 +472,7 @@ export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProp
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
     };
-  }, []);
+  }, [commit, pushChange, screenToWorld, viewport.scale]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -650,7 +661,7 @@ export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProp
       commit({ ...data, edges: data.edges.filter((e) => e.id !== selection.id) });
     }
     setSelection(null);
-  }, [data, selection]);
+  }, [commit, data, selection]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -685,10 +696,14 @@ export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProp
   };
 
   const setNodeText = (id: string, text: string) => {
-    setData((d) => ({
-      ...d,
-      nodes: d.nodes.map((n) => (n.id === id && n.type === "text" ? { ...n, text } : n)),
-    }));
+    setData((d) => {
+      const next = {
+        ...d,
+        nodes: d.nodes.map((n) => (n.id === id && n.type === "text" ? { ...n, text } : n)),
+      };
+      dataRef.current = next;
+      return next;
+    });
   };
 
   const nodeById = (id: string) => data.nodes.find((n) => n.id === id);

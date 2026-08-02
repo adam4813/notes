@@ -118,16 +118,13 @@ export function MarkdownEditor({
     [onViewStateChange],
   );
 
-  const requestPaneFocus = useCallback(
-    (pane: MarkdownPane) => {
-      if (pane === "source") {
-        setSourceFocusRequest({ token: nextToken() });
-      } else {
-        setRenderedFocusRequest({ token: nextToken() });
-      }
-    },
-    [setSourceFocusRequest, setRenderedFocusRequest],
-  );
+  const requestPaneFocus = useCallback((pane: MarkdownPane) => {
+    if (pane === "source") {
+      setSourceFocusRequest({ token: nextToken() });
+    } else {
+      setRenderedFocusRequest({ token: nextToken() });
+    }
+  }, []);
 
   const preferredPaneForMode = useCallback((nextMode: EditorMode): MarkdownPane => {
     if (nextMode === "edit") {
@@ -141,7 +138,7 @@ export function MarkdownEditor({
 
   useEffect(() => {
     requestPaneFocus(preferredPaneForMode(mode));
-  }, []);
+  }, [mode, preferredPaneForMode, requestPaneFocus]);
 
   useEffect(() => {
     const prev = prevModeRef.current;

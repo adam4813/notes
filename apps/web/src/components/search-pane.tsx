@@ -32,12 +32,14 @@ export function SearchPane({
 
   useEffect(() => {
     if (initialTag !== undefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTag(initialTag);
     }
   }, [initialTag]);
 
   useEffect(() => {
     if (initialQuery !== undefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery(initialQuery);
     }
   }, [initialQuery]);
@@ -54,6 +56,7 @@ export function SearchPane({
   useEffect(() => {
     const hasFilters = Boolean(tag || type || folder);
     if (query.trim().length === 0 && !hasFilters) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResults([]);
       return;
     }

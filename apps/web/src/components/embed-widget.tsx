@@ -79,6 +79,7 @@ export function EmbedWidget({ target }: { target: string }) {
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState({ status: "loading" });
     void (async () => {
       if (isImagePath(target)) {
@@ -112,7 +113,7 @@ export function EmbedWidget({ target }: { target: string }) {
     return () => {
       cancelled = true;
     };
-  }, [target]);
+  }, [fileHandlers, target]);
 
   // Subscribe to file-change events so edits made in the full editor are
   // reflected here without requiring a manual re-render trigger.

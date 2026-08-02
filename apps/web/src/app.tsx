@@ -119,10 +119,8 @@ export function App() {
   const [externalThemes, setExternalThemes] = useState<ThemeMeta[]>([]);
   const [pendingRestartPlugins, setPendingRestartPlugins] = useState<PluginManifest[]>([]);
   const plugins = usePlugins();
-  const treeRef = useRef(state.tree);
-  treeRef.current = state.tree;
   // Paths of freshly-created notes not yet modified/named (discarded on close).
-  const provisionalRef = useRef<Set<string>>(new Set());
+  const [provisional, setProvisional] = useState<Set<string>>(new Set());
 
   const undoStack = useUndoStack();
   const undoableFileOps = useMemo(() => makeUndoableFileOps(undoStack), [undoStack]);
@@ -164,15 +162,15 @@ export function App() {
   const createOfType = useCallback(
     (base: string, ext: string, contentFor: (name: string) => string, dir?: string) => {
       void (async () => {
-        const path = nextName(dir ?? "", base, ext, treeRef.current);
+        const path = nextName(dir ?? "", base, ext, state.tree);
         const content = contentFor(baseNoExt(path));
         await undoableFileOps.createFile(path, content);
-        provisionalRef.current.add(path);
         await refreshTree();
         dispatch({ type: "openFile", path, title: baseNoExt(path) });
+        setProvisional((prev) => new Set(prev).add(path));
       })();
     },
-    [dispatch, refreshTree, undoableFileOps],
+    [dispatch, refreshTree, state.tree, undoableFileOps],
   );
 
   const createNote = useCallback(
@@ -204,7 +202,6 @@ export function App() {
     [createOfType],
   );
 
-  // Explicitly-named note (quick switcher "create on miss"); not provisional.
   const createNamedNote = useCallback(
     (name: string) => {
       const safe = name.replace(/[\\/:]+/g, "-").trim();
@@ -222,7 +219,11 @@ export function App() {
   );
 
   const markModified = useCallback((path: string) => {
-    provisionalRef.current.delete(path);
+    setProvisional((prev) => {
+      const next = new Set(prev);
+      next.delete(path);
+      return next;
+    });
   }, []);
 
   // First-run onboarding: seed a small showcase Tome.
@@ -374,6 +375,7 @@ export function App() {
       void loadExternalThemes().then(setExternalThemes);
       return;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refreshTree();
     // Load external themes on startup.
     void loadExternalThemes().then(setExternalThemes);
@@ -399,14 +401,13 @@ export function App() {
     // When switching to a custom theme that specifies default fonts, apply them.
     const meta = externalThemes.find((t) => t.id === state.theme);
     if (meta) {
-      if (meta.appFont !== undefined) {
-        const appFont = meta.appFont;
-        setFontFamilies((prev) => ({ ...prev, app: appFont }));
-      }
-      if (meta.editorFont !== undefined) {
-        const editorFont = meta.editorFont;
-        setFontFamilies((prev) => ({ ...prev, editor: editorFont }));
-      }
+      // TODO: Subscribe to theme change events and set font families there
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFontFamilies((prev) => ({
+        ...prev,
+        app: meta.appFont ?? prev.app,
+        editor: meta.editorFont ?? prev.editor,
+      }));
     }
   }, [state.theme, externalThemes]);
 
@@ -444,14 +445,12 @@ export function App() {
 
   // Prune restored/open tabs whose files no longer exist. Runs only when the
   // tree changes (not on tab edits) to avoid racing with rename/refresh.
-  const panesRef = useRef(state.panes);
-  panesRef.current = state.panes;
   useEffect(() => {
     if (state.tree.length === 0) {
       return;
     }
     const existing = new Set(flattenFiles(state.tree).map((file) => file.path));
-    for (const pane of panesRef.current) {
+    for (const pane of state.panes) {
       for (const tab of pane.tabs) {
         if (
           !tab.path.startsWith("notes://") &&
@@ -462,7 +461,7 @@ export function App() {
         }
       }
     }
-  }, [state.tree, dispatch]);
+  }, [state.tree, state.panes, dispatch]);
 
   useEffect(() => {
     applyAccent(accent);
@@ -510,16 +509,22 @@ export function App() {
   // Discard provisional notes whose tab was closed without modification.
   useEffect(() => {
     const openPaths = new Set(state.panes.flatMap((pane) => pane.tabs.map((tab) => tab.path)));
-    for (const path of [...provisionalRef.current]) {
+    for (const path of [...provisional]) {
       if (!openPaths.has(path)) {
-        provisionalRef.current.delete(path);
+        // TODO: Subscribe to tab close events and cleanup provisional there
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setProvisional((prev) => {
+          const next = new Set(prev);
+          next.delete(path);
+          return next;
+        });
         void api
           .remove(path)
           .then(() => refreshTree())
           .catch(() => undefined);
       }
     }
-  }, [state.panes, refreshTree]);
+  }, [state.panes, refreshTree, provisional]);
 
   const commands = useMemo<AppCommand[]>(
     () => [

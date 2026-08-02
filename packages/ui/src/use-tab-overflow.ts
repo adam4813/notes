@@ -15,10 +15,6 @@ export function useTabOverflow<T extends OverflowableTab>(
 ) {
   const tabListRef = useRef<HTMLDivElement>(null);
   const tabRefsMap = useRef<Record<string, HTMLDivElement | null>>({});
-  const tabsRef = useRef(tabs);
-  tabsRef.current = tabs;
-  const activeIdRef = useRef(activeTabId);
-  activeIdRef.current = activeTabId;
 
   const [overflowTabs, setOverflowTabs] = useState<T[]>([]);
   const [hiddenTabIds, setHiddenTabIds] = useState<Set<string>>(new Set());
@@ -31,15 +27,13 @@ export function useTabOverflow<T extends OverflowableTab>(
       return;
     }
 
-    const allTabs = tabsRef.current;
-    const activeId = activeIdRef.current;
     const GAP = 2;
     const widthOf = (tab: T) => tabRefsMap.current[tab.id]?.offsetWidth ?? 140;
 
     let used = 0;
     const visible: T[] = [];
 
-    for (const tab of allTabs) {
+    for (const tab of tabs) {
       const w = widthOf(tab);
       const next = used + w + (visible.length > 0 ? GAP : 0);
       if (next <= list.clientWidth) {
@@ -49,7 +43,7 @@ export function useTabOverflow<T extends OverflowableTab>(
     }
 
     // Ensure the active tab is always visible by bumping it in.
-    const active = allTabs.find((t) => t.id === activeId);
+    const active = tabs.find((t) => t.id === activeTabId);
     if (active && !visible.some((t) => t.id === active.id)) {
       let activeNext = used + widthOf(active) + (visible.length > 0 ? GAP : 0);
       while (visible.length > 0 && activeNext > list.clientWidth) {
@@ -63,10 +57,10 @@ export function useTabOverflow<T extends OverflowableTab>(
     }
 
     const visibleIds = new Set(visible.map((t) => t.id));
-    const overflow = allTabs.filter((t) => !visibleIds.has(t.id));
+    const overflow = tabs.filter((t) => !visibleIds.has(t.id));
     setOverflowTabs(overflow);
     setHiddenTabIds(new Set(overflow.map((t) => t.id)));
-  }, []);
+  }, [tabs, activeTabId]);
 
   const scheduleRecalc = useCallback(() => {
     // Show all tabs first (so measureable widths are correct), then hide.

@@ -28,6 +28,6 @@ export function useDraggable<T>(
         onDragEnd();
       },
     }),
-    [isDraggable, onDragStart, onDragEnd, ...data],
+    [isDraggable, onDragStart, onDragEnd, data],
   );
 }
