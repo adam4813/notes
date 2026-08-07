@@ -19,6 +19,38 @@ const SAVE_LABEL: Record<SaveState, string> = {
   offline: "Saved offline",
 };
 
+export function SourceViewToggle(props: {
+  sourceView: boolean;
+  onToggle: (sourceView: boolean) => void;
+  saveState: SaveState;
+}) {
+  return (
+    <div className="mode-float">
+      <div className="mode-switch mode-switch--floating" role="tablist">
+        <button
+          role="tab"
+          aria-selected={props.sourceView}
+          className={`mode-btn ${props.sourceView ? "mode-btn--active" : ""}`}
+          onClick={() => props.onToggle(true)}
+        >
+          Source
+        </button>
+        <button
+          role="tab"
+          aria-selected={!props.sourceView}
+          className={`mode-btn ${!props.sourceView ? "mode-btn--active" : ""}`}
+          onClick={() => props.onToggle(false)}
+        >
+          Rendered
+        </button>
+      </div>
+      <span className={`save-status save-status--${props.saveState}`}>
+        {SAVE_LABEL[props.saveState]}
+      </span>
+    </div>
+  );
+}
+
 export function ModeToggle(props: {
   onChangeMode: (nextMode: EditorMode) => void;
   mode: EditorMode;

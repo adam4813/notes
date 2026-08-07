@@ -3,6 +3,7 @@ import {
   type EditorMode,
   MarkdownEditor,
   type MarkdownViewState,
+  NativeSourceEditor,
   NoteToolbar,
 } from "@notes/editor";
 import { BoardView } from "@notes/note-boards";
@@ -28,7 +29,7 @@ import { useWorkspace } from "../state/app-context";
 import { useAppServices } from "../state/app-services";
 import { useToasts } from "../state/toast";
 import { FindBar } from "./find-bar";
-import { ModeToggle, SaveState } from "./mode-toggle";
+import { ModeToggle, SaveState, SourceViewToggle } from "./mode-toggle";
 
 function basename(path: string): string {
   return (path.split("/").pop() ?? path).replace(/\.[^.]+$/, "");
@@ -139,6 +140,7 @@ export function NoteEditor({
   const [mode, setMode] = useState<EditorMode>(initialSession.mode);
   const [saveState, setSaveState] = useState<SaveState>("loading");
   const [findOpen, setFindOpen] = useState(false);
+  const [sourceView, setSourceView] = useState(false);
   const [splitScrollSync, setSplitScrollSync] = useState(initialSession.viewState.splitScrollSync);
   const ctxMenu = useContextMenu<HTMLElement | null>();
   // Note-view components register a builder here to supply content-specific
@@ -325,6 +327,7 @@ export function NoteEditor({
     !isCalendar &&
     !isGrid;
   const canToggleMode = canFind && !disableModeToggle;
+  const canSourceView = !isImage && !canFind;
   // Standalone files don't write frontmatter, so never read/show the width override.
   const renderedWidthOverride =
     canFind && !isStandalone ? readRenderedWidthOverride(content) : undefined;
@@ -423,7 +426,16 @@ export function NoteEditor({
             saveState={saveState}
           />
         )}
-        {pluginHandler ? (
+        {canSourceView && (
+          <SourceViewToggle
+            sourceView={sourceView}
+            onToggle={setSourceView}
+            saveState={saveState}
+          />
+        )}
+        {canSourceView && sourceView ? (
+          <NativeSourceEditor value={content} onChange={handleChange} />
+        ) : pluginHandler ? (
           <div className="plugin-note">
             <NoteToolbar
               label={pluginHandler.label}
