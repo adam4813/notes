@@ -1,3 +1,4 @@
+import { MARKDOWN_NOTE_TYPE_ID } from "@notes/core";
 import {
   DEFAULT_MARKDOWN_VIEW_STATE,
   type EditorMode,
@@ -5,12 +6,8 @@ import {
   type MarkdownViewState,
   NoteToolbar,
 } from "@notes/editor";
-import { BoardView } from "@notes/note-boards";
-import { CalendarView } from "@notes/note-calendar";
-import { CanvasView } from "@notes/note-canvas";
-import { GridView } from "@notes/note-grid";
-import { MermaidView } from "@notes/note-mermaid";
-import { TableGrid } from "@notes/note-tables";
+import { CANVAS_NOTE_TYPE_ID } from "@notes/note-canvas";
+import { MERMAID_NOTE_TYPE_ID } from "@notes/note-mermaid";
 import type { FileTypeHandler } from "@notes/plugin-host";
 import {
   ContextMenu,
@@ -22,12 +19,10 @@ import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } fr
 import { api } from "../api/client";
 import { queueWrite } from "../api/offline-queue";
 import { connectTomeChanges } from "../api/ws";
-import { buildContent, frontmatterType, parseFrontmatter } from "../lib/frontmatter";
+import { frontmatterType } from "../lib/frontmatter";
 import { isImagePath } from "../lib/images";
-import { useWorkspace } from "../state/app-context";
 import { useAppServices } from "../state/app-services";
 import { useToasts } from "../state/toast";
-import { FindBar } from "./find-bar";
 import { ModeToggle, SaveState } from "./mode-toggle";
 
 function basename(path: string): string {
@@ -71,30 +66,6 @@ function PluginFileView({
   return <div ref={ref} className="rendered-scroll" />;
 }
 
-type RenderedWidthMode = "normal" | "wide";
-type RenderedWidthOverride = RenderedWidthMode | "unset";
-
-const RENDERED_WIDTH_FRONTMATTER_KEY = "__notes_rendered_width";
-
-function parseRenderedWidthMode(value: string | null | undefined): RenderedWidthMode | undefined {
-  return value === "normal" || value === "wide" ? value : undefined;
-}
-
-function readRenderedWidthOverride(content: string): RenderedWidthMode | undefined {
-  const parsed = parseFrontmatter(content);
-  const raw = parsed.props.find((prop) => prop.key === RENDERED_WIDTH_FRONTMATTER_KEY)?.value;
-  return parseRenderedWidthMode(raw as string | null | undefined);
-}
-
-function applyRenderedWidthOverride(content: string, override: RenderedWidthOverride): string {
-  const parsed = parseFrontmatter(content);
-  const props = parsed.props.filter((prop) => prop.key !== RENDERED_WIDTH_FRONTMATTER_KEY);
-  if (override === "normal" || override === "wide") {
-    props.push({ key: RENDERED_WIDTH_FRONTMATTER_KEY, value: override });
-  }
-  return buildContent(props, parsed.body);
-}
-
 interface PersistedEditorSession {
   mode: EditorMode;
   viewState: MarkdownViewState;
@@ -124,8 +95,7 @@ export function NoteEditor({
   /** When true, disables file drop/paste and frontmatter type detection. */
   isStandalone?: boolean;
 }) {
-  const { dispatch } = useWorkspace();
-  const { markModified, setActiveDocument, settings, fileHandlers } = useAppServices();
+  const { markModified, setActiveDocument, fileHandlers } = useAppServices();
   const { notify } = useToasts();
   const stateKey = editorStateKey(path);
   const initialSession = markdownSessionByPath.get(stateKey) ?? {
@@ -138,7 +108,6 @@ export function NoteEditor({
   const [content, setContent] = useState("");
   const [mode, setMode] = useState<EditorMode>(initialSession.mode);
   const [saveState, setSaveState] = useState<SaveState>("loading");
-  const [findOpen, setFindOpen] = useState(false);
   const [splitScrollSync, setSplitScrollSync] = useState(initialSession.viewState.splitScrollSync);
   const ctxMenu = useContextMenu<HTMLElement | null>();
   // Note-view components register a builder here to supply content-specific
@@ -286,6 +255,13 @@ export function NoteEditor({
     });
   }, [path, isImage]);
 
+  const pluginHandler = fileHandlers.find((h) => h.extensions.includes(getExtension(path)));
+  const isCanvas = !pluginHandler && path.toLowerCase().endsWith(".canvas");
+  const frontType = isCanvas
+    ? CANVAS_NOTE_TYPE_ID
+    : (frontmatterType(content) ?? MARKDOWN_NOTE_TYPE_ID);
+  const canToggleMode = !isImage && !disableModeToggle;
+
   // Publish the active document to plugins (word count, etc.).
   useEffect(() => {
     if (saveState === "loading") {
@@ -299,38 +275,10 @@ export function NoteEditor({
         ? ext.slice(1) // e.g. "json"
         : isImage
           ? "image"
-          : path.toLowerCase().endsWith(".canvas")
-            ? "canvas"
-            : (frontmatterType(content) ?? "markdown");
+          : frontType;
     setActiveDocument({ path, content, type });
     return () => setActiveDocument(null);
-  }, [path, content, saveState, setActiveDocument, isImage, fileHandlers, isStandalone]);
-
-  const pluginHandler = fileHandlers.find((h) => h.extensions.includes(getExtension(path)));
-  const isCanvas = !pluginHandler && path.toLowerCase().endsWith(".canvas");
-  // Standalone files always use the plain markdown editor regardless of frontmatter type.
-  const frontType = isCanvas || isStandalone ? undefined : frontmatterType(content);
-  const isBoard = frontType === "board";
-  const isTable = frontType === "table";
-  const isMermaid = frontType === "mermaid";
-  const isCalendar = frontType === "calendar";
-  const isGrid = frontType === "grid";
-  const canFind =
-    !pluginHandler &&
-    !isImage &&
-    !isCanvas &&
-    !isBoard &&
-    !isTable &&
-    !isMermaid &&
-    !isCalendar &&
-    !isGrid;
-  const canToggleMode = canFind && !disableModeToggle;
-  // Standalone files don't write frontmatter, so never read/show the width override.
-  const renderedWidthOverride =
-    canFind && !isStandalone ? readRenderedWidthOverride(content) : undefined;
-  const defaultRenderedWidth = parseRenderedWidthMode(settings.renderedWidthDefault) ?? "normal";
-  const renderedWidth: RenderedWidthMode = renderedWidthOverride ?? defaultRenderedWidth;
-  const selectedRenderedWidthOverride: RenderedWidthOverride = renderedWidthOverride ?? "unset";
+  }, [path, content, saveState, setActiveDocument, isImage, fileHandlers, isStandalone, frontType]);
 
   const runEditCommand = useCallback(
     (command: string, target: HTMLElement | null) => {
@@ -368,21 +316,8 @@ export function NoteEditor({
     return <div className="note-loading">Loading…</div>;
   }
 
-  const applyReplace = (next: string) => {
-    setContent(next);
-    handleChange(next);
-  };
-
   return (
-    <div
-      className={`note-editor ${canFind ? `note-editor--render-width-${renderedWidth}` : ""}`}
-      onKeyDown={(event) => {
-        if (canFind && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f") {
-          event.preventDefault();
-          setFindOpen(true);
-        }
-      }}
-    >
+    <div className="note-editor">
       <div
         className="note-editor-region"
         ref={regionRef}
@@ -391,9 +326,11 @@ export function NoteEditor({
           if (!target || target.closest(".context-menu")) {
             return;
           }
-          // If the note view's builder returns [] (empty), suppress the menu entirely.
-          const custom = noteViewCtxBuilder?.(target);
-          if (custom !== undefined && custom !== null && custom.length === 0) return;
+          if (typeof noteViewCtxBuilder === "function") {
+            const custom = noteViewCtxBuilder?.(target);
+            // If the note view's builder returns [] (empty), suppress the menu entirely.
+            if (custom !== undefined && custom !== null && custom.length === 0) return;
+          }
           event.preventDefault();
           ctxMenu.open({ x: event.clientX, y: event.clientY }, target);
         }}
@@ -447,40 +384,11 @@ export function NoteEditor({
               <img className="image-note-preview" src={api.fileRawUrl(path)} alt={basename(path)} />
             </div>
           </div>
-        ) : isCanvas ? (
-          <CanvasView
-            key={path}
-            path={path}
-            value={content}
-            onChange={handleChange}
-            onOpenFile={(target) =>
-              dispatch({ type: "openFile", path: target, title: basename(target) })
-            }
-          />
-        ) : isBoard ? (
-          <BoardView
-            value={content}
-            onChange={handleChange}
-            path={path}
-            onRegisterContextMenu={setNoteViewCtxBuilder}
-          />
-        ) : isTable ? (
-          <TableGrid value={content} onChange={handleChange} />
-        ) : isMermaid ? (
-          <MermaidView
-            value={content}
-            onChange={handleChange}
-            modes={disableModeToggle ? [] : undefined}
-            defaultMode={disableModeToggle ? "preview" : undefined}
-          />
-        ) : isCalendar ? (
-          <CalendarView value={content} onChange={handleChange} path={path} />
-        ) : isGrid ? (
-          <GridView value={content} onChange={handleChange} />
         ) : (
           <MarkdownEditor
-            value={content}
             mode={mode}
+            path={path}
+            value={content}
             onChange={handleChange}
             viewState={markdownViewState}
             syncSplitScroll={splitScrollSync}
@@ -491,62 +399,10 @@ export function NoteEditor({
                 return nextState;
               });
             }}
+            isReadOnly={frontType !== MARKDOWN_NOTE_TYPE_ID && frontType !== MERMAID_NOTE_TYPE_ID}
             disableToolbarInEdit
-            disableFileDrop={isStandalone}
-            toolbarTrailing={
-              canFind ? (
-                <div className="editor-toolbar-meta">
-                  {!isStandalone && (
-                    <label className="editor-width-control">
-                      <span className="editor-width-label">Width</span>
-                      <select
-                        className="editor-width-select"
-                        aria-label="Rendered width override"
-                        value={selectedRenderedWidthOverride}
-                        onChange={(event) => {
-                          const next = event.target.value as RenderedWidthOverride;
-                          const nextContent = applyRenderedWidthOverride(content, next);
-                          if (nextContent !== content) {
-                            handleChange(nextContent);
-                          }
-                        }}
-                      >
-                        <option value="unset">Unset (use default)</option>
-                        <option value="normal">Normal</option>
-                        <option value="wide">Wide</option>
-                      </select>
-                    </label>
-                  )}
-                  <div className="editor-find-wrap">
-                    <button
-                      className="editor-find-btn"
-                      title="Find in note (Ctrl/Cmd+F)"
-                      aria-label="Find in note"
-                      aria-expanded={findOpen}
-                      onClick={() => {
-                        if (canFind) {
-                          setFindOpen((open) => !open);
-                          return;
-                        }
-                        setFindOpen(false);
-                      }}
-                    >
-                      🔍 Find
-                    </button>
-                    {findOpen && (
-                      <div className="editor-find-popout">
-                        <FindBar
-                          regionRef={regionRef}
-                          content={content}
-                          onReplace={applyReplace}
-                          onClose={() => setFindOpen(false)}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : undefined
-            }
+            isStandalone={isStandalone}
+            setNoteViewCtxBuilder={setNoteViewCtxBuilder}
           />
         )}
       </div>

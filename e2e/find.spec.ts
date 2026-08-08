@@ -5,9 +5,7 @@ test("find: in-note find counts matches and replace-all rewrites them", async ({
   await page.goto("/");
   await createNewNote(page);
 
-  // Use the source (Edit) mode for deterministic text.
-  await page.getByRole("tab", { name: "Edit", exact: true }).click();
-  const source = page.locator(".source-editor");
+  const source = page.locator(".rendered-editor");
   await source.click();
   await page.keyboard.press("Control+End");
   await page.keyboard.type("alpha beta alpha");
@@ -24,5 +22,5 @@ test("find: in-note find counts matches and replace-all rewrites them", async ({
   await page.getByTestId("replace-input").fill("gamma");
   await page.getByTestId("replace-all").click();
 
-  await expect(page.locator(".source-editor")).toContainText("gamma beta gamma");
+  await expect(page.locator(".rendered-editor")).toContainText("gamma beta gamma");
 });

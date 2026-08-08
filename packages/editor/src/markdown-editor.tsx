@@ -1,5 +1,14 @@
+import { MARKDOWN_NOTE_TYPE_ID } from "@notes/core";
+import { BOARD_NOTE_TYPE_ID, BoardView } from "@notes/note-boards";
+import { CALENDAR_NOTE_TYPE_ID, CalendarView } from "@notes/note-calendar";
+import { CANVAS_NOTE_TYPE_ID, CanvasView } from "@notes/note-canvas";
+import { GRID_NOTE_TYPE_ID, GridView } from "@notes/note-grid";
+import { MERMAID_NOTE_TYPE_ID, MermaidView } from "@notes/note-mermaid";
+import { TABLE_NOTE_TYPE_ID, TableGrid } from "@notes/note-tables";
+import type { NoteViewContextMenuBuilder } from "@notes/ui";
 import { api } from "@notes/web/src/api/client";
 import { EmbedWidget } from "@notes/web/src/components/embed-widget";
+import { frontmatterType } from "@notes/web/src/lib/frontmatter";
 import {
   importedFilePath,
   markdownForImportedFile,
@@ -9,9 +18,18 @@ import {
 import { useWorkspace } from "@notes/web/src/state/app-context";
 import { useAppServices } from "@notes/web/src/state/app-services";
 import { useToasts } from "@notes/web/src/state/toast";
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { NativeSourceEditor } from "./native-source-editor";
+import {
+  ComponentType,
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { RenderedEditor } from "./rendered-editor";
+import { NativeSourceEditor } from "./native-source-editor";
 import { EditorToolbar } from "./toolbar";
 import type {
   CursorRequest,
@@ -42,16 +60,47 @@ export const DEFAULT_MARKDOWN_VIEW_STATE: MarkdownViewState = {
 };
 
 interface MarkdownEditorProps {
-  value: string;
   mode: EditorMode;
+  path?: string;
+  value: string;
   onChange: (markdown: string) => void;
-  toolbarTrailing?: ReactNode;
   disableToolbarInEdit?: boolean;
   viewState?: MarkdownViewState;
   onViewStateChange?: (patch: Partial<MarkdownViewState>) => void;
   syncSplitScroll?: boolean;
   /** When true, disables all file/note drop-and-paste operations. */
-  disableFileDrop?: boolean;
+  isStandalone?: boolean;
+  isReadOnly?: boolean;
+  setNoteViewCtxBuilder?: Dispatch<SetStateAction<NoteViewContextMenuBuilder | null>>;
+}
+
+interface RendererProps {
+  path: string;
+  value: string;
+  onChange: (markdown: string) => void;
+  callbacks?: EditorCallbacks;
+  isStandalone?: boolean; // If the file belongs to the tome or not
+  cursorRequest?: CursorRequest;
+  scrollRequest?: ScrollRequest;
+  onCursorChange?: (position: number) => void;
+  onScrollChange?: (ratio: number) => void;
+  onFocus?: () => void;
+  focusRequest?: FocusRequest;
+  onRegisterContextMenu?: Dispatch<SetStateAction<NoteViewContextMenuBuilder | null>>;
+}
+
+const NOTE_RENDERERS: Record<string, ComponentType<RendererProps>> = {
+  [MARKDOWN_NOTE_TYPE_ID]: RenderedEditor,
+  [CANVAS_NOTE_TYPE_ID]: CanvasView,
+  [BOARD_NOTE_TYPE_ID]: BoardView,
+  [TABLE_NOTE_TYPE_ID]: TableGrid,
+  [MERMAID_NOTE_TYPE_ID]: MermaidView,
+  [CALENDAR_NOTE_TYPE_ID]: CalendarView,
+  [GRID_NOTE_TYPE_ID]: GridView,
+};
+
+function basename(path: string): string {
+  return (path.split("/").pop() ?? path).replace(/\.[^.]+$/, "");
 }
 
 /**
@@ -59,15 +108,17 @@ interface MarkdownEditorProps {
  * rendered view; in split mode both are shown and stay in sync through the shared value.
  */
 export function MarkdownEditor({
-  value,
   mode,
+  path,
+  value,
   onChange,
-  toolbarTrailing,
   disableToolbarInEdit = false,
   viewState,
   onViewStateChange,
   syncSplitScroll = true,
-  disableFileDrop = false,
+  isStandalone = false,
+  isReadOnly,
+  setNoteViewCtxBuilder,
 }: MarkdownEditorProps) {
   const { dispatch } = useWorkspace();
   const { settings } = useAppServices();
@@ -238,9 +289,10 @@ export function MarkdownEditor({
           dispatch({ type: "openFile", path: newPath, title: name });
         })();
       },
+      onOpenFile: (path) => dispatch({ type: "openFile", path: path, title: basename(path) }),
       listNotes: async () => (await api.notes()).notes,
       listTags: async () => (await api.tags()).tags.map((tag) => tag.tag),
-      onImportFile: disableFileDrop
+      onImportFile: isStandalone
         ? undefined
         : async (file) => {
             const mediaPath = importedFilePath(
@@ -258,22 +310,25 @@ export function MarkdownEditor({
             }
           },
       renderEmbed: (embedTarget) => <EmbedWidget target={embedTarget} />,
-      disableFileDrop,
+      disableFileDrop: isStandalone,
     }),
-    [dispatch, notify, settings.mediaDirectory, disableFileDrop],
+    [dispatch, notify, settings.mediaDirectory, isStandalone],
   );
+  const isCanvas = path?.toLowerCase().endsWith(".canvas");
+  const frontType = isCanvas
+    ? CANVAS_NOTE_TYPE_ID
+    : (frontmatterType(value) ?? MARKDOWN_NOTE_TYPE_ID);
+  const NoteRenderer = NOTE_RENDERERS[frontType];
 
   return (
     <div className={`markdown-editor-shell markdown-editor-shell--${mode}`}>
-      {mode === "edit" && disableToolbarInEdit && (
-        <EditorToolbar editor={null} disabled trailing={toolbarTrailing} />
-      )}
+      {mode === "edit" && disableToolbarInEdit && <EditorToolbar editor={null} disabled />}
       <div className={`markdown-editor markdown-editor--${mode}`}>
         {showSource && (
           <div className="editor-column editor-column--split">
             <NativeSourceEditor
               value={value}
-              onChange={onChange}
+              onChange={isReadOnly ? () => {} : onChange}
               callbacks={callbacks}
               focusRequest={sourceFocusRequest}
               onFocus={handleSourceFocus}
@@ -285,20 +340,20 @@ export function MarkdownEditor({
           </div>
         )}
         {showRendered && (
-          <div className="editor-column editor-column--rendered">
-            <RenderedEditor
-              value={value}
-              onChange={onChange}
-              callbacks={callbacks}
-              toolbarTrailing={toolbarTrailing}
-              cursorRequest={renderedCursorRequest}
-              scrollRequest={renderedScrollRequest}
-              onFocus={handleRenderedFocus}
-              onCursorChange={handleRenderedCursorChange}
-              onScrollChange={handleRenderedScrollChange}
-              focusRequest={renderedFocusRequest}
-            />
-          </div>
+          <NoteRenderer
+            path={path ?? ""}
+            value={value}
+            onChange={onChange}
+            callbacks={callbacks}
+            isStandalone={isStandalone}
+            cursorRequest={renderedCursorRequest}
+            scrollRequest={renderedScrollRequest}
+            onFocus={handleRenderedFocus}
+            onCursorChange={handleRenderedCursorChange}
+            onScrollChange={handleRenderedScrollChange}
+            focusRequest={renderedFocusRequest}
+            onRegisterContextMenu={setNoteViewCtxBuilder}
+          />
         )}
       </div>
     </div>
