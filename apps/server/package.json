@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@fastify/rate-limit": "^11.1.0",
+    "@fastify/rate-limit": "^11.2.0",
     "@fastify/static": "^10.1.2",
     "@fastify/websocket": "^11.3.0",
     "@notes/core": "*",
