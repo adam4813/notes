@@ -11,7 +11,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { NoteEditor } from "@notes/web/src/components/note-editor";
-import { NoteToolbar, usePromptDialog } from "@notes/editor";
+import { type EditorCallbacks, NoteToolbar, usePromptDialog } from "@notes/editor";
 import {
   parseCanvas,
   serializeCanvas,
@@ -23,7 +23,7 @@ import {
 interface CanvasViewProps {
   value: string;
   onChange: (text: string) => void;
-  onOpenFile?: (path: string) => void;
+  callbacks?: EditorCallbacks;
   path: string;
 }
 
@@ -267,7 +267,7 @@ function center(node: CanvasNode): { x: number; y: number } {
   return { x: node.x + node.width / 2, y: node.y + node.height / 2 };
 }
 
-export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProps) {
+export function CanvasView({ value, onChange, callbacks, path }: CanvasViewProps) {
   const { openPrompt, promptDialog } = usePromptDialog();
   const undoStack = useUndoStack();
   const [data, setData] = useState<CanvasData>(() => parseCanvas(value));
@@ -904,7 +904,7 @@ export function CanvasView({ value, onChange, onOpenFile, path }: CanvasViewProp
                   <FileNodeCard
                     file={node.file}
                     isVisible={isVisible}
-                    onOpen={() => onOpenFile?.(node.file)}
+                    onOpen={() => callbacks?.onOpenFile?.(node.file)}
                   />
                 )}
 

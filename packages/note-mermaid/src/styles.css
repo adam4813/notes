@@ -5,6 +5,7 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  flex: 1;
 }
 
 .mermaid-mode-switch {
@@ -19,15 +20,6 @@
   flex: 1;
   min-height: 0;
   display: grid;
-}
-
-/* These are used via mermaid-body--${mode} */
-.mermaid-body--split {
-  grid-template-columns: 1fr 1fr;
-}
-
-.mermaid-body--source,
-.mermaid-body--preview {
   grid-template-columns: 1fr;
 }
 
@@ -41,11 +33,6 @@
   background: var(--bg);
   color: var(--fg);
   outline: none;
-}
-
-/* This is used via mermaid-body--${mode} */
-.mermaid-body--source .mermaid-source {
-  border-right: none;
 }
 
 .mermaid-preview {

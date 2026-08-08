@@ -1,4 +1,6 @@
+import { FindBar } from "@notes/web/src/components/find-bar";
 import { buildContent, parseFrontmatter } from "@notes/web/src/lib/frontmatter";
+import { useAppServices } from "@notes/web/src/state/app-services";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import { Table } from "@tiptap/extension-table";
@@ -15,7 +17,6 @@ import {
   type ClipboardEvent as ReactClipboardEvent,
   type DragEvent as ReactDragEvent,
   type MouseEvent,
-  type ReactNode,
 } from "react";
 import { Markdown } from "tiptap-markdown";
 import { Embed } from "./embed-extension";
@@ -47,6 +48,30 @@ function readMarkdown(instance: Editor): string {
   return markdown.replace(/\\([[\]])/g, "$1").replace(/\\#(?=[\p{L}\p{N}])/gu, "#");
 }
 
+type RenderedWidthMode = "normal" | "wide";
+type RenderedWidthOverride = RenderedWidthMode | "unset";
+
+const RENDERED_WIDTH_FRONTMATTER_KEY = "__notes_rendered_width";
+
+function parseRenderedWidthMode(value: string | null | undefined): RenderedWidthMode | undefined {
+  return value === "normal" || value === "wide" ? value : undefined;
+}
+
+function readRenderedWidthOverride(content: string): RenderedWidthMode | undefined {
+  const parsed = parseFrontmatter(content);
+  const raw = parsed.props.find((prop) => prop.key === RENDERED_WIDTH_FRONTMATTER_KEY)?.value;
+  return parseRenderedWidthMode(raw as string | null | undefined);
+}
+
+function applyRenderedWidthOverride(content: string, override: RenderedWidthOverride): string {
+  const parsed = parseFrontmatter(content);
+  const props = parsed.props.filter((prop) => prop.key !== RENDERED_WIDTH_FRONTMATTER_KEY);
+  if (override === "normal" || override === "wide") {
+    props.push({ key: RENDERED_WIDTH_FRONTMATTER_KEY, value: override });
+  }
+  return buildContent(props, parsed.body);
+}
+
 type SuggestKind = "wikilink" | "tag";
 
 interface SuggestState {
@@ -65,7 +90,7 @@ interface RenderedEditorProps {
   value: string;
   onChange: (markdown: string) => void;
   callbacks?: EditorCallbacks;
-  toolbarTrailing?: ReactNode;
+  isStandalone?: boolean;
   toolbarDisabled?: boolean;
   cursorRequest?: CursorRequest;
   scrollRequest?: ScrollRequest;
@@ -80,7 +105,7 @@ export function RenderedEditor({
   value,
   onChange,
   callbacks,
-  toolbarTrailing,
+  isStandalone,
   toolbarDisabled = false,
   cursorRequest,
   scrollRequest,
@@ -89,6 +114,8 @@ export function RenderedEditor({
   onFocus,
   focusRequest,
 }: RenderedEditorProps) {
+  const { settings } = useAppServices();
+  const [findOpen, setFindOpen] = useState(false);
   const currentParts = parseFrontmatter(value);
   const renderedValue = currentParts.body;
   const suppressScrollRef = useRef(false);
@@ -102,6 +129,12 @@ export function RenderedEditor({
     desiredPosition: 1,
     attempts: 0,
   });
+
+  // Standalone files don't write frontmatter, so never read/show the width override.
+  const renderedWidthOverride = readRenderedWidthOverride(value);
+  const defaultRenderedWidth = parseRenderedWidthMode(settings.renderedWidthDefault) ?? "normal";
+  const renderedWidth: RenderedWidthMode = renderedWidthOverride ?? defaultRenderedWidth;
+  const selectedRenderedWidthOverride: RenderedWidthOverride = renderedWidthOverride ?? "unset";
 
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollHostRef = useRef<HTMLDivElement>(null);
@@ -507,44 +540,106 @@ export function RenderedEditor({
   );
 
   return (
-    <div className="rendered-editor" ref={containerRef}>
-      <EditorToolbar editor={editor} disabled={toolbarDisabled} trailing={toolbarTrailing} />
+    <div className="editor-column editor-column--rendered">
       <div
-        ref={scrollHostRef}
-        className="rendered-scroll"
-        onScroll={() => {
-          const host = scrollHostRef.current;
-          if (!host || suppressScrollRef.current) {
-            return;
-          }
-          const max = Math.max(0, host.scrollHeight - host.clientHeight);
-          const ratio = max === 0 ? 0 : host.scrollTop / max;
-          onScrollChange?.(ratio);
-        }}
-        onClick={handleClick}
-        onPaste={handlePaste}
-        onDragOver={(event) => {
-          if (
-            !callbacks?.disableFileDrop &&
-            (event.dataTransfer.types.includes(NOTES_PATH_MIME) ||
-              event.dataTransfer.files.length > 0)
-          ) {
+        className={`rendered-editor ${renderedWidth ? `rendered-editor--render-width-${renderedWidth}` : ""}`}
+        ref={containerRef}
+        onKeyDown={(event) => {
+          if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f") {
             event.preventDefault();
+            setFindOpen(true);
           }
         }}
-        onDrop={handleDrop}
       >
-        <EditorContent editor={editor} className="tiptap-host" />
-      </div>
-      {suggest && (
-        <SuggestionPopup
-          items={suggest.items}
-          activeIndex={suggest.index}
-          left={suggest.left}
-          top={suggest.top}
-          onPick={(index) => applySuggest(editor, index)}
+        <EditorToolbar
+          editor={editor}
+          disabled={toolbarDisabled}
+          trailing={
+            <div className="editor-toolbar-meta">
+              {!isStandalone && (
+                <label className="editor-width-control">
+                  <span className="editor-width-label">Width</span>
+                  <select
+                    className="editor-width-select"
+                    aria-label="Rendered width override"
+                    value={selectedRenderedWidthOverride}
+                    onChange={(event) => {
+                      const next = event.target.value as RenderedWidthOverride;
+                      const nextContent = applyRenderedWidthOverride(value, next);
+                      if (nextContent !== value) {
+                        onChange(nextContent);
+                      }
+                    }}
+                  >
+                    <option value="unset">Unset (use default)</option>
+                    <option value="normal">Normal</option>
+                    <option value="wide">Wide</option>
+                  </select>
+                </label>
+              )}
+              <div className="editor-find-wrap">
+                <button
+                  className="editor-find-btn"
+                  title="Find in note (Ctrl/Cmd+F)"
+                  aria-label="Find in note"
+                  aria-expanded={findOpen}
+                  onClick={() => {
+                    setFindOpen((open) => !open);
+                  }}
+                >
+                  🔍 Find
+                </button>
+                {findOpen && (
+                  <div className="editor-find-popout">
+                    <FindBar
+                      regionRef={scrollHostRef}
+                      content={value}
+                      onReplace={onChange}
+                      onClose={() => setFindOpen(false)}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          }
         />
-      )}
+        <div
+          ref={scrollHostRef}
+          className="rendered-scroll"
+          onScroll={() => {
+            const host = scrollHostRef.current;
+            if (!host || suppressScrollRef.current) {
+              return;
+            }
+            const max = Math.max(0, host.scrollHeight - host.clientHeight);
+            const ratio = max === 0 ? 0 : host.scrollTop / max;
+            onScrollChange?.(ratio);
+          }}
+          onClick={handleClick}
+          onPaste={handlePaste}
+          onDragOver={(event) => {
+            if (
+              !callbacks?.disableFileDrop &&
+              (event.dataTransfer.types.includes(NOTES_PATH_MIME) ||
+                event.dataTransfer.files.length > 0)
+            ) {
+              event.preventDefault();
+            }
+          }}
+          onDrop={handleDrop}
+        >
+          <EditorContent editor={editor} className="tiptap-host" />
+        </div>
+        {suggest && (
+          <SuggestionPopup
+            items={suggest.items}
+            activeIndex={suggest.index}
+            left={suggest.left}
+            top={suggest.top}
+            onPick={(index) => applySuggest(editor, index)}
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -9,8 +9,10 @@
 .grid-note {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   height: 100%;
   min-height: 0;
+  flex: 1;
 }
 
 .grid-tools {
@@ -96,6 +98,7 @@
   padding: 12px;
   user-select: none;
   background: var(--bg);
+  flex: 1;
 }
 
 .grid-canvas .grid-row {

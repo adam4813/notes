@@ -1,4 +1,14 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type DragEvent,
+  Dispatch,
+  SetStateAction,
+} from "react";
 import { usePromptDialog } from "@notes/editor";
 import { debounce } from "@notes/core";
 import { type NoteViewContextMenuBuilder } from "@notes/ui";
@@ -18,7 +28,7 @@ interface BoardViewProps {
   onChange: (markdown: string) => void;
   path: string;
   /** Called once on mount so the parent NoteEditor can show card-specific context menus. */
-  onRegisterContextMenu?: (builder: NoteViewContextMenuBuilder | null) => void;
+  onRegisterContextMenu?: Dispatch<SetStateAction<NoteViewContextMenuBuilder | null>>;
 }
 
 interface CardDrag {

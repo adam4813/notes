@@ -71,6 +71,7 @@ export function droppedPathInsertion(path: string, plainLink: boolean): string {
 /** Host-provided callbacks that connect the editor to the index/workspace. */
 export interface EditorCallbacks {
   onOpenWikilink?: (name: string) => void;
+  onOpenFile?: (path: string) => void;
   listNotes?: () => Promise<WikiSuggestion[]>;
   listTags?: () => Promise<string[]>;
   /** Imports a pasted/dropped file and returns markdown/html to insert at the caret. */

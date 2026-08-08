@@ -1896,8 +1896,8 @@ button {
   line-height: 1.65;
 }
 
-/* This is used via note-editor--render-width-${renderedWidth} */
-.note-editor--render-width-wide .tiptap-host .ProseMirror {
+/* This is used via rendered-editor--render-width-${renderedWidth} */
+.rendered-editor--render-width-wide .tiptap-host .ProseMirror {
   max-width: none;
   margin: 0;
 }
