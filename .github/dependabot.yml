@@ -17,8 +17,8 @@ updates:
           - "*"
     ignore:
       - dependency-name: "@eslint/js"
-        versions: [ ">9" ]
+        versions: [">9"]
       - dependency-name: "eslint"
-        versions: [ ">9" ]
+        versions: [">9"]
       - dependency-name: "typescript"
-        versions: [ ">6" ]
+        versions: [">6"]
