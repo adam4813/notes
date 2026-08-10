@@ -79,6 +79,16 @@ packages/
   (`./config`, not `./config.js`). Cross-package imports use the package name (`@notes/shared`).
 - **Functional React components**; hooks for state. Global app state via **React Context +
   reducers**; heavy widgets (editor, canvas, table) may own encapsulated local stores.
+- **Avoid `useEffect` for app logic**. Use it only for true external synchronization
+  boundaries (for example: registering/unregistering message/event handlers, imperative API
+  wiring, timers, subscriptions). Derive UI state from props/state/query data instead of
+  effect-driven state syncing.
+- **Discourage `useRef` unless truly required** (DOM handles, stable imperative instances,
+  mutable escape hatches that must not trigger renders). Prefer regular state, memoization,
+  and pure data flow when possible.
+- **Use `@tanstack/react-query` for all new data fetching and mutations** (already wired in
+  this repo; board note types are a reference implementation). For new query surfaces, define
+  and use **query key factories** rather than ad-hoc inline keys.
 - **Strict TypeScript** — no implicit `any`, handle `null`/`undefined`, keep functions typed.
 - **Desktop-safe interactions only** — never use `window.prompt` dialogs (they fail in desktop).
   Use in-app modal/popover UI components for user input instead.
@@ -86,12 +96,15 @@ packages/
 
 ## Testing & Verification
 
-- Run `npm run typecheck && npm test` after each task; fix errors before moving on.
+- After completing work, run formatting, linting, tests (unit/integration and e2e), and
+  compilation/type checks, then fix any linting errors before considering the task complete.
 - Add Vitest unit tests for logic (`*.test.ts` beside the code) and Playwright specs in `e2e/`.
 - First e2e run needs browsers: `npx playwright install chromium`.
 
 ## Git Conventions
 
+- For new work, explicitly create/switch to a feature branch before making implementation
+  changes.
 - **Conventional commits:** `feat:`, `fix:`, `refactor:`, `chore:`, `test:`, `docs:`.
 - **Targeted commits only** — never `git add -A`. Stage specific files/hunks and verify with
   `git diff --cached --stat` before committing.
