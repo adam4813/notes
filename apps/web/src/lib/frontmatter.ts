@@ -20,7 +20,9 @@ const BLOCK_RE = /^---\n([\s\S]*?)\n---\n*/;
 
 export function frontmatterType(content: string): string | undefined {
   const block = BLOCK_RE.exec(content);
-  return block ? /^type:\s*(?:["']?)(.+?)(?:["']?)$/m.exec(block[1])?.[1].trim() : undefined;
+  if (!block) return undefined;
+  const parsed = matter(content);
+  return parsed.data?.type;
 }
 
 export function stripFrontmatter(content: string): string {
@@ -42,12 +44,12 @@ export function parseFrontmatter(content: string): ParsedFrontmatter {
   try {
     const parsed = matter(content);
     return {
-      props: Object.entries(parsed.data ?? {}).map(([key, value]) => ({
+      props: Object.entries(parsed.data).map(([key, value]) => ({
         key,
         value: value,
       })),
       body: parsed.content,
-      hasBlock: true,
+      hasBlock: Object.keys(parsed.data).length > 0,
     };
   } catch (e) {
     console.error("Failed to parse frontmatter:", e);
