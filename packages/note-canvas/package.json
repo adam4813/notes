@@ -1,6 +1,6 @@
 {
   "name": "@notes/note-canvas",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "description": "Canvas note type using the JSONCanvas format (first-party plugin).",
   "type": "module",

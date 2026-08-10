@@ -1,6 +1,6 @@
 {
   "name": "@notes/shared",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "description": "Shared types, zod schemas, constants, and UI strings (client + server).",
   "type": "module",
