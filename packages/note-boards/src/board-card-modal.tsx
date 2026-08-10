@@ -1,4 +1,4 @@
-﻿import { MarkdownEditor } from "@notes/editor";
+﻿import { RenderedEditor } from "@notes/editor";
 import { Modal, ModalBody, ModalHeader } from "@notes/ui";
 import type { RichCard } from "./board-format";
 
@@ -71,11 +71,7 @@ export function BoardCardModal({
           </label>
         </div>
 
-        <MarkdownEditor
-          value={card.body}
-          mode="rendered"
-          onChange={(body) => updateCardState({ ...card, body })}
-        />
+        <RenderedEditor value={card.body} onChange={(body) => updateCardState({ ...card, body })} />
       </ModalBody>
     </Modal>
   );

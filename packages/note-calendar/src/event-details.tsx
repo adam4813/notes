@@ -1,4 +1,4 @@
-﻿import { MarkdownEditor } from "@notes/editor";
+﻿import { RenderedEditor } from "@notes/editor";
 import type { RichEvent } from "./calendar-format";
 
 const DURATION_OPTIONS = [
@@ -106,9 +106,8 @@ export function EventDetails({
       </div>
 
       <div className="calendar-event-body">
-        <MarkdownEditor
+        <RenderedEditor
           value={selectedEvent.body}
-          mode="rendered"
           onChange={(body) => onUpdateEvent({ ...selectedEvent, body })}
         />
       </div>

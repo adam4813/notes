@@ -3,12 +3,13 @@ import {
   DEFAULT_MARKDOWN_VIEW_STATE,
   EDITOR_MODES,
   EditorToolbar,
-  type EditorCallbacks,
   type EditorMode,
   type MarkdownViewState,
   type MarkdownPane,
   NativeSourceEditor,
   NoteToolbar,
+  PaneSyncProvider,
+  type PaneSyncContextValue,
   getNoteContextMenuBuilder,
   getNoteViewComponent,
   type RendererProps,
@@ -36,17 +37,10 @@ import {
 import { api } from "../api/client";
 import { queueWrite } from "../api/offline-queue";
 import { connectTomeChanges } from "../api/ws";
-import { EmbedWidget } from "./embed-widget";
 import { frontmatterType } from "../lib/frontmatter";
-import {
-  importedFilePath,
-  isImagePath,
-  markdownForImportedFile,
-  normalizeMediaDirectory,
-  toBase64,
-} from "../lib/images";
-import { useWorkspace } from "../state/app-context";
+import { isImagePath } from "../lib/images";
 import { useAppServices } from "../state/app-services";
+import { useEditorCallbacks } from "../state/use-editor-callbacks";
 import { useToasts } from "../state/toast";
 import { ModeToggle, SaveState } from "./mode-toggle";
 
@@ -131,10 +125,9 @@ export function NoteEditor({
   /** When true, disables file drop/paste and frontmatter type detection. */
   isStandalone?: boolean;
 }) {
-  const { markModified, setActiveDocument, fileHandlers, noteViewRegistry, settings } =
-    useAppServices();
-  const { dispatch } = useWorkspace();
+  const { markModified, setActiveDocument, fileHandlers, noteViewRegistry } = useAppServices();
   const { notify } = useToasts();
+  const callbacks = useEditorCallbacks(isStandalone);
   const stateKey = editorStateKey(path);
   const initialSession = markdownSessionByPath.get(stateKey) ?? {
     mode: defaultMode,
@@ -297,49 +290,6 @@ export function NoteEditor({
     [emitViewState, mode, splitScrollSync, sourceScroll],
   );
 
-  // ── Callbacks for the note renderer / source editor ───────────────────────
-
-  const callbacks = useMemo<EditorCallbacks>(
-    () => ({
-      onOpenWikilink: (name) => {
-        void (async () => {
-          const resolved = await api.resolve(name);
-          if (resolved.path) {
-            dispatch({ type: "openFile", path: resolved.path, title: name });
-            return;
-          }
-          const newPath = `${name}.md`;
-          await api.create(newPath, `# ${name}\n\n`).catch(() => undefined);
-          dispatch({ type: "openFile", path: newPath, title: name });
-        })();
-      },
-      onOpenFile: (filePath) =>
-        dispatch({ type: "openFile", path: filePath, title: basename(filePath) }),
-      listNotes: async () => (await api.notes()).notes,
-      listTags: async () => (await api.tags()).tags.map((tag) => tag.tag),
-      onImportFile: isStandalone
-        ? undefined
-        : async (file) => {
-            const mediaPath = importedFilePath(
-              file,
-              normalizeMediaDirectory(settings.mediaDirectory),
-            );
-            try {
-              const bytes = new Uint8Array(await file.arrayBuffer());
-              await api.createBinary(mediaPath, toBase64(bytes));
-              notify(`Imported file saved to ${mediaPath}`, { kind: "success" });
-              return markdownForImportedFile(mediaPath, file.type, api.fileRawUrl(mediaPath));
-            } catch {
-              notify("Couldn't import dropped file", { kind: "error" });
-              return null;
-            }
-          },
-      renderEmbed: (embedTarget) => <EmbedWidget target={embedTarget} />,
-      disableFileDrop: isStandalone,
-    }),
-    [dispatch, notify, settings.mediaDirectory, isStandalone],
-  );
-
   // Flush any unsaved edit when the component unmounts (tab switch / close).
   useEffect(() => {
     return () => {
@@ -483,6 +433,32 @@ export function NoteEditor({
   const showSource = effectiveMode === "edit" || effectiveMode === "split";
   const showRendered = effectiveMode === "rendered" || effectiveMode === "split";
 
+  // Build the pane-sync context value for the markdown editor panes.
+  const paneSyncValue: PaneSyncContextValue = {
+    source: {
+      cursorRequest: sourceCursor.request,
+      scrollRequest: descriptorSupportsScrollSync ? sourceScroll.request : undefined,
+      focusRequest: sourceFocus.request,
+      onCursorChange: handleSourceCursorChange,
+      onScrollChange: descriptorSupportsScrollSync ? handleSourceScrollChange : undefined,
+      onFocus: handleSourceFocus,
+      isReadOnly: descriptorSourceProtected,
+    },
+    rendered: {
+      cursorRequest: renderedCursor.request,
+      scrollRequest: descriptorSupportsScrollSync ? renderedScroll.request : undefined,
+      focusRequest: renderedFocus.request,
+      onCursorChange: handleRenderedCursorChange,
+      onScrollChange: descriptorSupportsScrollSync ? handleRenderedScrollChange : undefined,
+      onFocus: handleRenderedFocus,
+      // Adapt state-setter to the context's plain callback signature.
+      onRegisterContextMenu: (builder) =>
+        setNoteViewCtxBuilder(builder as NoteViewContextMenuBuilder | null),
+    },
+    callbacks,
+    isStandalone,
+  };
+
   // Publish the active document to plugins (word count, etc.).
   useEffect(() => {
     if (saveState === "loading") {
@@ -613,52 +589,36 @@ export function NoteEditor({
             </div>
           </div>
         ) : (
-          <div className={`markdown-editor-shell markdown-editor-shell--${effectiveMode}`}>
-            {effectiveMode === "edit" && <EditorToolbar editor={null} disabled />}
-            <div className={`markdown-editor markdown-editor--${effectiveMode}`}>
-              {showSource && (
-                <div className="editor-column editor-column--split">
-                  <NativeSourceEditor
+          <PaneSyncProvider value={paneSyncValue}>
+            <div className={`markdown-editor-shell markdown-editor-shell--${effectiveMode}`}>
+              {effectiveMode === "edit" && <EditorToolbar editor={null} disabled />}
+              <div className={`markdown-editor markdown-editor--${effectiveMode}`}>
+                {showSource && (
+                  <div className="editor-column editor-column--split">
+                    <NativeSourceEditor value={content} onChange={handleChange} />
+                  </div>
+                )}
+                {showRendered && noteRenderer && (
+                  <DynamicNoteRenderer
+                    renderer={noteRenderer}
+                    path={path}
                     value={content}
-                    onChange={descriptorSourceProtected ? () => {} : handleChange}
+                    onChange={handleChange}
                     callbacks={callbacks}
-                    focusRequest={sourceFocus.request}
-                    onFocus={handleSourceFocus}
-                    scrollRequest={descriptorSupportsScrollSync ? sourceScroll.request : undefined}
-                    onScrollChange={
-                      descriptorSupportsScrollSync ? handleSourceScrollChange : undefined
+                    isStandalone={isStandalone}
+                    onRegisterContextMenu={(builder) =>
+                      setNoteViewCtxBuilder(builder as NoteViewContextMenuBuilder | null)
                     }
-                    cursorRequest={sourceCursor.request}
-                    onCursorChange={handleSourceCursorChange}
                   />
-                </div>
-              )}
-              {showRendered && noteRenderer && (
-                <DynamicNoteRenderer
-                  renderer={noteRenderer}
-                  path={path}
-                  value={content}
-                  onChange={handleChange}
-                  callbacks={callbacks}
-                  isStandalone={isStandalone}
-                  cursorRequest={renderedCursor.request}
-                  scrollRequest={descriptorSupportsScrollSync ? renderedScroll.request : undefined}
-                  onFocus={handleRenderedFocus}
-                  onCursorChange={handleRenderedCursorChange}
-                  onScrollChange={
-                    descriptorSupportsScrollSync ? handleRenderedScrollChange : undefined
-                  }
-                  focusRequest={renderedFocus.request}
-                  onRegisterContextMenu={setNoteViewCtxBuilder}
-                />
-              )}
-              {showRendered && !noteRenderer && (
-                <div className="note-renderer-missing">
-                  No renderer registered for &ldquo;{frontType}&rdquo;.
-                </div>
-              )}
+                )}
+                {showRendered && !noteRenderer && (
+                  <div className="note-renderer-missing">
+                    No renderer registered for &ldquo;{frontType}&rdquo;.
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </PaneSyncProvider>
         )}
       </div>
 

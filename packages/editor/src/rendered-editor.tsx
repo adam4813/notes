@@ -32,6 +32,7 @@ import type {
   ScrollRequest,
   WikiSuggestion,
 } from "./types";
+import { useRenderedPaneSync } from "./pane-sync-context";
 import { WikilinkDecorator } from "./wikilink-decorator";
 
 interface MarkdownStorage {
@@ -89,6 +90,7 @@ interface SuggestState {
 interface RenderedEditorProps {
   value: string;
   onChange: (markdown: string) => void;
+  // Fallbacks for standalone use — context wins when both are present.
   callbacks?: EditorCallbacks;
   isStandalone?: boolean;
   toolbarDisabled?: boolean;
@@ -104,16 +106,26 @@ interface RenderedEditorProps {
 export function RenderedEditor({
   value,
   onChange,
-  callbacks,
-  isStandalone,
+  callbacks: callbacksProp,
+  isStandalone: isStandaloneProp,
   toolbarDisabled = false,
-  cursorRequest,
-  scrollRequest,
-  onCursorChange,
-  onScrollChange,
-  onFocus,
-  focusRequest,
+  cursorRequest: cursorRequestProp,
+  scrollRequest: scrollRequestProp,
+  onCursorChange: onCursorChangeProp,
+  onScrollChange: onScrollChangeProp,
+  onFocus: onFocusProp,
+  focusRequest: focusRequestProp,
 }: RenderedEditorProps) {
+  // Context wins over props; props are fallbacks for standalone usage.
+  const ctx = useRenderedPaneSync();
+  const callbacks = ctx?.callbacks ?? callbacksProp;
+  const isStandalone = ctx?.isStandalone ?? isStandaloneProp ?? false;
+  const cursorRequest = ctx?.cursorRequest ?? cursorRequestProp;
+  const scrollRequest = ctx?.scrollRequest ?? scrollRequestProp;
+  const onCursorChange = ctx?.onCursorChange ?? onCursorChangeProp;
+  const onScrollChange = ctx?.onScrollChange ?? onScrollChangeProp;
+  const onFocus = ctx?.onFocus ?? onFocusProp;
+  const focusRequest = ctx?.focusRequest ?? focusRequestProp;
   const { settings } = useAppServices();
   const [findOpen, setFindOpen] = useState(false);
   const currentParts = parseFrontmatter(value);

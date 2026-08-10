@@ -7,7 +7,7 @@
 import type { NoteTypeProvider, NoteTypeToolbarItem } from "@notes/core";
 import type { ComponentType, ReactNode } from "react";
 import type { NoteViewContextMenuBuilder, ContextMenuEntry } from "@notes/ui";
-import type { RendererProps } from "./markdown-editor";
+import type { RendererProps } from "./types";
 
 export type NoteViewComponent = ComponentType<RendererProps>;
 

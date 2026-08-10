@@ -6,6 +6,28 @@ export type EditorMode = NoteViewMode;
 
 export const EDITOR_MODES: EditorMode[] = ["edit", "split", "rendered"];
 
+// ── Markdown view state ───────────────────────────────────────────────────────
+
+export type MarkdownPane = "source" | "rendered";
+
+export interface MarkdownViewState {
+  sourceCursor: number;
+  renderedCursor: number;
+  sourceScrollRatio: number;
+  renderedScrollRatio: number;
+  lastFocusedPane: MarkdownPane;
+  splitScrollSync: boolean;
+}
+
+export const DEFAULT_MARKDOWN_VIEW_STATE: MarkdownViewState = {
+  sourceCursor: 0,
+  renderedCursor: 1,
+  sourceScrollRatio: 0,
+  renderedScrollRatio: 0,
+  lastFocusedPane: "rendered",
+  splitScrollSync: true,
+};
+
 export interface WikiSuggestion {
   title: string;
   path: string;
@@ -85,4 +107,26 @@ export interface EditorCallbacks {
    * Use for standalone files that should not import local assets.
    */
   disableFileDrop?: boolean;
+}
+
+// ── Renderer contract ─────────────────────────────────────────────────────────
+
+/**
+ * Props for registry-registered note renderers (canvas, board, table, markdown, …).
+ *
+ * Cursor/scroll/focus sync is no longer in RendererProps — renderers that need it
+ * consume PaneSyncContext directly via the hooks in pane-sync-context.tsx.
+ */
+export interface RendererProps {
+  path: string;
+  value: string;
+  onChange: (markdown: string) => void;
+  callbacks?: EditorCallbacks;
+  isStandalone?: boolean;
+  /**
+   * Called by the renderer to register a note-specific context-menu builder.
+   * Pass null (or call with null at cleanup) to unregister.
+   * Typed as unknown[] to avoid importing @notes/ui here; consumers cast to ContextMenuEntry[].
+   */
+  onRegisterContextMenu?: (builder: ((target: Element | null) => unknown[] | null) | null) => void;
 }

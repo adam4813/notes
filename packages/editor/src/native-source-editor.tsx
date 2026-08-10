@@ -8,37 +8,55 @@
   useRef,
 } from "react";
 import {
-  type CursorRequest,
   droppedPathInsertion,
-  type EditorCallbacks,
-  type FocusRequest,
   NOTES_PATH_MIME,
+  type EditorCallbacks,
+  type CursorRequest,
+  type FocusRequest,
   type ScrollRequest,
 } from "./types";
+import { useSourcePaneSync } from "./pane-sync-context";
 
+/**
+ * When rendered inside a PaneSyncProvider (i.e. within NoteEditor), all sync
+ * props come from context. When used standalone, props are used as fallbacks.
+ * Only `value` and `onChange` are always required.
+ */
 interface NativeSourceEditorProps {
   value: string;
   onChange: (markdown: string) => void;
+  // All below are fallbacks for standalone use outside a PaneSyncProvider.
   callbacks?: EditorCallbacks;
-  scrollRequest?: ScrollRequest; // The other view/mode set the request
-  onScrollChange?: (ratio: number) => void; // Send the other view/mode the request
-  focusRequest?: FocusRequest; // The other view/mode set the request
-  onFocus?: () => void; // Send the other view/mode the request
-  cursorRequest?: CursorRequest; // The other view/mode set the request
-  onCursorChange?: (position: number) => void; // Send the other view/mode the request
+  scrollRequest?: ScrollRequest;
+  onScrollChange?: (ratio: number) => void;
+  focusRequest?: FocusRequest;
+  onFocus?: () => void;
+  cursorRequest?: CursorRequest;
+  onCursorChange?: (position: number) => void;
 }
 
 export function NativeSourceEditor({
   value,
   onChange,
-  callbacks,
-  scrollRequest,
-  onScrollChange,
-  focusRequest,
-  onFocus,
-  cursorRequest,
-  onCursorChange,
+  callbacks: callbacksProp,
+  scrollRequest: scrollRequestProp,
+  onScrollChange: onScrollChangeProp,
+  focusRequest: focusRequestProp,
+  onFocus: onFocusProp,
+  cursorRequest: cursorRequestProp,
+  onCursorChange: onCursorChangeProp,
 }: NativeSourceEditorProps) {
+  // Context wins over props; props are fallbacks for standalone usage.
+  const ctx = useSourcePaneSync();
+  const callbacks = ctx?.callbacks ?? callbacksProp;
+  const scrollRequest = ctx?.scrollRequest ?? scrollRequestProp;
+  const onScrollChange = ctx?.onScrollChange ?? onScrollChangeProp;
+  const focusRequest = ctx?.focusRequest ?? focusRequestProp;
+  const onFocus = ctx?.onFocus ?? onFocusProp;
+  const cursorRequest = ctx?.cursorRequest ?? cursorRequestProp;
+  const onCursorChange = ctx?.onCursorChange ?? onCursorChangeProp;
+  const effectiveOnChange = ctx?.isReadOnly ? () => {} : onChange;
+
   const viewRef = useRef<HTMLTextAreaElement | null>(null);
   const suppressScrollRef = useRef(false);
 
@@ -176,7 +194,7 @@ export function NativeSourceEditor({
       className="source-editor"
       spellCheck="false"
       value={value}
-      onChange={(event) => onChange(event.target.value)}
+      onChange={(event) => effectiveOnChange(event.target.value)}
       onDragOver={handleDragover}
       onDrop={handleDrop}
       onPaste={handlePaste}

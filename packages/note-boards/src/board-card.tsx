@@ -1,4 +1,4 @@
-﻿import { MarkdownEditor } from "@notes/editor";
+﻿import { RenderedEditor } from "@notes/editor";
 import { PopupMenu, useDraggable, usePreventChildDrag } from "@notes/ui";
 import { DragEvent, useEffect, useRef, useState } from "react";
 import type { IBoardColumn, RichCard } from "./board-format";
@@ -282,9 +282,8 @@ export function BoardCard({
           </div>
 
           <div className="board-card-body-editor" {...preventChildDrag}>
-            <MarkdownEditor
+            <RenderedEditor
               value={card.body}
-              mode="rendered"
               onChange={(body) => updateCardState({ ...card, body })}
             />
           </div>
