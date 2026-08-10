@@ -1,11 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { formatCombo } from "@notes/core";
-import { emptyCanvas } from "@notes/note-canvas";
-import { emptyBoard } from "@notes/note-boards";
-import { emptyCalendar } from "@notes/note-calendar";
-import { emptyGrid } from "@notes/note-grid";
-import { emptyMermaid } from "@notes/note-mermaid";
-import { emptyTableMarkdown } from "@notes/note-tables";
+import { NoteViewRegistry, formatCombo } from "@notes/core";
+import { registerMarkdownNoteView } from "@notes/editor";
+import { emptyCanvas, registerBuiltinNoteView as registerCanvasNoteView } from "@notes/note-canvas";
+import { emptyBoard, registerBuiltinNoteView as registerBoardNoteView } from "@notes/note-boards";
+import {
+  emptyCalendar,
+  registerBuiltinNoteView as registerCalendarNoteView,
+} from "@notes/note-calendar";
+import { emptyGrid, registerBuiltinNoteView as registerGridNoteView } from "@notes/note-grid";
+import {
+  emptyMermaid,
+  registerBuiltinNoteView as registerMermaidNoteView,
+} from "@notes/note-mermaid";
+import {
+  emptyTableMarkdown,
+  registerBuiltinNoteView as registerTableNoteView,
+} from "@notes/note-tables";
 import type { PluginManifest } from "@notes/plugin-host";
 import type { ThemeMeta } from "@notes/shared";
 import { api, type FileEntry } from "./api/client";
@@ -118,7 +128,23 @@ export function App() {
   const [noteTypes, setNoteTypes] = useState<Record<string, string>>({});
   const [externalThemes, setExternalThemes] = useState<ThemeMeta[]>([]);
   const [pendingRestartPlugins, setPendingRestartPlugins] = useState<PluginManifest[]>([]);
-  const plugins = usePlugins();
+
+  // Create the NoteViewRegistry once and register all built-in note types.
+  // Kept here (not in usePlugins) so the registry is an explicit app-level
+  // concern; plugins extend it via PluginContext.registerNoteView.
+  const noteViewRegistry = useMemo(() => {
+    const registry = new NoteViewRegistry();
+    registerMarkdownNoteView(registry);
+    registerCanvasNoteView(registry);
+    registerBoardNoteView(registry);
+    registerTableNoteView(registry);
+    registerMermaidNoteView(registry);
+    registerCalendarNoteView(registry);
+    registerGridNoteView(registry);
+    return registry;
+  }, []);
+
+  const plugins = usePlugins(noteViewRegistry);
   // Paths of freshly-created notes not yet modified/named (discarded on close).
   const [provisional, setProvisional] = useState<Set<string>>(new Set());
 
@@ -837,7 +863,7 @@ export function App() {
       setActiveDocument: (doc: { path: string; content: string; type: string } | null) =>
         plugins.documentSignal.set(doc),
       fileHandlers: plugins.fileHandlers,
-      noteViewRegistry: plugins.noteViewRegistry,
+      noteViewRegistry,
       settings: settingsProps,
       undoableFileOps,
     }),
@@ -856,7 +882,7 @@ export function App() {
       noteTypes,
       plugins.documentSignal,
       plugins.fileHandlers,
-      plugins.noteViewRegistry,
+      noteViewRegistry,
       settingsProps,
       undoableFileOps,
     ],

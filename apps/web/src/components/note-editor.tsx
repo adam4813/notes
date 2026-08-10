@@ -1,11 +1,20 @@
 import { MARKDOWN_NOTE_TYPE_ID } from "@notes/core";
 import {
   DEFAULT_MARKDOWN_VIEW_STATE,
+  EDITOR_MODES,
+  EditorToolbar,
+  type EditorCallbacks,
   type EditorMode,
-  MarkdownEditor,
   type MarkdownViewState,
-  getNoteContextMenuBuilder,
+  type MarkdownPane,
+  NativeSourceEditor,
   NoteToolbar,
+  getNoteContextMenuBuilder,
+  getNoteViewComponent,
+  type RendererProps,
+  useCursorSync,
+  useFocusSync,
+  useScrollSync,
 } from "@notes/editor";
 import { CANVAS_NOTE_TYPE_ID } from "@notes/note-canvas";
 import type { FileTypeHandler } from "@notes/plugin-host";
@@ -15,12 +24,28 @@ import {
   type NoteViewContextMenuBuilder,
   useContextMenu,
 } from "@notes/ui";
-import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ComponentType,
+  type MouseEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { api } from "../api/client";
 import { queueWrite } from "../api/offline-queue";
 import { connectTomeChanges } from "../api/ws";
+import { EmbedWidget } from "./embed-widget";
 import { frontmatterType } from "../lib/frontmatter";
-import { isImagePath } from "../lib/images";
+import {
+  importedFilePath,
+  isImagePath,
+  markdownForImportedFile,
+  normalizeMediaDirectory,
+  toBase64,
+} from "../lib/images";
+import { useWorkspace } from "../state/app-context";
 import { useAppServices } from "../state/app-services";
 import { useToasts } from "../state/toast";
 import { ModeToggle, SaveState } from "./mode-toggle";
@@ -77,6 +102,17 @@ function editorStateKey(path: string): string {
   return path.replaceAll("\\", "/").toLowerCase();
 }
 
+/**
+ * Stable shell component that renders a dynamically-resolved note renderer.
+ * Declared at module level so the linter does not consider it "created during render".
+ */
+function DynamicNoteRenderer({
+  renderer: Renderer,
+  ...props
+}: RendererProps & { renderer: ComponentType<RendererProps> }) {
+  return <Renderer {...props} />;
+}
+
 export function NoteEditor({
   path,
   defaultMode = "rendered",
@@ -95,7 +131,9 @@ export function NoteEditor({
   /** When true, disables file drop/paste and frontmatter type detection. */
   isStandalone?: boolean;
 }) {
-  const { markModified, setActiveDocument, fileHandlers, noteViewRegistry } = useAppServices();
+  const { markModified, setActiveDocument, fileHandlers, noteViewRegistry, settings } =
+    useAppServices();
+  const { dispatch } = useWorkspace();
   const { notify } = useToasts();
   const stateKey = editorStateKey(path);
   const initialSession = markdownSessionByPath.get(stateKey) ?? {
@@ -110,9 +148,9 @@ export function NoteEditor({
   const [saveState, setSaveState] = useState<SaveState>("loading");
   const [splitScrollSync, setSplitScrollSync] = useState(initialSession.viewState.splitScrollSync);
   const ctxMenu = useContextMenu<HTMLElement | null>();
-  // Note-view components register a builder here to supply content-specific
-  // context menu items (e.g. board cards register Delete / Duplicate).
-  const [noteViewCtxBuilder, setNoteViewCtxBuilder] = useState<NoteViewContextMenuBuilder | null>(
+  // Component-registered context menu builder (e.g. board view registers Delete/Duplicate).
+  // Takes priority over the descriptor-declared builder below.
+  const [componentCtxBuilder, setNoteViewCtxBuilder] = useState<NoteViewContextMenuBuilder | null>(
     null,
   );
   const regionRef = useRef<HTMLDivElement>(null);
@@ -121,6 +159,22 @@ export function NoteEditor({
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const lastWriteAtRef = useRef(0);
   const isImage = isImagePath(path);
+
+  // ── Per-pane sync hooks (cursor, scroll, focus) ───────────────────────────
+  const sourceCursor = useCursorSync(initialSession.viewState.sourceCursor);
+  const renderedCursor = useCursorSync(initialSession.viewState.renderedCursor);
+  const sourceScroll = useScrollSync(initialSession.viewState.sourceScrollRatio);
+  const renderedScroll = useScrollSync(initialSession.viewState.renderedScrollRatio);
+  const sourceFocus = useFocusSync();
+  const renderedFocus = useFocusSync();
+
+  const activePaneRef = useRef<MarkdownPane>(initialSession.viewState.lastFocusedPane);
+  const sourceCursorPosRef = useRef(initialSession.viewState.sourceCursor);
+  const renderedCursorPosRef = useRef(initialSession.viewState.renderedCursor);
+  const prevModeRef = useRef(mode);
+  // Scroll-sync lock refs — prevent feedback loops when programmatically scrolling.
+  const sourceScrollLock = useRef(false);
+  const renderedScrollLock = useRef(false);
 
   const persistSession = useCallback(
     (nextMode: EditorMode, nextViewState: MarkdownViewState) => {
@@ -132,6 +186,159 @@ export function NoteEditor({
   useEffect(() => {
     persistSession(mode, markdownViewState);
   }, [mode, markdownViewState, persistSession]);
+
+  // ── Pane sync logic ───────────────────────────────────────────────────────
+
+  const preferredPaneForMode = useCallback((nextMode: EditorMode): MarkdownPane => {
+    if (nextMode === "edit") return "source";
+    if (nextMode === "rendered") return "rendered";
+    return activePaneRef.current;
+  }, []);
+
+  const requestPaneFocus = useCallback(
+    (pane: MarkdownPane) => {
+      if (pane === "source") sourceFocus.send();
+      else renderedFocus.send();
+    },
+    [sourceFocus, renderedFocus],
+  );
+
+  useEffect(() => {
+    requestPaneFocus(preferredPaneForMode(mode));
+  }, [mode, preferredPaneForMode, requestPaneFocus]);
+
+  useEffect(() => {
+    const prev = prevModeRef.current;
+    if (prev === mode) return;
+
+    if (mode === "edit") {
+      const position =
+        activePaneRef.current === "rendered"
+          ? renderedCursorPosRef.current
+          : sourceCursorPosRef.current;
+      sourceCursor.send(position);
+      requestPaneFocus("source");
+    } else if (mode === "rendered") {
+      const position =
+        activePaneRef.current === "source"
+          ? sourceCursorPosRef.current
+          : renderedCursorPosRef.current;
+      renderedCursor.send(position);
+      requestPaneFocus("rendered");
+    } else {
+      requestPaneFocus(preferredPaneForMode(mode));
+    }
+
+    prevModeRef.current = mode;
+  }, [mode, preferredPaneForMode, requestPaneFocus, sourceCursor, renderedCursor]);
+
+  const emitViewState = useCallback(
+    (patch: Partial<MarkdownViewState>) => {
+      setMarkdownViewState((prev) => {
+        const next = { ...prev, ...patch };
+        persistSession(mode, next);
+        return next;
+      });
+    },
+    [persistSession, mode],
+  );
+
+  const handleSourceFocus = useCallback(() => {
+    activePaneRef.current = "source";
+    emitViewState({ lastFocusedPane: "source" });
+  }, [emitViewState]);
+
+  const handleRenderedFocus = useCallback(() => {
+    activePaneRef.current = "rendered";
+    emitViewState({ lastFocusedPane: "rendered" });
+  }, [emitViewState]);
+
+  const handleSourceCursorChange = useCallback(
+    (position: number) => {
+      sourceCursorPosRef.current = position;
+      emitViewState({ sourceCursor: position });
+    },
+    [emitViewState],
+  );
+
+  const handleRenderedCursorChange = useCallback(
+    (position: number) => {
+      renderedCursorPosRef.current = position;
+      emitViewState({ renderedCursor: position });
+    },
+    [emitViewState],
+  );
+
+  const handleSourceScrollChange = useCallback(
+    (ratio: number) => {
+      emitViewState({ sourceScrollRatio: ratio });
+      if (!splitScrollSync || mode !== "split") return;
+      if (sourceScrollLock.current) {
+        sourceScrollLock.current = false;
+        return;
+      }
+      renderedScrollLock.current = true;
+      renderedScroll.send(ratio);
+    },
+    [emitViewState, mode, splitScrollSync, renderedScroll],
+  );
+
+  const handleRenderedScrollChange = useCallback(
+    (ratio: number) => {
+      emitViewState({ renderedScrollRatio: ratio });
+      if (!splitScrollSync || mode !== "split") return;
+      if (renderedScrollLock.current) {
+        renderedScrollLock.current = false;
+        return;
+      }
+      sourceScrollLock.current = true;
+      sourceScroll.send(ratio);
+    },
+    [emitViewState, mode, splitScrollSync, sourceScroll],
+  );
+
+  // ── Callbacks for the note renderer / source editor ───────────────────────
+
+  const callbacks = useMemo<EditorCallbacks>(
+    () => ({
+      onOpenWikilink: (name) => {
+        void (async () => {
+          const resolved = await api.resolve(name);
+          if (resolved.path) {
+            dispatch({ type: "openFile", path: resolved.path, title: name });
+            return;
+          }
+          const newPath = `${name}.md`;
+          await api.create(newPath, `# ${name}\n\n`).catch(() => undefined);
+          dispatch({ type: "openFile", path: newPath, title: name });
+        })();
+      },
+      onOpenFile: (filePath) =>
+        dispatch({ type: "openFile", path: filePath, title: basename(filePath) }),
+      listNotes: async () => (await api.notes()).notes,
+      listTags: async () => (await api.tags()).tags.map((tag) => tag.tag),
+      onImportFile: isStandalone
+        ? undefined
+        : async (file) => {
+            const mediaPath = importedFilePath(
+              file,
+              normalizeMediaDirectory(settings.mediaDirectory),
+            );
+            try {
+              const bytes = new Uint8Array(await file.arrayBuffer());
+              await api.createBinary(mediaPath, toBase64(bytes));
+              notify(`Imported file saved to ${mediaPath}`, { kind: "success" });
+              return markdownForImportedFile(mediaPath, file.type, api.fileRawUrl(mediaPath));
+            } catch {
+              notify("Couldn't import dropped file", { kind: "error" });
+              return null;
+            }
+          },
+      renderEmbed: (embedTarget) => <EmbedWidget target={embedTarget} />,
+      disableFileDrop: isStandalone,
+    }),
+    [dispatch, notify, settings.mediaDirectory, isStandalone],
+  );
 
   // Flush any unsaved edit when the component unmounts (tab switch / close).
   useEffect(() => {
@@ -262,10 +469,19 @@ export function NoteEditor({
     : (frontmatterType(content) ?? MARKDOWN_NOTE_TYPE_ID);
   const activeDescriptor = !pluginHandler && !isImage ? noteViewRegistry.get(frontType) : undefined;
   const descriptorSourceProtected = activeDescriptor?.sourceProtected ?? false;
-  const descriptorSupportedModes =
-    activeDescriptor?.supportedModes ?? (["edit", "split", "rendered"] as EditorMode[]);
+  const descriptorSupportedModes = activeDescriptor?.supportedModes ?? EDITOR_MODES;
   const descriptorSupportsScrollSync = activeDescriptor?.supportsScrollSync ?? false;
   const canToggleMode = !isImage && !disableModeToggle && descriptorSupportedModes.length > 1;
+
+  // Resolved component for the active note type — passed to DynamicNoteRenderer.
+  const noteRenderer = activeDescriptor ? getNoteViewComponent(activeDescriptor) : undefined;
+
+  // Clamp the mode to what the descriptor allows.
+  const effectiveMode = descriptorSupportedModes.includes(mode)
+    ? mode
+    : (descriptorSupportedModes[0] ?? "rendered");
+  const showSource = effectiveMode === "edit" || effectiveMode === "split";
+  const showRendered = effectiveMode === "rendered" || effectiveMode === "split";
 
   // Publish the active document to plugins (word count, etc.).
   useEffect(() => {
@@ -285,13 +501,11 @@ export function NoteEditor({
     return () => setActiveDocument(null);
   }, [path, content, saveState, setActiveDocument, isImage, fileHandlers, isStandalone, frontType]);
 
-  // When the active note type changes, seed the context menu builder from the
-  // descriptor (if any). Component-level registrations (via onRegisterContextMenu)
-  // will override this for richer per-instance menus.
-  useEffect(() => {
-    const builder = activeDescriptor ? getNoteContextMenuBuilder(activeDescriptor) : undefined;
-    setNoteViewCtxBuilder(() => builder ?? null);
-  }, [activeDescriptor]);
+  // Descriptor-declared builder is the fallback; component-registered takes priority.
+  const descriptorCtxBuilder = activeDescriptor
+    ? (getNoteContextMenuBuilder(activeDescriptor) ?? null)
+    : null;
+  const noteViewCtxBuilder = componentCtxBuilder ?? descriptorCtxBuilder;
 
   const runEditCommand = useCallback(
     (command: string, target: HTMLElement | null) => {
@@ -305,9 +519,8 @@ export function NoteEditor({
   const contextMenuItems = useMemo(() => {
     const target = ctxMenu.menu?.data ?? null;
 
-    // FIXME: noteViewCtxBuilder is an array
     if (typeof noteViewCtxBuilder === "function") {
-      const custom = noteViewCtxBuilder?.(target);
+      const custom = noteViewCtxBuilder(target);
       if (custom) return custom;
     }
 
@@ -340,7 +553,7 @@ export function NoteEditor({
             return;
           }
           if (typeof noteViewCtxBuilder === "function") {
-            const custom = noteViewCtxBuilder?.(target);
+            const custom = noteViewCtxBuilder(target);
             // If the note view's builder returns [] (empty), suppress the menu entirely.
             if (custom !== undefined && custom !== null && custom.length === 0) return;
           }
@@ -400,25 +613,52 @@ export function NoteEditor({
             </div>
           </div>
         ) : (
-          <MarkdownEditor
-            mode={mode}
-            path={path}
-            value={content}
-            onChange={handleChange}
-            viewState={markdownViewState}
-            syncSplitScroll={splitScrollSync}
-            onViewStateChange={(patch) => {
-              setMarkdownViewState((prevState) => {
-                const nextState = { ...prevState, ...patch };
-                persistSession(mode, nextState);
-                return nextState;
-              });
-            }}
-            isReadOnly={descriptorSourceProtected}
-            disableToolbarInEdit
-            isStandalone={isStandalone}
-            setNoteViewCtxBuilder={setNoteViewCtxBuilder}
-          />
+          <div className={`markdown-editor-shell markdown-editor-shell--${effectiveMode}`}>
+            {effectiveMode === "edit" && <EditorToolbar editor={null} disabled />}
+            <div className={`markdown-editor markdown-editor--${effectiveMode}`}>
+              {showSource && (
+                <div className="editor-column editor-column--split">
+                  <NativeSourceEditor
+                    value={content}
+                    onChange={descriptorSourceProtected ? () => {} : handleChange}
+                    callbacks={callbacks}
+                    focusRequest={sourceFocus.request}
+                    onFocus={handleSourceFocus}
+                    scrollRequest={descriptorSupportsScrollSync ? sourceScroll.request : undefined}
+                    onScrollChange={
+                      descriptorSupportsScrollSync ? handleSourceScrollChange : undefined
+                    }
+                    cursorRequest={sourceCursor.request}
+                    onCursorChange={handleSourceCursorChange}
+                  />
+                </div>
+              )}
+              {showRendered && noteRenderer && (
+                <DynamicNoteRenderer
+                  renderer={noteRenderer}
+                  path={path}
+                  value={content}
+                  onChange={handleChange}
+                  callbacks={callbacks}
+                  isStandalone={isStandalone}
+                  cursorRequest={renderedCursor.request}
+                  scrollRequest={descriptorSupportsScrollSync ? renderedScroll.request : undefined}
+                  onFocus={handleRenderedFocus}
+                  onCursorChange={handleRenderedCursorChange}
+                  onScrollChange={
+                    descriptorSupportsScrollSync ? handleRenderedScrollChange : undefined
+                  }
+                  focusRequest={renderedFocus.request}
+                  onRegisterContextMenu={setNoteViewCtxBuilder}
+                />
+              )}
+              {showRendered && !noteRenderer && (
+                <div className="note-renderer-missing">
+                  No renderer registered for &ldquo;{frontType}&rdquo;.
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
 

@@ -32,7 +32,7 @@ function makeHost() {
       fileHandlers.push(handler);
       return () => fileHandlers.splice(fileHandlers.indexOf(handler), 1);
     },
-    registerNoteView: (_descriptor) => {
+    registerNoteView: () => {
       return () => {};
     },
     document: new Signal(null),

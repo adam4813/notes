@@ -1,6 +1,8 @@
+import type { NoteViewMode } from "@notes/core";
 import type { ReactNode } from "react";
 
-export type EditorMode = "edit" | "split" | "rendered";
+/** Canonical editor mode — re-exported from @notes/core as NoteViewMode so there is one definition. */
+export type EditorMode = NoteViewMode;
 
 export const EDITOR_MODES: EditorMode[] = ["edit", "split", "rendered"];
 

@@ -2,6 +2,7 @@ export * from "./types";
 export * from "./markdown-editor";
 export * from "./markdown-note-view";
 export * from "./note-view-descriptor";
+export * from "./use-pane-sync";
 export * from "./rendered-editor";
 export * from "./toolbar";
 export * from "./note-toolbar";

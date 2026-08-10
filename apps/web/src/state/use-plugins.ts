@@ -9,15 +9,8 @@ import {
   type PluginInfo,
   type StatusBarItem,
 } from "@notes/plugin-host";
-import { NoteViewRegistry } from "@notes/core";
-import { registerMarkdownNoteView } from "@notes/editor";
-import { registerBuiltinNoteView as registerCanvasNoteView } from "@notes/note-canvas";
-import { registerBuiltinNoteView as registerBoardNoteView } from "@notes/note-boards";
-import { registerBuiltinNoteView as registerTableNoteView } from "@notes/note-tables";
-import { registerBuiltinNoteView as registerMermaidNoteView } from "@notes/note-mermaid";
-import { registerBuiltinNoteView as registerCalendarNoteView } from "@notes/note-calendar";
-import { registerBuiltinNoteView as registerGridNoteView } from "@notes/note-grid";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type NoteViewRegistry } from "@notes/core";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
 import { localPlugins } from "../plugins";
 
@@ -26,7 +19,6 @@ export interface PluginsApi {
   pluginCommands: PluginCommand[];
   statusItems: StatusBarItem[];
   fileHandlers: FileTypeHandler[];
-  noteViewRegistry: NoteViewRegistry;
   list: PluginInfo[];
   isEnabled: (id: string) => boolean;
   toggle: (id: string, enabled: boolean) => void;
@@ -56,29 +48,14 @@ async function loadTomePlugin(id: string): Promise<NotesPlugin | null> {
   }
 }
 
-export function usePlugins(): PluginsApi {
-  const documentSignal = useMemo(() => new Signal<ActiveDocument | null>(null), []);
+export function usePlugins(noteViewRegistry: NoteViewRegistry): PluginsApi {
+  const documentSignal = useState(() => new Signal<ActiveDocument | null>(null))[0];
   const [pluginCommands, setPluginCommands] = useState<PluginCommand[]>([]);
   const [statusItems, setStatusItems] = useState<StatusBarItem[]>([]);
   const [fileHandlers, setFileHandlers] = useState<FileTypeHandler[]>([]);
   const [list, setList] = useState<PluginInfo[]>([]);
   const [tomePluginsPath, setTomePluginsPath] = useState("");
   const managerRef = useRef<PluginManager>(undefined);
-
-  // The NoteViewRegistry is stable for the lifetime of the hook instance.
-  // Built-in note types are registered once; plugins may register/unregister
-  // via PluginContext.registerNoteView → host.registerNoteView.
-  const noteViewRegistry = useMemo(() => {
-    const registry = new NoteViewRegistry();
-    registerMarkdownNoteView(registry);
-    registerCanvasNoteView(registry);
-    registerBoardNoteView(registry);
-    registerTableNoteView(registry);
-    registerMermaidNoteView(registry);
-    registerCalendarNoteView(registry);
-    registerGridNoteView(registry);
-    return registry;
-  }, []);
 
   useEffect(() => {
     let manager: PluginManager | undefined;
@@ -166,7 +143,7 @@ export function usePlugins(): PluginsApi {
       setStatusItems([]);
       setFileHandlers([]);
     };
-  }, [documentSignal]);
+  }, [documentSignal, noteViewRegistry]);
 
   const toggle = useCallback((id: string, enabled: boolean) => {
     const manager = managerRef.current;
@@ -182,7 +159,6 @@ export function usePlugins(): PluginsApi {
     pluginCommands,
     statusItems,
     fileHandlers,
-    noteViewRegistry,
     list,
     isEnabled,
     toggle,

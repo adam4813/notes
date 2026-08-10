@@ -1,29 +1,31 @@
-import { MARKDOWN_NOTE_TYPE_ID } from "@notes/core";
-import { CANVAS_NOTE_TYPE_ID } from "@notes/note-canvas";
+/**
+ * MarkdownEditor — a self-contained inline markdown component.
+ *
+ * This component is used as a lightweight inline editor wherever a markdown
+ * snippet needs to be rendered or edited in place (e.g. board cards, calendar
+ * event descriptions). It does NOT handle file I/O, registry routing, or the
+ * full note-editor lifecycle — those concerns live in NoteEditor in apps/web.
+ *
+ * Props summary:
+ *   - value / onChange  — the raw markdown string
+ *   - mode              — "edit" | "split" | "rendered"
+ *   - callbacks         — optional EditorCallbacks for wikilinks, embeds, etc.
+ *   - viewState / onViewStateChange — cursor/scroll/focus persistence
+ */
 import type { NoteViewContextMenuBuilder } from "@notes/ui";
-import { api } from "@notes/web/src/api/client";
-import { EmbedWidget } from "@notes/web/src/components/embed-widget";
-import { frontmatterType } from "@notes/web/src/lib/frontmatter";
-import {
-  importedFilePath,
-  markdownForImportedFile,
-  normalizeMediaDirectory,
-  toBase64,
-} from "@notes/web/src/lib/images";
-import { useWorkspace } from "@notes/web/src/state/app-context";
-import { useAppServices } from "@notes/web/src/state/app-services";
-import { useToasts } from "@notes/web/src/state/toast";
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useEffect, useRef } from "react";
+import { RenderedEditor } from "./rendered-editor";
 import { NativeSourceEditor } from "./native-source-editor";
 import { EditorToolbar } from "./toolbar";
-import type {
-  CursorRequest,
-  EditorCallbacks,
-  EditorMode,
-  FocusRequest,
-  ScrollRequest,
+import {
+  EDITOR_MODES,
+  type CursorRequest,
+  type EditorCallbacks,
+  type EditorMode,
+  type FocusRequest,
+  type ScrollRequest,
 } from "./types";
-import { getNoteViewComponent } from "./note-view-descriptor";
+import { useCursorSync, useFocusSync, useScrollSync } from "./use-pane-sync";
 
 export type MarkdownPane = "source" | "rendered";
 
@@ -54,9 +56,9 @@ interface MarkdownEditorProps {
   viewState?: MarkdownViewState;
   onViewStateChange?: (patch: Partial<MarkdownViewState>) => void;
   syncSplitScroll?: boolean;
-  /** When true, disables all file/note drop-and-paste operations. */
   isStandalone?: boolean;
   isReadOnly?: boolean;
+  callbacks?: EditorCallbacks;
   setNoteViewCtxBuilder?: Dispatch<SetStateAction<NoteViewContextMenuBuilder | null>>;
 }
 
@@ -65,7 +67,7 @@ export interface RendererProps {
   value: string;
   onChange: (markdown: string) => void;
   callbacks?: EditorCallbacks;
-  isStandalone?: boolean; // If the file belongs to the tome or not
+  isStandalone?: boolean;
   cursorRequest?: CursorRequest;
   scrollRequest?: ScrollRequest;
   onCursorChange?: (position: number) => void;
@@ -75,17 +77,15 @@ export interface RendererProps {
   onRegisterContextMenu?: Dispatch<SetStateAction<NoteViewContextMenuBuilder | null>>;
 }
 
-function basename(path: string): string {
-  return (path.split("/").pop() ?? path).replace(/\.[^.]+$/, "");
-}
-
 /**
- * Hybrid markdown editor. A single `value` (markdown) drives both a source view and a TipTap
- * rendered view; in split mode both are shown and stay in sync through the shared value.
+ * Lightweight inline markdown editor. Use for embedding a markdown view
+ * inside other components (board cards, modals, etc.).
+ *
+ * For the full note-editor experience with file I/O, registry routing, and
+ * save state, use `NoteEditor` in apps/web instead.
  */
 export function MarkdownEditor({
   mode,
-  path,
   value,
   onChange,
   disableToolbarInEdit = false,
@@ -93,75 +93,56 @@ export function MarkdownEditor({
   onViewStateChange,
   syncSplitScroll = true,
   isStandalone = false,
-  isReadOnly,
-  setNoteViewCtxBuilder,
+  isReadOnly = false,
+  callbacks,
 }: MarkdownEditorProps) {
-  const { dispatch } = useWorkspace();
-  const { settings, noteViewRegistry } = useAppServices();
-  const { notify } = useToasts();
-
-  const sourceCursorRef = useRef(
+  const sourceCursor = useCursorSync(
     viewState?.sourceCursor ?? DEFAULT_MARKDOWN_VIEW_STATE.sourceCursor,
   );
-  const renderedCursorRef = useRef(
+  const renderedCursor = useCursorSync(
     viewState?.renderedCursor ?? DEFAULT_MARKDOWN_VIEW_STATE.renderedCursor,
   );
+  const sourceScroll = useScrollSync(
+    viewState?.sourceScrollRatio ?? DEFAULT_MARKDOWN_VIEW_STATE.sourceScrollRatio,
+  );
+  const renderedScroll = useScrollSync(
+    viewState?.renderedScrollRatio ?? DEFAULT_MARKDOWN_VIEW_STATE.renderedScrollRatio,
+  );
+  const sourceFocus = useFocusSync();
+  const renderedFocus = useFocusSync();
+
   const activePaneRef = useRef<MarkdownPane>(
     viewState?.lastFocusedPane ?? DEFAULT_MARKDOWN_VIEW_STATE.lastFocusedPane,
   );
-  const tokenRef = useRef(3);
-  const syncLockRef = useRef<MarkdownPane | null>(null);
+  const sourceCursorPosRef = useRef(
+    viewState?.sourceCursor ?? DEFAULT_MARKDOWN_VIEW_STATE.sourceCursor,
+  );
+  const renderedCursorPosRef = useRef(
+    viewState?.renderedCursor ?? DEFAULT_MARKDOWN_VIEW_STATE.renderedCursor,
+  );
   const prevModeRef = useRef(mode);
-
-  const [sourceCursorRequest, setSourceCursorRequest] = useState<CursorRequest>({
-    token: 1,
-    position: viewState?.sourceCursor ?? DEFAULT_MARKDOWN_VIEW_STATE.sourceCursor,
-  });
-  const [renderedCursorRequest, setRenderedCursorRequest] = useState<CursorRequest>({
-    token: 1,
-    position: viewState?.renderedCursor ?? DEFAULT_MARKDOWN_VIEW_STATE.renderedCursor,
-  });
-  const [sourceScrollRequest, setSourceScrollRequest] = useState<ScrollRequest>({
-    token: 1,
-    ratio: viewState?.sourceScrollRatio ?? DEFAULT_MARKDOWN_VIEW_STATE.sourceScrollRatio,
-  });
-  const [renderedScrollRequest, setRenderedScrollRequest] = useState<ScrollRequest>({
-    token: 1,
-    ratio: viewState?.renderedScrollRatio ?? DEFAULT_MARKDOWN_VIEW_STATE.renderedScrollRatio,
-  });
-  const [sourceFocusRequest, setSourceFocusRequest] = useState<FocusRequest>({ token: 1 });
-  const [renderedFocusRequest, setRenderedFocusRequest] = useState<FocusRequest>({ token: 1 });
-
-  const nextToken = () => {
-    const token = tokenRef.current;
-    tokenRef.current += 1;
-    return token;
-  };
+  // Scroll-sync lock refs — prevent feedback loops when programmatically scrolling.
+  const sourceScrollLock = useRef(false);
+  const renderedScrollLock = useRef(false);
 
   const emitViewState = useCallback(
-    (patch: Partial<MarkdownViewState>) => {
-      onViewStateChange?.(patch);
-    },
+    (patch: Partial<MarkdownViewState>) => onViewStateChange?.(patch),
     [onViewStateChange],
   );
 
-  const requestPaneFocus = useCallback((pane: MarkdownPane) => {
-    if (pane === "source") {
-      setSourceFocusRequest({ token: nextToken() });
-    } else {
-      setRenderedFocusRequest({ token: nextToken() });
-    }
-  }, []);
-
   const preferredPaneForMode = useCallback((nextMode: EditorMode): MarkdownPane => {
-    if (nextMode === "edit") {
-      return "source";
-    }
-    if (nextMode === "rendered") {
-      return "rendered";
-    }
+    if (nextMode === "edit") return "source";
+    if (nextMode === "rendered") return "rendered";
     return activePaneRef.current;
   }, []);
+
+  const requestPaneFocus = useCallback(
+    (pane: MarkdownPane) => {
+      if (pane === "source") sourceFocus.send();
+      else renderedFocus.send();
+    },
+    [sourceFocus, renderedFocus],
+  );
 
   useEffect(() => {
     requestPaneFocus(preferredPaneForMode(mode));
@@ -169,26 +150,28 @@ export function MarkdownEditor({
 
   useEffect(() => {
     const prev = prevModeRef.current;
-    if (prev === mode) {
-      return;
-    }
+    if (prev === mode) return;
 
     if (mode === "edit") {
       const position =
-        activePaneRef.current === "rendered" ? renderedCursorRef.current : sourceCursorRef.current;
-      setSourceCursorRequest({ token: nextToken(), position });
+        activePaneRef.current === "rendered"
+          ? renderedCursorPosRef.current
+          : sourceCursorPosRef.current;
+      sourceCursor.send(position);
       requestPaneFocus("source");
     } else if (mode === "rendered") {
       const position =
-        activePaneRef.current === "source" ? sourceCursorRef.current : renderedCursorRef.current;
-      setRenderedCursorRequest({ token: nextToken(), position });
+        activePaneRef.current === "source"
+          ? sourceCursorPosRef.current
+          : renderedCursorPosRef.current;
+      renderedCursor.send(position);
       requestPaneFocus("rendered");
     } else {
       requestPaneFocus(preferredPaneForMode(mode));
     }
 
     prevModeRef.current = mode;
-  }, [mode, preferredPaneForMode, requestPaneFocus]);
+  }, [mode, preferredPaneForMode, requestPaneFocus, sourceCursor, renderedCursor]);
 
   const handleSourceFocus = useCallback(() => {
     activePaneRef.current = "source";
@@ -202,7 +185,7 @@ export function MarkdownEditor({
 
   const handleSourceCursorChange = useCallback(
     (position: number) => {
-      sourceCursorRef.current = position;
+      sourceCursorPosRef.current = position;
       emitViewState({ sourceCursor: position });
     },
     [emitViewState],
@@ -210,7 +193,7 @@ export function MarkdownEditor({
 
   const handleRenderedCursorChange = useCallback(
     (position: number) => {
-      renderedCursorRef.current = position;
+      renderedCursorPosRef.current = position;
       emitViewState({ renderedCursor: position });
     },
     [emitViewState],
@@ -219,90 +202,33 @@ export function MarkdownEditor({
   const handleSourceScrollChange = useCallback(
     (ratio: number) => {
       emitViewState({ sourceScrollRatio: ratio });
-      if (!syncSplitScroll || mode !== "split") {
+      if (!syncSplitScroll || mode !== "split") return;
+      if (sourceScrollLock.current) {
+        sourceScrollLock.current = false;
         return;
       }
-      if (syncLockRef.current === "source") {
-        syncLockRef.current = null;
-        return;
-      }
-      syncLockRef.current = "rendered";
-      setRenderedScrollRequest({ token: nextToken(), ratio });
+      renderedScrollLock.current = true;
+      renderedScroll.send(ratio);
     },
-    [emitViewState, mode, syncSplitScroll],
+    [emitViewState, mode, syncSplitScroll, renderedScroll],
   );
 
   const handleRenderedScrollChange = useCallback(
     (ratio: number) => {
       emitViewState({ renderedScrollRatio: ratio });
-      if (!syncSplitScroll || mode !== "split") {
+      if (!syncSplitScroll || mode !== "split") return;
+      if (renderedScrollLock.current) {
+        renderedScrollLock.current = false;
         return;
       }
-      if (syncLockRef.current === "rendered") {
-        syncLockRef.current = null;
-        return;
-      }
-      syncLockRef.current = "source";
-      setSourceScrollRequest({ token: nextToken(), ratio });
+      sourceScrollLock.current = true;
+      sourceScroll.send(ratio);
     },
-    [emitViewState, mode, syncSplitScroll],
+    [emitViewState, mode, syncSplitScroll, sourceScroll],
   );
 
-  const callbacks = useMemo<EditorCallbacks>(
-    () => ({
-      onOpenWikilink: (name) => {
-        void (async () => {
-          const resolved = await api.resolve(name);
-          if (resolved.path) {
-            dispatch({ type: "openFile", path: resolved.path, title: name });
-            return;
-          }
-          const newPath = `${name}.md`;
-          await api.create(newPath, `# ${name}\n\n`).catch(() => undefined);
-          dispatch({ type: "openFile", path: newPath, title: name });
-        })();
-      },
-      onOpenFile: (path) => dispatch({ type: "openFile", path: path, title: basename(path) }),
-      listNotes: async () => (await api.notes()).notes,
-      listTags: async () => (await api.tags()).tags.map((tag) => tag.tag),
-      onImportFile: isStandalone
-        ? undefined
-        : async (file) => {
-            const mediaPath = importedFilePath(
-              file,
-              normalizeMediaDirectory(settings.mediaDirectory),
-            );
-            try {
-              const bytes = new Uint8Array(await file.arrayBuffer());
-              await api.createBinary(mediaPath, toBase64(bytes));
-              notify(`Imported file saved to ${mediaPath}`, { kind: "success" });
-              return markdownForImportedFile(mediaPath, file.type, api.fileRawUrl(mediaPath));
-            } catch {
-              notify("Couldn't import dropped file", { kind: "error" });
-              return null;
-            }
-          },
-      renderEmbed: (embedTarget) => <EmbedWidget target={embedTarget} />,
-      disableFileDrop: isStandalone,
-    }),
-    [dispatch, notify, settings.mediaDirectory, isStandalone],
-  );
-  const isCanvas = path?.toLowerCase().endsWith(".canvas");
-  const frontType = isCanvas
-    ? CANVAS_NOTE_TYPE_ID
-    : (frontmatterType(value) ?? MARKDOWN_NOTE_TYPE_ID);
-  const activeProvider =
-    noteViewRegistry.get(frontType) ?? noteViewRegistry.get(MARKDOWN_NOTE_TYPE_ID);
-  const NoteRenderer = activeProvider ? getNoteViewComponent(activeProvider) : undefined;
-
-  const sourceProtected = activeProvider?.sourceProtected ?? false;
-  const supportsScrollSync = activeProvider?.supportsScrollSync ?? false;
-  const supportedModes =
-    activeProvider?.supportedModes ?? (["edit", "split", "rendered"] as EditorMode[]);
-
-  // Clamp the requested mode to what the active note type supports.
+  const supportedModes = EDITOR_MODES;
   const effectiveMode = supportedModes.includes(mode) ? mode : (supportedModes[0] ?? "rendered");
-
   const showSource = effectiveMode === "edit" || effectiveMode === "split";
   const showRendered = effectiveMode === "rendered" || effectiveMode === "split";
 
@@ -314,35 +240,30 @@ export function MarkdownEditor({
           <div className="editor-column editor-column--split">
             <NativeSourceEditor
               value={value}
-              onChange={isReadOnly || sourceProtected ? () => {} : onChange}
+              onChange={isReadOnly ? () => {} : onChange}
               callbacks={callbacks}
-              focusRequest={sourceFocusRequest}
+              focusRequest={sourceFocus.request}
               onFocus={handleSourceFocus}
-              scrollRequest={supportsScrollSync ? sourceScrollRequest : undefined}
-              onScrollChange={supportsScrollSync ? handleSourceScrollChange : undefined}
-              cursorRequest={sourceCursorRequest}
+              scrollRequest={sourceScroll.request}
+              onScrollChange={handleSourceScrollChange}
+              cursorRequest={sourceCursor.request}
               onCursorChange={handleSourceCursorChange}
             />
           </div>
         )}
-        {showRendered && NoteRenderer && (
-          <NoteRenderer
-            path={path ?? ""}
+        {showRendered && (
+          <RenderedEditor
             value={value}
             onChange={onChange}
             callbacks={callbacks}
             isStandalone={isStandalone}
-            cursorRequest={renderedCursorRequest}
-            scrollRequest={supportsScrollSync ? renderedScrollRequest : undefined}
+            cursorRequest={renderedCursor.request}
+            scrollRequest={renderedScroll.request}
             onFocus={handleRenderedFocus}
             onCursorChange={handleRenderedCursorChange}
-            onScrollChange={supportsScrollSync ? handleRenderedScrollChange : undefined}
-            focusRequest={renderedFocusRequest}
-            onRegisterContextMenu={setNoteViewCtxBuilder}
+            onScrollChange={handleRenderedScrollChange}
+            focusRequest={renderedFocus.request}
           />
-        )}
-        {showRendered && !NoteRenderer && (
-          <div className="note-renderer-missing">No renderer registered for "{frontType}".</div>
         )}
       </div>
     </div>
