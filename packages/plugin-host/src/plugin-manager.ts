@@ -111,6 +111,11 @@ export class PluginManager {
         entry.disposers.push(disposer);
         return disposer;
       },
+      registerNoteView: (descriptor) => {
+        const disposer = this.host.registerNoteView(descriptor);
+        entry.disposers.push(disposer);
+        return disposer;
+      },
       document: this.host.document,
       settings,
     };

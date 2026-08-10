@@ -8,4 +8,9 @@ export const markdownNoteType: NoteTypeProvider = {
   detect(file: NoteFileDescriptor): boolean {
     return file.path.toLowerCase().endsWith(".md");
   },
+  supportedModes: ["edit", "split", "rendered"],
+  sourceProtected: false,
+  supportsScrollSync: true,
+  // viewComponent is set by packages/editor via registerBuiltinNoteView
+  // to avoid a circular dependency (core must stay React-free).
 };

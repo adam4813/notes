@@ -837,6 +837,7 @@ export function App() {
       setActiveDocument: (doc: { path: string; content: string; type: string } | null) =>
         plugins.documentSignal.set(doc),
       fileHandlers: plugins.fileHandlers,
+      noteViewRegistry: plugins.noteViewRegistry,
       settings: settingsProps,
       undoableFileOps,
     }),
@@ -855,6 +856,7 @@ export function App() {
       noteTypes,
       plugins.documentSignal,
       plugins.fileHandlers,
+      plugins.noteViewRegistry,
       settingsProps,
       undoableFileOps,
     ],

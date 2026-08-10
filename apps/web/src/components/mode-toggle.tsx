@@ -25,11 +25,18 @@ export function ModeToggle(props: {
   splitScrollSync: boolean;
   onToggleSyncScroll: () => void;
   saveState: SaveState;
+  /** Which editor modes are available for the current note type. Defaults to all three. */
+  supportedModes?: EditorMode[];
+  /** Whether to show the scroll sync toggle in split mode. Defaults to true. */
+  supportsScrollSync?: boolean;
 }) {
+  const visibleModes = props.supportedModes ?? EDITOR_MODES;
+  const showSyncToggle = props.supportsScrollSync ?? true;
+
   return (
     <div className="mode-float">
       <div className="mode-switch mode-switch--floating" role="tablist">
-        {EDITOR_MODES.map((mode) => (
+        {visibleModes.map((mode) => (
           <button
             key={mode}
             role="tab"
@@ -43,7 +50,7 @@ export function ModeToggle(props: {
           </button>
         ))}
       </div>
-      {props.mode === "split" && (
+      {showSyncToggle && props.mode === "split" && (
         <button
           type="button"
           className={`mode-sync-toggle ${props.splitScrollSync ? "mode-sync-toggle--on" : ""}`}

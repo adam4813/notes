@@ -1,4 +1,5 @@
-import type { NoteTypeProvider } from "@notes/core";
+import type { NoteTypeProvider, NoteViewRegistry, NoteViewDisposer } from "@notes/core";
+import { GridView } from "./grid-view";
 
 export const GRID_NOTE_TYPE_ID = "grid";
 
@@ -8,4 +9,13 @@ export const gridNoteType: NoteTypeProvider = {
   detect(file) {
     return file.path.toLowerCase().endsWith(".md") && file.frontmatterType === "grid";
   },
+  supportedModes: ["rendered"],
+  sourceProtected: true,
+  supportsScrollSync: false,
+  viewComponent: GridView,
 };
+
+/** Registers the grid note type with the NoteViewRegistry — mirrors the plugin pattern. */
+export function registerBuiltinNoteView(registry: NoteViewRegistry): NoteViewDisposer {
+  return registry.register(gridNoteType);
+}

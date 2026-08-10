@@ -4,10 +4,10 @@ import {
   type EditorMode,
   MarkdownEditor,
   type MarkdownViewState,
+  getNoteContextMenuBuilder,
   NoteToolbar,
 } from "@notes/editor";
 import { CANVAS_NOTE_TYPE_ID } from "@notes/note-canvas";
-import { MERMAID_NOTE_TYPE_ID } from "@notes/note-mermaid";
 import type { FileTypeHandler } from "@notes/plugin-host";
 import {
   ContextMenu,
@@ -95,7 +95,7 @@ export function NoteEditor({
   /** When true, disables file drop/paste and frontmatter type detection. */
   isStandalone?: boolean;
 }) {
-  const { markModified, setActiveDocument, fileHandlers } = useAppServices();
+  const { markModified, setActiveDocument, fileHandlers, noteViewRegistry } = useAppServices();
   const { notify } = useToasts();
   const stateKey = editorStateKey(path);
   const initialSession = markdownSessionByPath.get(stateKey) ?? {
@@ -260,7 +260,12 @@ export function NoteEditor({
   const frontType = isCanvas
     ? CANVAS_NOTE_TYPE_ID
     : (frontmatterType(content) ?? MARKDOWN_NOTE_TYPE_ID);
-  const canToggleMode = !isImage && !disableModeToggle;
+  const activeDescriptor = !pluginHandler && !isImage ? noteViewRegistry.get(frontType) : undefined;
+  const descriptorSourceProtected = activeDescriptor?.sourceProtected ?? false;
+  const descriptorSupportedModes =
+    activeDescriptor?.supportedModes ?? (["edit", "split", "rendered"] as EditorMode[]);
+  const descriptorSupportsScrollSync = activeDescriptor?.supportsScrollSync ?? false;
+  const canToggleMode = !isImage && !disableModeToggle && descriptorSupportedModes.length > 1;
 
   // Publish the active document to plugins (word count, etc.).
   useEffect(() => {
@@ -279,6 +284,14 @@ export function NoteEditor({
     setActiveDocument({ path, content, type });
     return () => setActiveDocument(null);
   }, [path, content, saveState, setActiveDocument, isImage, fileHandlers, isStandalone, frontType]);
+
+  // When the active note type changes, seed the context menu builder from the
+  // descriptor (if any). Component-level registrations (via onRegisterContextMenu)
+  // will override this for richer per-instance menus.
+  useEffect(() => {
+    const builder = activeDescriptor ? getNoteContextMenuBuilder(activeDescriptor) : undefined;
+    setNoteViewCtxBuilder(() => builder ?? null);
+  }, [activeDescriptor]);
 
   const runEditCommand = useCallback(
     (command: string, target: HTMLElement | null) => {
@@ -358,6 +371,8 @@ export function NoteEditor({
               })
             }
             saveState={saveState}
+            supportedModes={descriptorSupportedModes}
+            supportsScrollSync={descriptorSupportsScrollSync}
           />
         )}
         {pluginHandler ? (
@@ -399,7 +414,7 @@ export function NoteEditor({
                 return nextState;
               });
             }}
-            isReadOnly={frontType !== MARKDOWN_NOTE_TYPE_ID && frontType !== MERMAID_NOTE_TYPE_ID}
+            isReadOnly={descriptorSourceProtected}
             disableToolbarInEdit
             isStandalone={isStandalone}
             setNoteViewCtxBuilder={setNoteViewCtxBuilder}

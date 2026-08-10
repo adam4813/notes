@@ -1,10 +1,5 @@
 import { MARKDOWN_NOTE_TYPE_ID } from "@notes/core";
-import { BOARD_NOTE_TYPE_ID, BoardView } from "@notes/note-boards";
-import { CALENDAR_NOTE_TYPE_ID, CalendarView } from "@notes/note-calendar";
-import { CANVAS_NOTE_TYPE_ID, CanvasView } from "@notes/note-canvas";
-import { GRID_NOTE_TYPE_ID, GridView } from "@notes/note-grid";
-import { MERMAID_NOTE_TYPE_ID, MermaidView } from "@notes/note-mermaid";
-import { TABLE_NOTE_TYPE_ID, TableGrid } from "@notes/note-tables";
+import { CANVAS_NOTE_TYPE_ID } from "@notes/note-canvas";
 import type { NoteViewContextMenuBuilder } from "@notes/ui";
 import { api } from "@notes/web/src/api/client";
 import { EmbedWidget } from "@notes/web/src/components/embed-widget";
@@ -18,17 +13,7 @@ import {
 import { useWorkspace } from "@notes/web/src/state/app-context";
 import { useAppServices } from "@notes/web/src/state/app-services";
 import { useToasts } from "@notes/web/src/state/toast";
-import {
-  ComponentType,
-  Dispatch,
-  SetStateAction,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { RenderedEditor } from "./rendered-editor";
+import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NativeSourceEditor } from "./native-source-editor";
 import { EditorToolbar } from "./toolbar";
 import type {
@@ -38,6 +23,7 @@ import type {
   FocusRequest,
   ScrollRequest,
 } from "./types";
+import { getNoteViewComponent } from "./note-view-descriptor";
 
 export type MarkdownPane = "source" | "rendered";
 
@@ -74,7 +60,7 @@ interface MarkdownEditorProps {
   setNoteViewCtxBuilder?: Dispatch<SetStateAction<NoteViewContextMenuBuilder | null>>;
 }
 
-interface RendererProps {
+export interface RendererProps {
   path: string;
   value: string;
   onChange: (markdown: string) => void;
@@ -88,16 +74,6 @@ interface RendererProps {
   focusRequest?: FocusRequest;
   onRegisterContextMenu?: Dispatch<SetStateAction<NoteViewContextMenuBuilder | null>>;
 }
-
-const NOTE_RENDERERS: Record<string, ComponentType<RendererProps>> = {
-  [MARKDOWN_NOTE_TYPE_ID]: RenderedEditor,
-  [CANVAS_NOTE_TYPE_ID]: CanvasView,
-  [BOARD_NOTE_TYPE_ID]: BoardView,
-  [TABLE_NOTE_TYPE_ID]: TableGrid,
-  [MERMAID_NOTE_TYPE_ID]: MermaidView,
-  [CALENDAR_NOTE_TYPE_ID]: CalendarView,
-  [GRID_NOTE_TYPE_ID]: GridView,
-};
 
 function basename(path: string): string {
   return (path.split("/").pop() ?? path).replace(/\.[^.]+$/, "");
@@ -121,7 +97,7 @@ export function MarkdownEditor({
   setNoteViewCtxBuilder,
 }: MarkdownEditorProps) {
   const { dispatch } = useWorkspace();
-  const { settings } = useAppServices();
+  const { settings, noteViewRegistry } = useAppServices();
   const { notify } = useToasts();
 
   const sourceCursorRef = useRef(
@@ -213,9 +189,6 @@ export function MarkdownEditor({
 
     prevModeRef.current = mode;
   }, [mode, preferredPaneForMode, requestPaneFocus]);
-
-  const showSource = mode === "edit" || mode === "split";
-  const showRendered = mode === "rendered" || mode === "split";
 
   const handleSourceFocus = useCallback(() => {
     activePaneRef.current = "source";
@@ -318,28 +291,41 @@ export function MarkdownEditor({
   const frontType = isCanvas
     ? CANVAS_NOTE_TYPE_ID
     : (frontmatterType(value) ?? MARKDOWN_NOTE_TYPE_ID);
-  const NoteRenderer = NOTE_RENDERERS[frontType];
+  const activeProvider =
+    noteViewRegistry.get(frontType) ?? noteViewRegistry.get(MARKDOWN_NOTE_TYPE_ID);
+  const NoteRenderer = activeProvider ? getNoteViewComponent(activeProvider) : undefined;
+
+  const sourceProtected = activeProvider?.sourceProtected ?? false;
+  const supportsScrollSync = activeProvider?.supportsScrollSync ?? false;
+  const supportedModes =
+    activeProvider?.supportedModes ?? (["edit", "split", "rendered"] as EditorMode[]);
+
+  // Clamp the requested mode to what the active note type supports.
+  const effectiveMode = supportedModes.includes(mode) ? mode : (supportedModes[0] ?? "rendered");
+
+  const showSource = effectiveMode === "edit" || effectiveMode === "split";
+  const showRendered = effectiveMode === "rendered" || effectiveMode === "split";
 
   return (
-    <div className={`markdown-editor-shell markdown-editor-shell--${mode}`}>
-      {mode === "edit" && disableToolbarInEdit && <EditorToolbar editor={null} disabled />}
-      <div className={`markdown-editor markdown-editor--${mode}`}>
+    <div className={`markdown-editor-shell markdown-editor-shell--${effectiveMode}`}>
+      {effectiveMode === "edit" && disableToolbarInEdit && <EditorToolbar editor={null} disabled />}
+      <div className={`markdown-editor markdown-editor--${effectiveMode}`}>
         {showSource && (
           <div className="editor-column editor-column--split">
             <NativeSourceEditor
               value={value}
-              onChange={isReadOnly ? () => {} : onChange}
+              onChange={isReadOnly || sourceProtected ? () => {} : onChange}
               callbacks={callbacks}
               focusRequest={sourceFocusRequest}
               onFocus={handleSourceFocus}
-              scrollRequest={sourceScrollRequest}
-              onScrollChange={handleSourceScrollChange}
+              scrollRequest={supportsScrollSync ? sourceScrollRequest : undefined}
+              onScrollChange={supportsScrollSync ? handleSourceScrollChange : undefined}
               cursorRequest={sourceCursorRequest}
               onCursorChange={handleSourceCursorChange}
             />
           </div>
         )}
-        {showRendered && (
+        {showRendered && NoteRenderer && (
           <NoteRenderer
             path={path ?? ""}
             value={value}
@@ -347,13 +333,16 @@ export function MarkdownEditor({
             callbacks={callbacks}
             isStandalone={isStandalone}
             cursorRequest={renderedCursorRequest}
-            scrollRequest={renderedScrollRequest}
+            scrollRequest={supportsScrollSync ? renderedScrollRequest : undefined}
             onFocus={handleRenderedFocus}
             onCursorChange={handleRenderedCursorChange}
-            onScrollChange={handleRenderedScrollChange}
+            onScrollChange={supportsScrollSync ? handleRenderedScrollChange : undefined}
             focusRequest={renderedFocusRequest}
             onRegisterContextMenu={setNoteViewCtxBuilder}
           />
+        )}
+        {showRendered && !NoteRenderer && (
+          <div className="note-renderer-missing">No renderer registered for "{frontType}".</div>
         )}
       </div>
     </div>
