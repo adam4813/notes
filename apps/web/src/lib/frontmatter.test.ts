@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyProperties, buildContent, parseFrontmatter } from "./frontmatter";
+import { applyProperties, buildContent, frontmatterType, parseFrontmatter } from "./frontmatter";
 
 describe("parseFrontmatter", () => {
   it("parses a frontmatter block and body", () => {
@@ -17,6 +17,18 @@ describe("parseFrontmatter", () => {
     expect(parsed.hasBlock).toBe(false);
     expect(parsed.props).toEqual([]);
     expect(parsed.body).toBe("# Just a note\n");
+  });
+});
+
+describe("frontmatterType", () => {
+  it("returns the correct type for a note with a type property", () => {
+    const type = frontmatterType("---\ntype: board\n---\n# Body\n");
+    expect(type).toBe("board");
+  });
+
+  it("returns undefined for a note without a type property", () => {
+    const type = frontmatterType("# Body\n");
+    expect(type).toBeUndefined();
   });
 });
 
