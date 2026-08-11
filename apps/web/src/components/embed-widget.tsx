@@ -173,11 +173,11 @@ export function EmbedWidget({ target }: { target: string }) {
       case "image":
         return <img className="embed-image" src={api.fileRawUrl(path)} alt={title} />;
       case "mermaid":
-        return <MermaidView value={content} onChange={save} />;
+        return <MermaidView value={content} onChange={save} path={path} />;
       case "grid":
-        return <GridView value={content} onChange={save} />;
+        return <GridView value={content} onChange={save} path={path} />;
       case "table":
-        return <TableGrid value={content} onChange={save} />;
+        return <TableGrid value={content} onChange={save} path={path} />;
       case "board":
       case "calendar":
         return (

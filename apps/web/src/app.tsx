@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { formatCombo } from "@notes/core";
-import { emptyCanvas } from "@notes/note-canvas";
-import { emptyBoard } from "@notes/note-boards";
-import { emptyCalendar } from "@notes/note-calendar";
-import { emptyGrid } from "@notes/note-grid";
-import { emptyMermaid } from "@notes/note-mermaid";
-import { emptyTableMarkdown } from "@notes/note-tables";
+import { NoteTypeRegistry, formatCombo } from "@notes/core";
+import { type NoteTypeDescriptor, markdownNoteType } from "@notes/editor";
+import { canvasNoteType, emptyCanvas } from "@notes/note-canvas";
+import { boardNoteType, emptyBoard } from "@notes/note-boards";
+import { calendarNoteType, emptyCalendar } from "@notes/note-calendar";
+import { emptyGrid, gridNoteType } from "@notes/note-grid";
+import { emptyMermaid, mermaidNoteType } from "@notes/note-mermaid";
+import { emptyTableMarkdown, tableNoteType } from "@notes/note-tables";
 import type { PluginManifest } from "@notes/plugin-host";
 import type { ThemeMeta } from "@notes/shared";
 import { api, type FileEntry } from "./api/client";
@@ -118,7 +119,23 @@ export function App() {
   const [noteTypes, setNoteTypes] = useState<Record<string, string>>({});
   const [externalThemes, setExternalThemes] = useState<ThemeMeta[]>([]);
   const [pendingRestartPlugins, setPendingRestartPlugins] = useState<PluginManifest[]>([]);
-  const plugins = usePlugins();
+
+  // Create the NoteTypeRegistry once and register all built-in note types.
+  // Kept here (not in usePlugins) so the registry is an explicit app-level
+  // concern; plugins extend it via PluginContext.registerNoteType.
+  const noteTypeRegistry = useMemo(() => {
+    const registry = new NoteTypeRegistry<NoteTypeDescriptor>();
+    registry.register(markdownNoteType, { fallback: true });
+    registry.register(canvasNoteType);
+    registry.register(boardNoteType);
+    registry.register(tableNoteType);
+    registry.register(mermaidNoteType);
+    registry.register(calendarNoteType);
+    registry.register(gridNoteType);
+    return registry;
+  }, []);
+
+  const plugins = usePlugins(noteTypeRegistry);
   // Paths of freshly-created notes not yet modified/named (discarded on close).
   const [provisional, setProvisional] = useState<Set<string>>(new Set());
 
@@ -837,6 +854,7 @@ export function App() {
       setActiveDocument: (doc: { path: string; content: string; type: string } | null) =>
         plugins.documentSignal.set(doc),
       fileHandlers: plugins.fileHandlers,
+      noteTypeRegistry,
       settings: settingsProps,
       undoableFileOps,
     }),
@@ -855,6 +873,7 @@ export function App() {
       noteTypes,
       plugins.documentSignal,
       plugins.fileHandlers,
+      noteTypeRegistry,
       settingsProps,
       undoableFileOps,
     ],

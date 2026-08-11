@@ -1,4 +1,5 @@
-import { markdownNoteType, NoteTypeRegistry, type CommandBus } from "@notes/core";
+import { NoteTypeRegistry, type CommandBus } from "@notes/core";
+import { markdownNoteType } from "@notes/editor";
 import { boardNoteType } from "@notes/note-boards";
 import { calendarNoteType } from "@notes/note-calendar";
 import { canvasNoteType } from "@notes/note-canvas";

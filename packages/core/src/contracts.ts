@@ -44,8 +44,14 @@ export interface NoteFileDescriptor {
   readonly frontmatterType?: string;
 }
 
-/** Strategy/Factory provider for a note type (markdown, table, canvas, board, …). */
-export interface NoteTypeProvider {
+/**
+ * Minimal interface for note-type detection — used server-side to match a
+ * file to its type. Only carries identity and the detect predicate.
+ *
+ * The full note-type descriptor (with React view capabilities) is
+ * NoteTypeDescriptor in packages/editor, which extends this interface.
+ */
+export interface NoteTypeDetector {
   readonly id: string;
   detect(file: NoteFileDescriptor): boolean;
 }

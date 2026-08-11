@@ -23,15 +23,10 @@ import { Embed } from "./embed-extension";
 import { ImageNode } from "./image-node";
 import { StyledTextMark } from "./styled-text-mark";
 import { SuggestionPopup } from "./suggestion-popup";
-import { droppedPathInsertion, NOTES_PATH_MIME } from "./types";
+import { droppedPathInsertion, NOTES_PATH_MIME, RendererProps } from "./types";
 import { EditorToolbar } from "./toolbar";
-import type {
-  CursorRequest,
-  EditorCallbacks,
-  FocusRequest,
-  ScrollRequest,
-  WikiSuggestion,
-} from "./types";
+import type { WikiSuggestion } from "./types";
+import { useRenderedPaneSync } from "./pane-sync-context";
 import { WikilinkDecorator } from "./wikilink-decorator";
 
 interface MarkdownStorage {
@@ -86,34 +81,23 @@ interface SuggestState {
   top: number;
 }
 
-interface RenderedEditorProps {
-  value: string;
-  onChange: (markdown: string) => void;
-  callbacks?: EditorCallbacks;
-  isStandalone?: boolean;
-  toolbarDisabled?: boolean;
-  cursorRequest?: CursorRequest;
-  scrollRequest?: ScrollRequest;
-  onCursorChange?: (position: number) => void;
-  onScrollChange?: (ratio: number) => void;
-  onFocus?: () => void;
-  focusRequest?: FocusRequest;
-}
-
 /** WYSIWYG editor (TipTap/ProseMirror): toolbar, clickable wikilinks, and autocomplete. */
 export function RenderedEditor({
   value,
   onChange,
-  callbacks,
-  isStandalone,
   toolbarDisabled = false,
-  cursorRequest,
-  scrollRequest,
-  onCursorChange,
-  onScrollChange,
-  onFocus,
-  focusRequest,
-}: RenderedEditorProps) {
+}: Omit<RendererProps, "path"> & { toolbarDisabled?: boolean; path?: string }) {
+  // Context wins over props; props are fallbacks for standalone usage.
+  const {
+    callbacks,
+    isStandalone = false,
+    cursorRequest,
+    scrollRequest,
+    onCursorChange,
+    onScrollChange,
+    onFocus,
+    focusRequest,
+  } = useRenderedPaneSync() ?? {};
   const { settings } = useAppServices();
   const [findOpen, setFindOpen] = useState(false);
   const currentParts = parseFrontmatter(value);

@@ -1,15 +1,5 @@
-import {
-  Fragment,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type DragEvent,
-  Dispatch,
-  SetStateAction,
-} from "react";
-import { usePromptDialog } from "@notes/editor";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import { usePromptDialog, type RendererProps } from "@notes/editor";
 import { debounce } from "@notes/core";
 import { type NoteViewContextMenuBuilder } from "@notes/ui";
 import { useUndoStack } from "@notes/web/src/state/undo-context";
@@ -23,14 +13,6 @@ import {
   serializeBoard,
 } from "./board-format";
 
-interface BoardViewProps {
-  value: string;
-  onChange: (markdown: string) => void;
-  path: string;
-  /** Called once on mount so the parent NoteEditor can show card-specific context menus. */
-  onRegisterContextMenu?: Dispatch<SetStateAction<NoteViewContextMenuBuilder | null>>;
-}
-
 interface CardDrag {
   cardId: string;
   fromColumn: string;
@@ -42,7 +24,7 @@ interface DropTarget {
   beforeCardId: string | null;
 }
 
-export function BoardView({ value, onChange, path, onRegisterContextMenu }: BoardViewProps) {
+export function BoardView({ value, onChange, path, onRegisterContextMenu }: RendererProps) {
   const { openPrompt, promptDialog } = usePromptDialog();
   const undoStack = useUndoStack();
   const [model, setModel] = useState<BoardModel>(() => parseBoard(value));
@@ -346,7 +328,7 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Boar
   // a card shows card-specific actions instead of the generic edit menu.
   useEffect(() => {
     if (!onRegisterContextMenu) return;
-    const builder: import("@notes/ui").NoteViewContextMenuBuilder = (target) => {
+    const builder: NoteViewContextMenuBuilder = (target) => {
       const cardEl = target?.closest("[data-card-id]");
       // Return [] (not null) so the generic edit menu (undo/redo/cut…) is
       // suppressed entirely — those commands don't apply to board operations.

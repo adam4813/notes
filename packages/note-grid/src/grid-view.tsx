@@ -1,6 +1,6 @@
 import { useUndoStack } from "@notes/web/src/state/undo-context";
 import { useEffect, useRef, useState } from "react";
-import { NoteToolbar, usePromptDialog } from "@notes/editor";
+import { NoteToolbar, usePromptDialog, type RendererProps } from "@notes/editor";
 import {
   cellKey,
   newId,
@@ -9,11 +9,6 @@ import {
   type GridLayer,
   type GridModel,
 } from "./grid-format";
-
-interface GridViewProps {
-  value: string;
-  onChange: (markdown: string) => void;
-}
 
 type Tool = "paint" | "erase" | "fill" | "token";
 
@@ -32,7 +27,7 @@ function topColor(model: GridModel, x: number, y: number): string | undefined {
   return color;
 }
 
-export function GridView({ value, onChange }: GridViewProps) {
+export function GridView({ value, onChange }: RendererProps) {
   const { openPrompt, promptDialog } = usePromptDialog();
   const undoStack = useUndoStack();
   const [model, setModel] = useState<GridModel>(() => parseGrid(value));

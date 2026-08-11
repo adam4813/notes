@@ -9,7 +9,9 @@ import {
   type PluginInfo,
   type StatusBarItem,
 } from "@notes/plugin-host";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type NoteTypeRegistry } from "@notes/core";
+import { type NoteTypeDescriptor } from "@notes/editor";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
 import { localPlugins } from "../plugins";
 
@@ -47,8 +49,8 @@ async function loadTomePlugin(id: string): Promise<NotesPlugin | null> {
   }
 }
 
-export function usePlugins(): PluginsApi {
-  const documentSignal = useMemo(() => new Signal<ActiveDocument | null>(null), []);
+export function usePlugins(noteTypeRegistry: NoteTypeRegistry<NoteTypeDescriptor>): PluginsApi {
+  const documentSignal = useState(() => new Signal<ActiveDocument | null>(null))[0];
   const [pluginCommands, setPluginCommands] = useState<PluginCommand[]>([]);
   const [statusItems, setStatusItems] = useState<StatusBarItem[]>([]);
   const [fileHandlers, setFileHandlers] = useState<FileTypeHandler[]>([]);
@@ -80,6 +82,9 @@ export function usePlugins(): PluginsApi {
           return [...filtered, handler];
         });
         return () => setFileHandlers((prev) => prev.filter((h) => h !== handler));
+      },
+      registerNoteType: (descriptor) => {
+        return noteTypeRegistry.register(descriptor);
       },
       document: documentSignal,
       storage: window.localStorage,
@@ -139,7 +144,7 @@ export function usePlugins(): PluginsApi {
       setStatusItems([]);
       setFileHandlers([]);
     };
-  }, [documentSignal]);
+  }, [documentSignal, noteTypeRegistry]);
 
   const toggle = useCallback((id: string, enabled: boolean) => {
     const manager = managerRef.current;

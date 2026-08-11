@@ -1,4 +1,4 @@
-import { NoteToolbar } from "@notes/editor";
+import { NoteToolbar, type RendererProps } from "@notes/editor";
 import { useUndoStack } from "@notes/web/src/state/undo-context";
 import { debounce } from "@notes/core";
 import { useCallback, useMemo, useState } from "react";
@@ -12,14 +12,9 @@ import { useGetEvents } from "./use-get-events";
 import { useUpdateEvent } from "./use-update-event";
 import { MONTHS, toIso } from "./utils";
 
-interface CalendarViewProps {
-  value: string;
-  onChange?: (markdown: string) => void;
-  path: string;
-}
 type CalendarMode = "month" | "agenda";
 
-export function CalendarView({ value, path }: CalendarViewProps) {
+export function CalendarView({ value, path }: RendererProps) {
   const undoStack = useUndoStack();
   const [selectedEvent, setSelectedEvent] = useState<RichEvent | null>(null);
   const [mode, setMode] = useState<CalendarMode>("month");

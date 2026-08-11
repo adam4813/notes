@@ -7,7 +7,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { PopupMenu } from "@notes/ui";
-import { NoteToolbar, usePromptDialog } from "@notes/editor";
+import { NoteToolbar, type RendererProps, usePromptDialog } from "@notes/editor";
 import {
   COLUMN_TYPES,
   parseTable,
@@ -15,11 +15,6 @@ import {
   type ColumnType,
   type TableModel,
 } from "./table-format";
-
-interface TableGridProps {
-  value: string;
-  onChange: (markdown: string) => void;
-}
 
 interface CellPos {
   r: number;
@@ -37,7 +32,7 @@ function compareValues(a: string, b: string, type: ColumnType): number {
   return a.localeCompare(b);
 }
 
-export function TableGrid({ value, onChange }: TableGridProps) {
+export function TableGrid({ value, onChange }: RendererProps) {
   const { openPrompt, promptDialog } = usePromptDialog();
   const undoStack = useUndoStack();
   const [model, setModel] = useState<TableModel>(() => parseTable(value));

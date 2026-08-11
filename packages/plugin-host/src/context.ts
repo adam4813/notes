@@ -1,3 +1,4 @@
+import type { NoteTypeDetector } from "@notes/core";
 import type { PluginManifest } from "./manifest";
 
 export type Disposer = () => void;
@@ -90,6 +91,12 @@ export interface PluginContext {
    * Returns a disposer that unregisters the handler.
    */
   registerFileHandler: (handler: FileTypeHandler) => Disposer;
+  /**
+   * Registers a note-type renderer with full UI view capabilities (component,
+   * toolbar items, context menu, mode restrictions, scroll sync, etc.).
+   * Returns a disposer that unregisters the view when the plugin is disabled.
+   */
+  registerNoteType: (descriptor: NoteTypeDetector) => Disposer;
   readonly document: DocumentSignal;
   readonly settings: PluginSettings;
 }
@@ -106,6 +113,7 @@ export interface PluginHost {
   addStatusBarItem: (item: StatusBarItem) => Disposer;
   setThemeToken: (name: string, value: string) => Disposer;
   registerFileHandler: (handler: FileTypeHandler) => Disposer;
+  registerNoteType: (descriptor: NoteTypeDetector) => Disposer;
   document: DocumentSignal;
   storage: {
     getItem: (key: string) => string | null;

@@ -1,13 +1,23 @@
-import { MARKDOWN_NOTE_TYPE_ID } from "@notes/core";
 import {
   DEFAULT_MARKDOWN_VIEW_STATE,
+  EDITOR_MODES,
+  EditorToolbar,
   type EditorMode,
-  MarkdownEditor,
   type MarkdownViewState,
+  type MarkdownPane,
+  MARKDOWN_NOTE_TYPE_ID,
+  NativeSourceEditor,
   NoteToolbar,
+  PaneSyncProvider,
+  type PaneSyncContextValue,
+  getNoteContextMenuBuilder,
+  getNoteViewComponent,
+  type RendererProps,
+  useCursorSync,
+  useFocusSync,
+  useScrollSync,
 } from "@notes/editor";
 import { CANVAS_NOTE_TYPE_ID } from "@notes/note-canvas";
-import { MERMAID_NOTE_TYPE_ID } from "@notes/note-mermaid";
 import type { FileTypeHandler } from "@notes/plugin-host";
 import {
   ContextMenu,
@@ -15,13 +25,22 @@ import {
   type NoteViewContextMenuBuilder,
   useContextMenu,
 } from "@notes/ui";
-import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ComponentType,
+  type MouseEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { api } from "../api/client";
 import { queueWrite } from "../api/offline-queue";
 import { connectTomeChanges } from "../api/ws";
 import { frontmatterType } from "../lib/frontmatter";
 import { isImagePath } from "../lib/images";
 import { useAppServices } from "../state/app-services";
+import { useEditorCallbacks } from "../state/use-editor-callbacks";
 import { useToasts } from "../state/toast";
 import { ModeToggle, SaveState } from "./mode-toggle";
 
@@ -77,6 +96,17 @@ function editorStateKey(path: string): string {
   return path.replaceAll("\\", "/").toLowerCase();
 }
 
+/**
+ * Stable shell component that renders a dynamically-resolved note renderer.
+ * Declared at module level so the linter does not consider it "created during render".
+ */
+function DynamicNoteRenderer({
+  renderer: Renderer,
+  ...props
+}: RendererProps & { renderer: ComponentType<RendererProps> }) {
+  return <Renderer {...props} />;
+}
+
 export function NoteEditor({
   path,
   defaultMode = "rendered",
@@ -95,8 +125,9 @@ export function NoteEditor({
   /** When true, disables file drop/paste and frontmatter type detection. */
   isStandalone?: boolean;
 }) {
-  const { markModified, setActiveDocument, fileHandlers } = useAppServices();
+  const { markModified, setActiveDocument, fileHandlers, noteTypeRegistry } = useAppServices();
   const { notify } = useToasts();
+  const callbacks = useEditorCallbacks(isStandalone);
   const stateKey = editorStateKey(path);
   const initialSession = markdownSessionByPath.get(stateKey) ?? {
     mode: defaultMode,
@@ -110,9 +141,9 @@ export function NoteEditor({
   const [saveState, setSaveState] = useState<SaveState>("loading");
   const [splitScrollSync, setSplitScrollSync] = useState(initialSession.viewState.splitScrollSync);
   const ctxMenu = useContextMenu<HTMLElement | null>();
-  // Note-view components register a builder here to supply content-specific
-  // context menu items (e.g. board cards register Delete / Duplicate).
-  const [noteViewCtxBuilder, setNoteViewCtxBuilder] = useState<NoteViewContextMenuBuilder | null>(
+  // Component-registered context menu builder (e.g. board view registers Delete/Duplicate).
+  // Takes priority over the descriptor-declared builder below.
+  const [componentCtxBuilder, setNoteViewCtxBuilder] = useState<NoteViewContextMenuBuilder | null>(
     null,
   );
   const regionRef = useRef<HTMLDivElement>(null);
@@ -121,6 +152,22 @@ export function NoteEditor({
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const lastWriteAtRef = useRef(0);
   const isImage = isImagePath(path);
+
+  // ── Per-pane sync hooks (cursor, scroll, focus) ───────────────────────────
+  const sourceCursor = useCursorSync(initialSession.viewState.sourceCursor);
+  const renderedCursor = useCursorSync(initialSession.viewState.renderedCursor);
+  const sourceScroll = useScrollSync(initialSession.viewState.sourceScrollRatio);
+  const renderedScroll = useScrollSync(initialSession.viewState.renderedScrollRatio);
+  const sourceFocus = useFocusSync();
+  const renderedFocus = useFocusSync();
+
+  const activePaneRef = useRef<MarkdownPane>(initialSession.viewState.lastFocusedPane);
+  const sourceCursorPosRef = useRef(initialSession.viewState.sourceCursor);
+  const renderedCursorPosRef = useRef(initialSession.viewState.renderedCursor);
+  const prevModeRef = useRef(mode);
+  // Scroll-sync lock refs — prevent feedback loops when programmatically scrolling.
+  const sourceScrollLock = useRef(false);
+  const renderedScrollLock = useRef(false);
 
   const persistSession = useCallback(
     (nextMode: EditorMode, nextViewState: MarkdownViewState) => {
@@ -132,6 +179,122 @@ export function NoteEditor({
   useEffect(() => {
     persistSession(mode, markdownViewState);
   }, [mode, markdownViewState, persistSession]);
+
+  // ── Pane sync logic ───────────────────────────────────────────────────────
+
+  const preferredPaneForMode = useCallback((nextMode: EditorMode): MarkdownPane => {
+    if (nextMode === "edit") return "source";
+    if (nextMode === "rendered") return "rendered";
+    return activePaneRef.current;
+  }, []);
+
+  const { send: sendSourceFocus } = sourceFocus;
+  const { send: sendRenderedFocus } = renderedFocus;
+  const requestPaneFocus = useCallback(
+    (pane: MarkdownPane) => {
+      if (pane === "source") sendSourceFocus();
+      else sendRenderedFocus();
+    },
+    [sendSourceFocus, sendRenderedFocus],
+  );
+
+  useEffect(() => {
+    requestPaneFocus(preferredPaneForMode(mode));
+  }, [mode, preferredPaneForMode, requestPaneFocus]);
+
+  const { send: sendSourceCursor } = sourceCursor;
+  const { send: sendRenderedCursor } = renderedCursor;
+  useEffect(() => {
+    const prev = prevModeRef.current;
+    if (prev === mode) return;
+
+    if (mode === "edit") {
+      const position =
+        activePaneRef.current === "rendered"
+          ? renderedCursorPosRef.current
+          : sourceCursorPosRef.current;
+      sendSourceCursor(position);
+      requestPaneFocus("source");
+    } else if (mode === "rendered") {
+      const position =
+        activePaneRef.current === "source"
+          ? sourceCursorPosRef.current
+          : renderedCursorPosRef.current;
+      sendRenderedCursor(position);
+      requestPaneFocus("rendered");
+    } else {
+      requestPaneFocus(preferredPaneForMode(mode));
+    }
+
+    prevModeRef.current = mode;
+  }, [mode, preferredPaneForMode, requestPaneFocus, sendSourceCursor, sendRenderedCursor]);
+
+  const emitViewState = useCallback(
+    (patch: Partial<MarkdownViewState>) => {
+      setMarkdownViewState((prev) => {
+        const next = { ...prev, ...patch };
+        persistSession(mode, next);
+        return next;
+      });
+    },
+    [persistSession, mode],
+  );
+
+  const handleSourceFocus = useCallback(() => {
+    activePaneRef.current = "source";
+    emitViewState({ lastFocusedPane: "source" });
+  }, [emitViewState]);
+
+  const handleRenderedFocus = useCallback(() => {
+    activePaneRef.current = "rendered";
+    emitViewState({ lastFocusedPane: "rendered" });
+  }, [emitViewState]);
+
+  const handleSourceCursorChange = useCallback(
+    (position: number) => {
+      sourceCursorPosRef.current = position;
+      emitViewState({ sourceCursor: position });
+    },
+    [emitViewState],
+  );
+
+  const handleRenderedCursorChange = useCallback(
+    (position: number) => {
+      renderedCursorPosRef.current = position;
+      emitViewState({ renderedCursor: position });
+    },
+    [emitViewState],
+  );
+
+  const { send: sendRenderedScroll } = renderedScroll;
+  const handleSourceScrollChange = useCallback(
+    (ratio: number) => {
+      emitViewState({ sourceScrollRatio: ratio });
+      if (!splitScrollSync || mode !== "split") return;
+      if (sourceScrollLock.current) {
+        sourceScrollLock.current = false;
+        return;
+      }
+      renderedScrollLock.current = true;
+      sendRenderedScroll(ratio);
+    },
+    [emitViewState, mode, splitScrollSync, sendRenderedScroll],
+  );
+
+  const { send: sendSourceScroll } = sourceScroll;
+  const handleRenderedScrollChange = useCallback(
+    (ratio: number) => {
+      emitViewState({ renderedScrollRatio: ratio });
+      if (!splitScrollSync || mode !== "split") return;
+      if (renderedScrollLock.current) {
+        renderedScrollLock.current = false;
+        return;
+      }
+      sourceScrollLock.current = true;
+      sendSourceScroll(ratio);
+    },
+    [emitViewState, mode, splitScrollSync, sendSourceScroll],
+  );
 
   // Flush any unsaved edit when the component unmounts (tab switch / close).
   useEffect(() => {
@@ -260,7 +423,47 @@ export function NoteEditor({
   const frontType = isCanvas
     ? CANVAS_NOTE_TYPE_ID
     : (frontmatterType(content) ?? MARKDOWN_NOTE_TYPE_ID);
-  const canToggleMode = !isImage && !disableModeToggle;
+  const activeDescriptor = !pluginHandler && !isImage ? noteTypeRegistry.get(frontType) : undefined;
+  const descriptorSourceProtected = activeDescriptor?.sourceProtected ?? false;
+  const descriptorSupportedModes = activeDescriptor?.supportedModes ?? EDITOR_MODES;
+  const descriptorSupportsScrollSync = activeDescriptor?.supportsScrollSync ?? false;
+  const canToggleMode = !isImage && !disableModeToggle && descriptorSupportedModes.length > 1;
+
+  // Resolved component for the active note type — passed to DynamicNoteRenderer.
+  const noteRenderer = activeDescriptor ? getNoteViewComponent(activeDescriptor) : undefined;
+
+  // Clamp the mode to what the descriptor allows.
+  const effectiveMode = descriptorSupportedModes.includes(mode)
+    ? mode
+    : (descriptorSupportedModes[0] ?? "rendered");
+  const showSource = effectiveMode === "edit" || effectiveMode === "split";
+  const showRendered = effectiveMode === "rendered" || effectiveMode === "split";
+
+  // Build the pane-sync context value for the markdown editor panes.
+  const paneSyncValue: PaneSyncContextValue = {
+    source: {
+      cursorRequest: sourceCursor.request,
+      scrollRequest: descriptorSupportsScrollSync ? sourceScroll.request : undefined,
+      focusRequest: sourceFocus.request,
+      onCursorChange: handleSourceCursorChange,
+      onScrollChange: descriptorSupportsScrollSync ? handleSourceScrollChange : undefined,
+      onFocus: handleSourceFocus,
+      isReadOnly: descriptorSourceProtected,
+    },
+    rendered: {
+      cursorRequest: renderedCursor.request,
+      scrollRequest: descriptorSupportsScrollSync ? renderedScroll.request : undefined,
+      focusRequest: renderedFocus.request,
+      onCursorChange: handleRenderedCursorChange,
+      onScrollChange: descriptorSupportsScrollSync ? handleRenderedScrollChange : undefined,
+      onFocus: handleRenderedFocus,
+      // Adapt state-setter to the context's plain callback signature.
+      onRegisterContextMenu: (builder) =>
+        setNoteViewCtxBuilder(builder as NoteViewContextMenuBuilder | null),
+    },
+    callbacks,
+    isStandalone,
+  };
 
   // Publish the active document to plugins (word count, etc.).
   useEffect(() => {
@@ -280,6 +483,12 @@ export function NoteEditor({
     return () => setActiveDocument(null);
   }, [path, content, saveState, setActiveDocument, isImage, fileHandlers, isStandalone, frontType]);
 
+  // Descriptor-declared builder is the fallback; component-registered takes priority.
+  const descriptorCtxBuilder = activeDescriptor
+    ? (getNoteContextMenuBuilder(activeDescriptor) ?? null)
+    : null;
+  const noteViewCtxBuilder = componentCtxBuilder ?? descriptorCtxBuilder;
+
   const runEditCommand = useCallback(
     (command: string, target: HTMLElement | null) => {
       target?.focus();
@@ -292,9 +501,8 @@ export function NoteEditor({
   const contextMenuItems = useMemo(() => {
     const target = ctxMenu.menu?.data ?? null;
 
-    // FIXME: noteViewCtxBuilder is an array
     if (typeof noteViewCtxBuilder === "function") {
-      const custom = noteViewCtxBuilder?.(target);
+      const custom = noteViewCtxBuilder(target);
       if (custom) return custom;
     }
 
@@ -327,7 +535,7 @@ export function NoteEditor({
             return;
           }
           if (typeof noteViewCtxBuilder === "function") {
-            const custom = noteViewCtxBuilder?.(target);
+            const custom = noteViewCtxBuilder(target);
             // If the note view's builder returns [] (empty), suppress the menu entirely.
             if (custom !== undefined && custom !== null && custom.length === 0) return;
           }
@@ -358,6 +566,8 @@ export function NoteEditor({
               })
             }
             saveState={saveState}
+            supportedModes={descriptorSupportedModes}
+            supportsScrollSync={descriptorSupportsScrollSync}
           />
         )}
         {pluginHandler ? (
@@ -385,25 +595,34 @@ export function NoteEditor({
             </div>
           </div>
         ) : (
-          <MarkdownEditor
-            mode={mode}
-            path={path}
-            value={content}
-            onChange={handleChange}
-            viewState={markdownViewState}
-            syncSplitScroll={splitScrollSync}
-            onViewStateChange={(patch) => {
-              setMarkdownViewState((prevState) => {
-                const nextState = { ...prevState, ...patch };
-                persistSession(mode, nextState);
-                return nextState;
-              });
-            }}
-            isReadOnly={frontType !== MARKDOWN_NOTE_TYPE_ID && frontType !== MERMAID_NOTE_TYPE_ID}
-            disableToolbarInEdit
-            isStandalone={isStandalone}
-            setNoteViewCtxBuilder={setNoteViewCtxBuilder}
-          />
+          <PaneSyncProvider value={paneSyncValue}>
+            <div className={`markdown-editor-shell markdown-editor-shell--${effectiveMode}`}>
+              {effectiveMode === "edit" && <EditorToolbar editor={null} disabled />}
+              <div className={`markdown-editor markdown-editor--${effectiveMode}`}>
+                {showSource && (
+                  <div className="editor-column editor-column--split">
+                    <NativeSourceEditor value={content} onChange={handleChange} path={path} />
+                  </div>
+                )}
+                {showRendered && noteRenderer && (
+                  <DynamicNoteRenderer
+                    renderer={noteRenderer}
+                    path={path}
+                    value={content}
+                    onChange={handleChange}
+                    onRegisterContextMenu={(builder) =>
+                      setNoteViewCtxBuilder(builder as NoteViewContextMenuBuilder | null)
+                    }
+                  />
+                )}
+                {showRendered && !noteRenderer && (
+                  <div className="note-renderer-missing">
+                    No renderer registered for &ldquo;{frontType}&rdquo;.
+                  </div>
+                )}
+              </div>
+            </div>
+          </PaneSyncProvider>
         )}
       </div>
 

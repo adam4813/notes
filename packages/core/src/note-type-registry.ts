@@ -1,38 +1,45 @@
-import type { NoteFileDescriptor, NoteTypeProvider } from "./contracts";
+import type { NoteFileDescriptor, NoteTypeDetector } from "./contracts";
 import { Registry } from "./registry";
 
 /**
- * Factory/registry that resolves a file to its note-type provider. Providers
- * are checked in registration order; a single provider may be marked as the
- * fallback (matched last), which the default markdown provider uses.
+ * Registry for note types.
+ *
+ * The generic parameter T lets server code work with the minimal NoteTypeDetector
+ * while client code uses the full NoteTypeDescriptor (from packages/editor).
+ * Both share this class; the server simply ignores the extra view fields.
+ *
+ * A single entry may be marked as the fallback (matched last).
  */
-export class NoteTypeRegistry {
-  private readonly providers = new Registry<NoteTypeProvider>();
+export class NoteTypeRegistry<T extends NoteTypeDetector = NoteTypeDetector> {
+  private readonly providers = new Registry<T>();
   private fallbackId?: string;
 
-  register(provider: NoteTypeProvider, options?: { fallback?: boolean }): void {
-    this.providers.register(provider.id, provider);
+  /**
+   * Registers a note-type descriptor. Returns a disposer that unregisters it;
+   * callers that do not need to unregister may ignore the return value.
+   */
+  register(descriptor: T, options?: { fallback?: boolean }): () => void {
+    this.providers.register(descriptor.id, descriptor);
     if (options?.fallback) {
-      this.fallbackId = provider.id;
+      this.fallbackId = descriptor.id;
     }
+    return () => {
+      if (this.fallbackId === descriptor.id) {
+        this.fallbackId = undefined;
+      }
+      this.providers.unregister(descriptor.id);
+    };
   }
 
-  unregister(id: string): boolean {
-    if (this.fallbackId === id) {
-      this.fallbackId = undefined;
-    }
-    return this.providers.unregister(id);
-  }
-
-  get(id: string): NoteTypeProvider | undefined {
+  get(id: string): T | undefined {
     return this.providers.get(id);
   }
 
-  list(): NoteTypeProvider[] {
+  list(): T[] {
     return this.providers.list();
   }
 
-  detect(file: NoteFileDescriptor): NoteTypeProvider | undefined {
+  detect(file: NoteFileDescriptor): T | undefined {
     for (const provider of this.providers.list()) {
       if (provider.id === this.fallbackId) {
         continue;

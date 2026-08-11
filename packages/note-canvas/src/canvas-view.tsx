@@ -11,7 +11,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { NoteEditor } from "@notes/web/src/components/note-editor";
-import { type EditorCallbacks, NoteToolbar, usePromptDialog } from "@notes/editor";
+import { NoteToolbar, usePromptDialog, type RendererProps } from "@notes/editor";
 import {
   parseCanvas,
   serializeCanvas,
@@ -19,13 +19,6 @@ import {
   type CanvasNode,
   type FileNode,
 } from "./canvas-format";
-
-interface CanvasViewProps {
-  value: string;
-  onChange: (text: string) => void;
-  callbacks?: EditorCallbacks;
-  path: string;
-}
 
 /** Note MIME type set by the explorer on drag. */
 const NOTES_DRAG_MIME = "application/x-notes-path";
@@ -267,7 +260,7 @@ function center(node: CanvasNode): { x: number; y: number } {
   return { x: node.x + node.width / 2, y: node.y + node.height / 2 };
 }
 
-export function CanvasView({ value, onChange, callbacks, path }: CanvasViewProps) {
+export function CanvasView({ value, onChange, callbacks, path }: RendererProps) {
   const { openPrompt, promptDialog } = usePromptDialog();
   const undoStack = useUndoStack();
   const [data, setData] = useState<CanvasData>(() => parseCanvas(value));

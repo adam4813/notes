@@ -7,38 +7,22 @@
   useEffect,
   useRef,
 } from "react";
-import {
-  type CursorRequest,
-  droppedPathInsertion,
-  type EditorCallbacks,
-  type FocusRequest,
-  NOTES_PATH_MIME,
-  type ScrollRequest,
-} from "./types";
+import { droppedPathInsertion, NOTES_PATH_MIME, RendererProps } from "./types";
+import { useSourcePaneSync } from "./pane-sync-context";
 
-interface NativeSourceEditorProps {
-  value: string;
-  onChange: (markdown: string) => void;
-  callbacks?: EditorCallbacks;
-  scrollRequest?: ScrollRequest; // The other view/mode set the request
-  onScrollChange?: (ratio: number) => void; // Send the other view/mode the request
-  focusRequest?: FocusRequest; // The other view/mode set the request
-  onFocus?: () => void; // Send the other view/mode the request
-  cursorRequest?: CursorRequest; // The other view/mode set the request
-  onCursorChange?: (position: number) => void; // Send the other view/mode the request
-}
+export function NativeSourceEditor({ value, onChange }: RendererProps) {
+  const {
+    callbacks,
+    scrollRequest,
+    onScrollChange,
+    focusRequest,
+    onFocus,
+    cursorRequest,
+    onCursorChange,
+    isReadOnly,
+  } = useSourcePaneSync() ?? {};
+  const effectiveOnChange = isReadOnly ? () => {} : onChange;
 
-export function NativeSourceEditor({
-  value,
-  onChange,
-  callbacks,
-  scrollRequest,
-  onScrollChange,
-  focusRequest,
-  onFocus,
-  cursorRequest,
-  onCursorChange,
-}: NativeSourceEditorProps) {
   const viewRef = useRef<HTMLTextAreaElement | null>(null);
   const suppressScrollRef = useRef(false);
 
@@ -176,7 +160,7 @@ export function NativeSourceEditor({
       className="source-editor"
       spellCheck="false"
       value={value}
-      onChange={(event) => onChange(event.target.value)}
+      onChange={(event) => effectiveOnChange(event.target.value)}
       onDragOver={handleDragover}
       onDrop={handleDrop}
       onPaste={handlePaste}
