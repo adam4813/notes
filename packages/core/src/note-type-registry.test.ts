@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { NoteTypeProvider } from "./contracts";
+import type { NoteTypeDescriptor } from "./contracts";
 import { markdownNoteType, MARKDOWN_NOTE_TYPE_ID } from "./markdown-note-type";
 import { NoteTypeRegistry } from "./note-type-registry";
 
-const tableType: NoteTypeProvider = {
+const tableType: NoteTypeDescriptor = {
   id: "table",
   detect: (file) => file.path.toLowerCase().endsWith(".md") && file.frontmatterType === "table",
 };

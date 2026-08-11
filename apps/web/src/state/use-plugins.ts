@@ -9,7 +9,7 @@ import {
   type PluginInfo,
   type StatusBarItem,
 } from "@notes/plugin-host";
-import { type NoteViewRegistry } from "@notes/core";
+import { type NoteTypeRegistry } from "@notes/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
 import { localPlugins } from "../plugins";
@@ -48,7 +48,7 @@ async function loadTomePlugin(id: string): Promise<NotesPlugin | null> {
   }
 }
 
-export function usePlugins(noteViewRegistry: NoteViewRegistry): PluginsApi {
+export function usePlugins(noteTypeRegistry: NoteTypeRegistry): PluginsApi {
   const documentSignal = useState(() => new Signal<ActiveDocument | null>(null))[0];
   const [pluginCommands, setPluginCommands] = useState<PluginCommand[]>([]);
   const [statusItems, setStatusItems] = useState<StatusBarItem[]>([]);
@@ -82,8 +82,8 @@ export function usePlugins(noteViewRegistry: NoteViewRegistry): PluginsApi {
         });
         return () => setFileHandlers((prev) => prev.filter((h) => h !== handler));
       },
-      registerNoteView: (descriptor) => {
-        return noteViewRegistry.register(descriptor);
+      registerNoteType: (descriptor) => {
+        return noteTypeRegistry.register(descriptor);
       },
       document: documentSignal,
       storage: window.localStorage,
@@ -143,7 +143,7 @@ export function usePlugins(noteViewRegistry: NoteViewRegistry): PluginsApi {
       setStatusItems([]);
       setFileHandlers([]);
     };
-  }, [documentSignal, noteViewRegistry]);
+  }, [documentSignal, noteTypeRegistry]);
 
   const toggle = useCallback((id: string, enabled: boolean) => {
     const manager = managerRef.current;

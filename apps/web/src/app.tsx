@@ -1,20 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { NoteViewRegistry, formatCombo } from "@notes/core";
-import { registerMarkdownNoteView } from "@notes/editor";
-import { emptyCanvas, registerBuiltinNoteView as registerCanvasNoteView } from "@notes/note-canvas";
-import { emptyBoard, registerBuiltinNoteView as registerBoardNoteView } from "@notes/note-boards";
+import { NoteTypeRegistry, formatCombo } from "@notes/core";
+import { registerMarkdownNoteType } from "@notes/editor";
+import { emptyCanvas, registerBuiltinNoteType as registerCanvasNoteType } from "@notes/note-canvas";
+import { emptyBoard, registerBuiltinNoteType as registerBoardNoteType } from "@notes/note-boards";
 import {
   emptyCalendar,
-  registerBuiltinNoteView as registerCalendarNoteView,
+  registerBuiltinNoteType as registerCalendarNoteType,
 } from "@notes/note-calendar";
-import { emptyGrid, registerBuiltinNoteView as registerGridNoteView } from "@notes/note-grid";
+import { emptyGrid, registerBuiltinNoteType as registerGridNoteType } from "@notes/note-grid";
 import {
   emptyMermaid,
-  registerBuiltinNoteView as registerMermaidNoteView,
+  registerBuiltinNoteType as registerMermaidNoteType,
 } from "@notes/note-mermaid";
 import {
   emptyTableMarkdown,
-  registerBuiltinNoteView as registerTableNoteView,
+  registerBuiltinNoteType as registerTableNoteType,
 } from "@notes/note-tables";
 import type { PluginManifest } from "@notes/plugin-host";
 import type { ThemeMeta } from "@notes/shared";
@@ -129,22 +129,22 @@ export function App() {
   const [externalThemes, setExternalThemes] = useState<ThemeMeta[]>([]);
   const [pendingRestartPlugins, setPendingRestartPlugins] = useState<PluginManifest[]>([]);
 
-  // Create the NoteViewRegistry once and register all built-in note types.
+  // Create the NoteTypeRegistry once and register all built-in note types.
   // Kept here (not in usePlugins) so the registry is an explicit app-level
-  // concern; plugins extend it via PluginContext.registerNoteView.
-  const noteViewRegistry = useMemo(() => {
-    const registry = new NoteViewRegistry();
-    registerMarkdownNoteView(registry);
-    registerCanvasNoteView(registry);
-    registerBoardNoteView(registry);
-    registerTableNoteView(registry);
-    registerMermaidNoteView(registry);
-    registerCalendarNoteView(registry);
-    registerGridNoteView(registry);
+  // concern; plugins extend it via PluginContext.registerNoteType.
+  const noteTypeRegistry = useMemo(() => {
+    const registry = new NoteTypeRegistry();
+    registerMarkdownNoteType(registry);
+    registerCanvasNoteType(registry);
+    registerBoardNoteType(registry);
+    registerTableNoteType(registry);
+    registerMermaidNoteType(registry);
+    registerCalendarNoteType(registry);
+    registerGridNoteType(registry);
     return registry;
   }, []);
 
-  const plugins = usePlugins(noteViewRegistry);
+  const plugins = usePlugins(noteTypeRegistry);
   // Paths of freshly-created notes not yet modified/named (discarded on close).
   const [provisional, setProvisional] = useState<Set<string>>(new Set());
 
@@ -863,7 +863,7 @@ export function App() {
       setActiveDocument: (doc: { path: string; content: string; type: string } | null) =>
         plugins.documentSignal.set(doc),
       fileHandlers: plugins.fileHandlers,
-      noteViewRegistry,
+      noteTypeRegistry,
       settings: settingsProps,
       undoableFileOps,
     }),
@@ -882,7 +882,7 @@ export function App() {
       noteTypes,
       plugins.documentSignal,
       plugins.fileHandlers,
-      noteViewRegistry,
+      noteTypeRegistry,
       settingsProps,
       undoableFileOps,
     ],

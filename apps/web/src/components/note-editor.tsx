@@ -125,7 +125,7 @@ export function NoteEditor({
   /** When true, disables file drop/paste and frontmatter type detection. */
   isStandalone?: boolean;
 }) {
-  const { markModified, setActiveDocument, fileHandlers, noteViewRegistry } = useAppServices();
+  const { markModified, setActiveDocument, fileHandlers, noteTypeRegistry } = useAppServices();
   const { notify } = useToasts();
   const callbacks = useEditorCallbacks(isStandalone);
   const stateKey = editorStateKey(path);
@@ -417,7 +417,7 @@ export function NoteEditor({
   const frontType = isCanvas
     ? CANVAS_NOTE_TYPE_ID
     : (frontmatterType(content) ?? MARKDOWN_NOTE_TYPE_ID);
-  const activeDescriptor = !pluginHandler && !isImage ? noteViewRegistry.get(frontType) : undefined;
+  const activeDescriptor = !pluginHandler && !isImage ? noteTypeRegistry.get(frontType) : undefined;
   const descriptorSourceProtected = activeDescriptor?.sourceProtected ?? false;
   const descriptorSupportedModes = activeDescriptor?.supportedModes ?? EDITOR_MODES;
   const descriptorSupportsScrollSync = activeDescriptor?.supportsScrollSync ?? false;

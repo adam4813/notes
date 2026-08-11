@@ -1,13 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import type { RendererProps } from "@notes/editor";
 import { MermaidDiagram } from "./mermaid-diagram";
 import { parseMermaid, type MermaidModel } from "./mermaid-format";
 
-interface MermaidViewProps {
-  value: string;
-  onChange: (markdown: string) => void;
-}
-
-export function MermaidView({ value }: MermaidViewProps) {
+export function MermaidView({ value }: RendererProps) {
   const [model, setModel] = useState<MermaidModel>(() => parseMermaid(value));
   const lastSerialized = useRef(value);
 

@@ -3,7 +3,6 @@ export * from "./event-bus";
 export * from "./registry";
 export * from "./command-bus";
 export * from "./note-type-registry";
-export * from "./note-view-registry";
 export * from "./markdown-note-type";
 export * from "./hotkeys";
 export * from "./undo-stack";

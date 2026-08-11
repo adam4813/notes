@@ -64,7 +64,7 @@ export interface NoteTypeToolbarItem {
 }
 
 /** Strategy/Factory provider for a note type (markdown, table, canvas, board, …). */
-export interface NoteTypeProvider {
+export interface NoteTypeDescriptor {
   readonly id: string;
   detect(file: NoteFileDescriptor): boolean;
 
@@ -86,7 +86,7 @@ export interface NoteTypeProvider {
   supportsScrollSync?: boolean;
   /**
    * Opaque view-component token. The editor package resolves this to a
-   * React ComponentType<RendererProps> via the NoteViewRegistry.
+   * React ComponentType<RendererProps> via the NoteTypeRegistry.
    */
   viewComponent?: unknown;
   /**
