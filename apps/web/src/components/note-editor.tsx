@@ -610,9 +610,7 @@ export function NoteEditor({
                     path={path}
                     value={content}
                     onChange={handleChange}
-                    onRegisterContextMenu={(builder) =>
-                      setNoteViewCtxBuilder(builder as NoteViewContextMenuBuilder | null)
-                    }
+                    onRegisterContextMenu={setNoteViewCtxBuilder}
                   />
                 )}
                 {showRendered && !noteRenderer && (

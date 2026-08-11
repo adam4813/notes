@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import type { NoteViewContextMenuBuilder } from "@notes/ui";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 
 /** The three editor modes available for a note-type view. */
 export type EditorMode = "edit" | "split" | "rendered";
@@ -127,5 +128,5 @@ export interface RendererProps {
    * Pass null (or call with null at cleanup) to unregister.
    * Typed as unknown[] to avoid importing @notes/ui here; consumers cast to ContextMenuEntry[].
    */
-  onRegisterContextMenu?: (builder: ((target: Element | null) => unknown[] | null) | null) => void;
+  onRegisterContextMenu?: Dispatch<SetStateAction<NoteViewContextMenuBuilder | null>>;
 }
