@@ -10,6 +10,7 @@ import {
   type StatusBarItem,
 } from "@notes/plugin-host";
 import { type NoteTypeRegistry } from "@notes/core";
+import { type NoteTypeDescriptor } from "@notes/editor";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
 import { localPlugins } from "../plugins";
@@ -48,7 +49,7 @@ async function loadTomePlugin(id: string): Promise<NotesPlugin | null> {
   }
 }
 
-export function usePlugins(noteTypeRegistry: NoteTypeRegistry): PluginsApi {
+export function usePlugins(noteTypeRegistry: NoteTypeRegistry<NoteTypeDescriptor>): PluginsApi {
   const documentSignal = useState(() => new Signal<ActiveDocument | null>(null))[0];
   const [pluginCommands, setPluginCommands] = useState<PluginCommand[]>([]);
   const [statusItems, setStatusItems] = useState<StatusBarItem[]>([]);

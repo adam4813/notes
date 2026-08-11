@@ -1,4 +1,3 @@
-import { MARKDOWN_NOTE_TYPE_ID } from "@notes/core";
 import {
   DEFAULT_MARKDOWN_VIEW_STATE,
   EDITOR_MODES,
@@ -6,6 +5,7 @@ import {
   type EditorMode,
   type MarkdownViewState,
   type MarkdownPane,
+  MARKDOWN_NOTE_TYPE_ID,
   NativeSourceEditor,
   NoteToolbar,
   PaneSyncProvider,
@@ -188,18 +188,22 @@ export function NoteEditor({
     return activePaneRef.current;
   }, []);
 
+  const { send: sendSourceFocus } = sourceFocus;
+  const { send: sendRenderedFocus } = renderedFocus;
   const requestPaneFocus = useCallback(
     (pane: MarkdownPane) => {
-      if (pane === "source") sourceFocus.send();
-      else renderedFocus.send();
+      if (pane === "source") sendSourceFocus();
+      else sendRenderedFocus();
     },
-    [sourceFocus, renderedFocus],
+    [sendSourceFocus, sendRenderedFocus],
   );
 
   useEffect(() => {
     requestPaneFocus(preferredPaneForMode(mode));
   }, [mode, preferredPaneForMode, requestPaneFocus]);
 
+  const { send: sendSourceCursor } = sourceCursor;
+  const { send: sendRenderedCursor } = renderedCursor;
   useEffect(() => {
     const prev = prevModeRef.current;
     if (prev === mode) return;
@@ -209,21 +213,21 @@ export function NoteEditor({
         activePaneRef.current === "rendered"
           ? renderedCursorPosRef.current
           : sourceCursorPosRef.current;
-      sourceCursor.send(position);
+      sendSourceCursor(position);
       requestPaneFocus("source");
     } else if (mode === "rendered") {
       const position =
         activePaneRef.current === "source"
           ? sourceCursorPosRef.current
           : renderedCursorPosRef.current;
-      renderedCursor.send(position);
+      sendRenderedCursor(position);
       requestPaneFocus("rendered");
     } else {
       requestPaneFocus(preferredPaneForMode(mode));
     }
 
     prevModeRef.current = mode;
-  }, [mode, preferredPaneForMode, requestPaneFocus, sourceCursor, renderedCursor]);
+  }, [mode, preferredPaneForMode, requestPaneFocus, sendSourceCursor, sendRenderedCursor]);
 
   const emitViewState = useCallback(
     (patch: Partial<MarkdownViewState>) => {
@@ -262,6 +266,7 @@ export function NoteEditor({
     [emitViewState],
   );
 
+  const { send: sendRenderedScroll } = renderedScroll;
   const handleSourceScrollChange = useCallback(
     (ratio: number) => {
       emitViewState({ sourceScrollRatio: ratio });
@@ -271,11 +276,12 @@ export function NoteEditor({
         return;
       }
       renderedScrollLock.current = true;
-      renderedScroll.send(ratio);
+      sendRenderedScroll(ratio);
     },
-    [emitViewState, mode, splitScrollSync, renderedScroll],
+    [emitViewState, mode, splitScrollSync, sendRenderedScroll],
   );
 
+  const { send: sendSourceScroll } = sourceScroll;
   const handleRenderedScrollChange = useCallback(
     (ratio: number) => {
       emitViewState({ renderedScrollRatio: ratio });
@@ -285,9 +291,9 @@ export function NoteEditor({
         return;
       }
       sourceScrollLock.current = true;
-      sourceScroll.send(ratio);
+      sendSourceScroll(ratio);
     },
-    [emitViewState, mode, splitScrollSync, sourceScroll],
+    [emitViewState, mode, splitScrollSync, sendSourceScroll],
   );
 
   // Flush any unsaved edit when the component unmounts (tab switch / close).
@@ -595,7 +601,7 @@ export function NoteEditor({
               <div className={`markdown-editor markdown-editor--${effectiveMode}`}>
                 {showSource && (
                   <div className="editor-column editor-column--split">
-                    <NativeSourceEditor value={content} onChange={handleChange} />
+                    <NativeSourceEditor value={content} onChange={handleChange} path={path} />
                   </div>
                 )}
                 {showRendered && noteRenderer && (
@@ -604,8 +610,6 @@ export function NoteEditor({
                     path={path}
                     value={content}
                     onChange={handleChange}
-                    callbacks={callbacks}
-                    isStandalone={isStandalone}
                     onRegisterContextMenu={(builder) =>
                       setNoteViewCtxBuilder(builder as NoteViewContextMenuBuilder | null)
                     }

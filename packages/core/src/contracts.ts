@@ -44,59 +44,14 @@ export interface NoteFileDescriptor {
   readonly frontmatterType?: string;
 }
 
-/** The editor modes a note-type view may support. */
-export type NoteViewMode = "edit" | "split" | "rendered";
-
 /**
- * A toolbar item contributed by a note type. The `element` field is opaque
- * here (unknown) and narrowed to ReactNode by the editor layer.
+ * Minimal interface for note-type detection — used server-side to match a
+ * file to its type. Only carries identity and the detect predicate.
+ *
+ * The full note-type descriptor (with React view capabilities) is
+ * NoteTypeDescriptor in packages/editor, which extends this interface.
  */
-export interface NoteTypeToolbarItem {
-  /** Unique id, e.g. "canvas.zoom-in". */
-  id: string;
-  /**
-   * When set, replaces the built-in toolbar button with this id.
-   * When omitted, the item is appended after the built-in buttons.
-   */
-  replace?: string;
-  /** Opaque ReactNode resolved by the editor layer. */
-  element: unknown;
-}
-
-/** Strategy/Factory provider for a note type (markdown, table, canvas, board, …). */
-export interface NoteTypeDescriptor {
+export interface NoteTypeDetector {
   readonly id: string;
   detect(file: NoteFileDescriptor): boolean;
-
-  // ── UI capabilities (all optional) ─────────────────────────────
-  /**
-   * Which editor modes this note type supports.
-   * Defaults to all three: ["edit", "split", "rendered"].
-   */
-  supportedModes?: NoteViewMode[];
-  /**
-   * When true, the source pane displays raw text as read-only unless the user
-   * explicitly unlocks it (appropriate for canvas, table, board notes).
-   */
-  sourceProtected?: boolean;
-  /**
-   * Whether this type supports scroll / cursor / focus synchronisation between
-   * source and rendered panes in split mode. Defaults to false.
-   */
-  supportsScrollSync?: boolean;
-  /**
-   * Opaque view-component token. The editor package resolves this to a
-   * React ComponentType<RendererProps> via the NoteTypeRegistry.
-   */
-  viewComponent?: unknown;
-  /**
-   * Toolbar items contributed by this note type. Each entry may append a new
-   * button or replace an existing built-in button by id.
-   */
-  toolbarItems?: NoteTypeToolbarItem[];
-  /**
-   * Context-menu item builder. Opaque here; typed in the editor / ui layer.
-   * Receives the clicked HTMLElement and returns ContextMenuEntry[].
-   */
-  contextMenuBuilder?: unknown;
 }

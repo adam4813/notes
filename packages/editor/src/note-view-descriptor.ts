@@ -1,60 +1,73 @@
 /**
- * React-typed narrowing helpers and typed descriptor interface for note types.
+ * NoteTypeDescriptor — the complete description of a note type.
  *
- * packages/core is React-free, so NoteTypeDescriptor uses `unknown` for its
- * React-specific fields. This module provides:
- *   - NoteTypeViewDescriptor — a typed variant of NoteTypeDescriptor with
- *     properly typed viewComponent, toolbarItems, and contextMenuBuilder.
- *   - Accessor helpers (getNoteViewComponent etc.) for the opaque core fields.
+ * This is the single interface used everywhere in the editor layer. It extends
+ * the minimal NoteTypeDetector from packages/core (which only carries id +
+ * detect for server-side file-type detection) with all client-side view
+ * capabilities, properly typed with React types.
+ *
+ * There is no separate "view descriptor" — every note type is described by
+ * NoteTypeDescriptor from the moment it is registered.
  */
-import type { NoteTypeDescriptor, NoteTypeToolbarItem } from "@notes/core";
+import type { NoteTypeDetector } from "@notes/core";
 import type { ComponentType, ReactNode } from "react";
 import type { NoteViewContextMenuBuilder, ContextMenuEntry } from "@notes/ui";
-import type { RendererProps } from "./types";
+import type { EditorMode, RendererProps } from "./types";
 
 export type NoteViewComponent = ComponentType<RendererProps>;
 
-export interface TypedNoteTypeToolbarItem extends Omit<NoteTypeToolbarItem, "element"> {
+/** A toolbar item contributed by a note type, with element typed as ReactNode. */
+export interface NoteTypeToolbarItem {
+  /** Unique id, e.g. "canvas.zoom-in". */
+  id: string;
+  /**
+   * When set, replaces the built-in toolbar button with this id.
+   * When omitted, the item is appended after the built-in buttons.
+   */
+  replace?: string;
   element: ReactNode;
 }
 
-// Re-export for convenience so consumers don't need to import from both packages.
+// Re-export for convenience.
 export type { NoteViewContextMenuBuilder, ContextMenuEntry };
 
 /**
- * NoteTypeDescriptor with React-typed fields. Use this when creating a
- * descriptor in note-* packages so TypeScript enforces the correct component
- * and toolbar types at registration time.
+ * Complete descriptor for a note type (id, detect, and all view capabilities).
  *
- * Assignable to NoteTypeDescriptor (the base type), so it can be passed
- * directly to NoteTypeRegistry.register().
+ * This is the one type to use when defining or registering a note type.
+ * Register with NoteTypeRegistry<NoteTypeDescriptor> client-side, or pass to
+ * a NoteTypeRegistry<NoteTypeDetector> server-side where only id + detect are used.
  */
-export interface NoteTypeViewDescriptor extends Omit<
-  NoteTypeDescriptor,
-  "viewComponent" | "toolbarItems" | "contextMenuBuilder"
-> {
+export interface NoteTypeDescriptor extends NoteTypeDetector {
+  /** Which editor modes this note type supports. Defaults to all three. */
+  supportedModes?: EditorMode[];
+  /**
+   * When true, the source pane shows raw text as read-only unless unlocked
+   * (appropriate for canvas, table, board notes).
+   */
+  sourceProtected?: boolean;
+  /** Whether split-mode scroll/cursor/focus synchronisation is meaningful. */
+  supportsScrollSync?: boolean;
+  /** React component that renders or edits this note type. */
   viewComponent?: NoteViewComponent;
-  toolbarItems?: TypedNoteTypeToolbarItem[];
+  /** Toolbar items contributed by this note type. */
+  toolbarItems?: NoteTypeToolbarItem[];
+  /** Builds note-type-specific context menu items on right-click. */
   contextMenuBuilder?: NoteViewContextMenuBuilder;
 }
 
-/** Extract the viewComponent from a descriptor (casts the opaque unknown field). */
-export function getNoteViewComponent(
-  descriptor: NoteTypeDescriptor,
-): NoteViewComponent | undefined {
-  return descriptor.viewComponent as NoteViewComponent | undefined;
+// ── Accessor helpers ──────────────────────────────────────────────────────────
+
+export function getNoteViewComponent(d: NoteTypeDescriptor): NoteViewComponent | undefined {
+  return d.viewComponent;
 }
 
-/** Extract and cast toolbarItems to typed ReactNode elements. */
-export function getNoteViewToolbarItems(
-  descriptor: NoteTypeDescriptor,
-): TypedNoteTypeToolbarItem[] {
-  return (descriptor.toolbarItems ?? []) as TypedNoteTypeToolbarItem[];
+export function getNoteViewToolbarItems(d: NoteTypeDescriptor): NoteTypeToolbarItem[] {
+  return d.toolbarItems ?? [];
 }
 
-/** Extract and cast the opaque contextMenuBuilder to a typed function. */
 export function getNoteContextMenuBuilder(
-  descriptor: NoteTypeDescriptor,
+  d: NoteTypeDescriptor,
 ): NoteViewContextMenuBuilder | undefined {
-  return descriptor.contextMenuBuilder as NoteViewContextMenuBuilder | undefined;
+  return d.contextMenuBuilder;
 }

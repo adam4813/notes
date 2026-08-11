@@ -23,15 +23,9 @@ import { Embed } from "./embed-extension";
 import { ImageNode } from "./image-node";
 import { StyledTextMark } from "./styled-text-mark";
 import { SuggestionPopup } from "./suggestion-popup";
-import { droppedPathInsertion, NOTES_PATH_MIME } from "./types";
+import { droppedPathInsertion, NOTES_PATH_MIME, RendererProps } from "./types";
 import { EditorToolbar } from "./toolbar";
-import type {
-  CursorRequest,
-  EditorCallbacks,
-  FocusRequest,
-  ScrollRequest,
-  WikiSuggestion,
-} from "./types";
+import type { WikiSuggestion } from "./types";
 import { useRenderedPaneSync } from "./pane-sync-context";
 import { WikilinkDecorator } from "./wikilink-decorator";
 
@@ -87,45 +81,23 @@ interface SuggestState {
   top: number;
 }
 
-interface RenderedEditorProps {
-  value: string;
-  onChange: (markdown: string) => void;
-  // Fallbacks for standalone use — context wins when both are present.
-  callbacks?: EditorCallbacks;
-  isStandalone?: boolean;
-  toolbarDisabled?: boolean;
-  cursorRequest?: CursorRequest;
-  scrollRequest?: ScrollRequest;
-  onCursorChange?: (position: number) => void;
-  onScrollChange?: (ratio: number) => void;
-  onFocus?: () => void;
-  focusRequest?: FocusRequest;
-}
-
 /** WYSIWYG editor (TipTap/ProseMirror): toolbar, clickable wikilinks, and autocomplete. */
 export function RenderedEditor({
   value,
   onChange,
-  callbacks: callbacksProp,
-  isStandalone: isStandaloneProp,
   toolbarDisabled = false,
-  cursorRequest: cursorRequestProp,
-  scrollRequest: scrollRequestProp,
-  onCursorChange: onCursorChangeProp,
-  onScrollChange: onScrollChangeProp,
-  onFocus: onFocusProp,
-  focusRequest: focusRequestProp,
-}: RenderedEditorProps) {
+}: Omit<RendererProps, "path"> & { toolbarDisabled?: boolean; path?: string }) {
   // Context wins over props; props are fallbacks for standalone usage.
-  const ctx = useRenderedPaneSync();
-  const callbacks = ctx?.callbacks ?? callbacksProp;
-  const isStandalone = ctx?.isStandalone ?? isStandaloneProp ?? false;
-  const cursorRequest = ctx?.cursorRequest ?? cursorRequestProp;
-  const scrollRequest = ctx?.scrollRequest ?? scrollRequestProp;
-  const onCursorChange = ctx?.onCursorChange ?? onCursorChangeProp;
-  const onScrollChange = ctx?.onScrollChange ?? onScrollChangeProp;
-  const onFocus = ctx?.onFocus ?? onFocusProp;
-  const focusRequest = ctx?.focusRequest ?? focusRequestProp;
+  const {
+    callbacks,
+    isStandalone = false,
+    cursorRequest,
+    scrollRequest,
+    onCursorChange,
+    onScrollChange,
+    onFocus,
+    focusRequest,
+  } = useRenderedPaneSync() ?? {};
   const { settings } = useAppServices();
   const [findOpen, setFindOpen] = useState(false);
   const currentParts = parseFrontmatter(value);

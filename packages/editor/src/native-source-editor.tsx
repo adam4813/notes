@@ -7,55 +7,21 @@
   useEffect,
   useRef,
 } from "react";
-import {
-  droppedPathInsertion,
-  NOTES_PATH_MIME,
-  type EditorCallbacks,
-  type CursorRequest,
-  type FocusRequest,
-  type ScrollRequest,
-} from "./types";
+import { droppedPathInsertion, NOTES_PATH_MIME, RendererProps } from "./types";
 import { useSourcePaneSync } from "./pane-sync-context";
 
-/**
- * When rendered inside a PaneSyncProvider (i.e. within NoteEditor), all sync
- * props come from context. When used standalone, props are used as fallbacks.
- * Only `value` and `onChange` are always required.
- */
-interface NativeSourceEditorProps {
-  value: string;
-  onChange: (markdown: string) => void;
-  // All below are fallbacks for standalone use outside a PaneSyncProvider.
-  callbacks?: EditorCallbacks;
-  scrollRequest?: ScrollRequest;
-  onScrollChange?: (ratio: number) => void;
-  focusRequest?: FocusRequest;
-  onFocus?: () => void;
-  cursorRequest?: CursorRequest;
-  onCursorChange?: (position: number) => void;
-}
-
-export function NativeSourceEditor({
-  value,
-  onChange,
-  callbacks: callbacksProp,
-  scrollRequest: scrollRequestProp,
-  onScrollChange: onScrollChangeProp,
-  focusRequest: focusRequestProp,
-  onFocus: onFocusProp,
-  cursorRequest: cursorRequestProp,
-  onCursorChange: onCursorChangeProp,
-}: NativeSourceEditorProps) {
-  // Context wins over props; props are fallbacks for standalone usage.
-  const ctx = useSourcePaneSync();
-  const callbacks = ctx?.callbacks ?? callbacksProp;
-  const scrollRequest = ctx?.scrollRequest ?? scrollRequestProp;
-  const onScrollChange = ctx?.onScrollChange ?? onScrollChangeProp;
-  const focusRequest = ctx?.focusRequest ?? focusRequestProp;
-  const onFocus = ctx?.onFocus ?? onFocusProp;
-  const cursorRequest = ctx?.cursorRequest ?? cursorRequestProp;
-  const onCursorChange = ctx?.onCursorChange ?? onCursorChangeProp;
-  const effectiveOnChange = ctx?.isReadOnly ? () => {} : onChange;
+export function NativeSourceEditor({ value, onChange }: RendererProps) {
+  const {
+    callbacks,
+    scrollRequest,
+    onScrollChange,
+    focusRequest,
+    onFocus,
+    cursorRequest,
+    onCursorChange,
+    isReadOnly,
+  } = useSourcePaneSync() ?? {};
+  const effectiveOnChange = isReadOnly ? () => {} : onChange;
 
   const viewRef = useRef<HTMLTextAreaElement | null>(null);
   const suppressScrollRef = useRef(false);

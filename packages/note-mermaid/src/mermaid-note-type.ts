@@ -1,11 +1,10 @@
-import type { NoteTypeRegistry } from "@notes/core";
-import type { NoteTypeViewDescriptor } from "@notes/editor";
+import type { NoteTypeDescriptor } from "@notes/editor";
 import { MermaidView } from "./mermaid-view";
 
 export const MERMAID_NOTE_TYPE_ID = "mermaid";
 
 /** Mermaid notes are `.md` files with `type: mermaid` frontmatter. */
-export const mermaidNoteType: NoteTypeViewDescriptor = {
+export const mermaidNoteType: NoteTypeDescriptor = {
   id: MERMAID_NOTE_TYPE_ID,
   detect(file) {
     return file.path.toLowerCase().endsWith(".md") && file.frontmatterType === "mermaid";
@@ -15,8 +14,3 @@ export const mermaidNoteType: NoteTypeViewDescriptor = {
   supportsScrollSync: false,
   viewComponent: MermaidView,
 };
-
-/** Registers the mermaid note type with the NoteTypeRegistry — mirrors the plugin pattern. */
-export function registerBuiltinNoteType(registry: NoteTypeRegistry): () => void {
-  return registry.register(mermaidNoteType);
-}

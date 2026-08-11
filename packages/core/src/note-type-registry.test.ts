@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { NoteTypeDescriptor } from "./contracts";
-import { markdownNoteType, MARKDOWN_NOTE_TYPE_ID } from "./markdown-note-type";
+import type { NoteTypeDetector } from "./contracts";
 import { NoteTypeRegistry } from "./note-type-registry";
 
-const tableType: NoteTypeDescriptor = {
+const testNoteType: NoteTypeDetector = {
+  id: "test",
+  detect: (file) => file.path.toLowerCase().endsWith(".test"),
+};
+
+const tableType: NoteTypeDetector = {
   id: "table",
   detect: (file) => file.path.toLowerCase().endsWith(".md") && file.frontmatterType === "table",
 };
@@ -11,17 +15,17 @@ const tableType: NoteTypeDescriptor = {
 describe("NoteTypeRegistry", () => {
   it("falls back to markdown for a plain .md file", () => {
     const registry = new NoteTypeRegistry();
-    registry.register(markdownNoteType, { fallback: true });
+    registry.register(testNoteType, { fallback: true });
     registry.register(tableType);
 
-    const provider = registry.detect({ path: "notes/hello.md" });
+    const provider = registry.detect({ path: "notes/hello.test" });
 
-    expect(provider?.id).toBe(MARKDOWN_NOTE_TYPE_ID);
+    expect(provider?.id).toBe("test");
   });
 
   it("prefers a specific provider over the markdown fallback", () => {
     const registry = new NoteTypeRegistry();
-    registry.register(markdownNoteType, { fallback: true });
+    registry.register(testNoteType, { fallback: true });
     registry.register(tableType);
 
     const provider = registry.detect({ path: "data/people.md", frontmatterType: "table" });
@@ -31,7 +35,7 @@ describe("NoteTypeRegistry", () => {
 
   it("returns undefined when nothing matches", () => {
     const registry = new NoteTypeRegistry();
-    registry.register(markdownNoteType, { fallback: true });
+    registry.register(testNoteType, { fallback: true });
 
     expect(registry.detect({ path: "diagram.canvas" })).toBeUndefined();
   });

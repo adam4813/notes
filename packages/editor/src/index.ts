@@ -1,5 +1,5 @@
 export * from "./types";
-export * from "./markdown-note-view";
+export * from "./markdown-note-type";
 export * from "./note-view-descriptor";
 export * from "./pane-sync-context";
 export * from "./use-pane-sync";

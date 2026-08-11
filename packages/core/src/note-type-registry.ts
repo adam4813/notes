@@ -1,25 +1,24 @@
-import type { NoteFileDescriptor, NoteTypeDescriptor } from "./contracts";
+import type { NoteFileDescriptor, NoteTypeDetector } from "./contracts";
 import { Registry } from "./registry";
 
 /**
- * Unified registry for note types — stores the full NoteTypeDescriptor
- * for every registered note type.
+ * Registry for note types.
  *
- * - Detection (`detect`) is used server-side to match a file to its type.
- * - View capabilities (`viewComponent`, `supportedModes`, …) are used
- *   client-side; the optional fields are simply absent in server-only usage.
+ * The generic parameter T lets server code work with the minimal NoteTypeDetector
+ * while client code uses the full NoteTypeDescriptor (from packages/editor).
+ * Both share this class; the server simply ignores the extra view fields.
  *
- * A single provider may be marked as the fallback (matched last).
+ * A single entry may be marked as the fallback (matched last).
  */
-export class NoteTypeRegistry {
-  private readonly providers = new Registry<NoteTypeDescriptor>();
+export class NoteTypeRegistry<T extends NoteTypeDetector = NoteTypeDetector> {
+  private readonly providers = new Registry<T>();
   private fallbackId?: string;
 
   /**
    * Registers a note-type descriptor. Returns a disposer that unregisters it;
    * callers that do not need to unregister may ignore the return value.
    */
-  register(descriptor: NoteTypeDescriptor, options?: { fallback?: boolean }): () => void {
+  register(descriptor: T, options?: { fallback?: boolean }): () => void {
     this.providers.register(descriptor.id, descriptor);
     if (options?.fallback) {
       this.fallbackId = descriptor.id;
@@ -32,15 +31,15 @@ export class NoteTypeRegistry {
     };
   }
 
-  get(id: string): NoteTypeDescriptor | undefined {
+  get(id: string): T | undefined {
     return this.providers.get(id);
   }
 
-  list(): NoteTypeDescriptor[] {
+  list(): T[] {
     return this.providers.list();
   }
 
-  detect(file: NoteFileDescriptor): NoteTypeDescriptor | undefined {
+  detect(file: NoteFileDescriptor): T | undefined {
     for (const provider of this.providers.list()) {
       if (provider.id === this.fallbackId) {
         continue;

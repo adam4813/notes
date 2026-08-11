@@ -1,6 +1,7 @@
 import { createContext, useContext, type ReactNode } from "react";
 import type { FileTypeHandler } from "@notes/plugin-host";
 import { NoteTypeRegistry } from "@notes/core";
+import type { NoteTypeDescriptor } from "@notes/editor";
 import type { SettingsBodyProps } from "../components/settings-view";
 import type { UndoableFileOps } from "../api/undoable-file-ops";
 
@@ -27,7 +28,7 @@ export interface AppServices {
   /** Plugin-registered file-type handlers, keyed by file extension. */
   fileHandlers: FileTypeHandler[];
   /** Registry of note-type descriptors (built-ins + plugin-registered). */
-  noteTypeRegistry: NoteTypeRegistry;
+  noteTypeRegistry: NoteTypeRegistry<NoteTypeDescriptor>;
   /** Everything the settings surface needs, so a settings tab can render. */
   settings: SettingsBodyProps;
   /** File-level undoable operations (create, delete, rename). */
@@ -91,7 +92,7 @@ const AppServicesContext = createContext<AppServices>({
   noteTypes: {},
   setActiveDocument: noop,
   fileHandlers: [],
-  noteTypeRegistry: new NoteTypeRegistry(),
+  noteTypeRegistry: new NoteTypeRegistry<NoteTypeDescriptor>(),
   settings: defaultSettings,
   undoableFileOps: {
     createFile: async () => {},
