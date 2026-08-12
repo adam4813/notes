@@ -17,7 +17,7 @@ import type { FileTypeHandler } from "@notes/plugin-host";
 import {
   ContextMenu,
   ContextMenuEntry,
-  type NoteViewContextMenuBuilder,
+  type CustomContextMenuBuilder,
   useContextMenu,
 } from "@notes/ui";
 import {
@@ -134,9 +134,7 @@ export function NoteEditor({
   const [saveState, setSaveState] = useState<SaveState>("loading");
   const [splitScrollSync, setSplitScrollSync] = useState(initialSession.viewState.splitScrollSync);
   const ctxMenu = useContextMenu<HTMLElement | null>();
-  const [componentCtxBuilder, setNoteViewCtxBuilder] = useState<NoteViewContextMenuBuilder | null>(
-    null,
-  );
+  const [customCtxBuilder, setCustomCtxBuilder] = useState<CustomContextMenuBuilder | null>(null);
   const regionRef = useRef<HTMLDivElement>(null);
   const dirtyRef = useRef(false);
   const contentRef = useRef("");
@@ -150,6 +148,11 @@ export function NoteEditor({
     },
     [stateKey],
   );
+
+  const registerCustomCtxBuilder = useCallback((builder: CustomContextMenuBuilder | null) => {
+    // setState dispatch is a function, so to store a function, we need to use the function syntax
+    setCustomCtxBuilder(() => builder);
+  }, []);
 
   // Flush any unsaved edit when the component unmounts (tab switch / close).
   useEffect(() => {
@@ -316,7 +319,7 @@ export function NoteEditor({
   const descriptorCtxBuilder = activeDescriptor
     ? (getNoteContextMenuBuilder(activeDescriptor) ?? null)
     : null;
-  const noteViewCtxBuilder = componentCtxBuilder ?? descriptorCtxBuilder;
+  const ctxBuilder = customCtxBuilder ?? descriptorCtxBuilder;
 
   const runEditCommand = useCallback(
     (command: string, target: HTMLElement | null) => {
@@ -330,8 +333,8 @@ export function NoteEditor({
   const contextMenuItems = useMemo(() => {
     const target = ctxMenu.menu?.data ?? null;
 
-    if (typeof noteViewCtxBuilder === "function") {
-      const custom = noteViewCtxBuilder(target);
+    if (ctxBuilder) {
+      const custom = ctxBuilder(target);
       if (custom) return custom;
     }
 
@@ -347,7 +350,7 @@ export function NoteEditor({
       { label: "Select All", run: () => runEditCommand("selectAll", target) },
     );
     return items;
-  }, [ctxMenu.menu?.data, noteViewCtxBuilder, runEditCommand]);
+  }, [ctxMenu.menu?.data, ctxBuilder, runEditCommand]);
 
   if (saveState === "loading") {
     return <div className="note-loading">Loading…</div>;
@@ -363,8 +366,8 @@ export function NoteEditor({
           if (!target || target.closest(".context-menu")) {
             return;
           }
-          if (typeof noteViewCtxBuilder === "function") {
-            const custom = noteViewCtxBuilder(target);
+          if (ctxBuilder) {
+            const custom = ctxBuilder(target);
             // If the note view's builder returns [] (empty), suppress the menu entirely.
             if (custom !== undefined && custom !== null && custom.length === 0) return;
           }
@@ -447,7 +450,7 @@ export function NoteEditor({
                     path={path}
                     value={content}
                     onChange={handleChange}
-                    onRegisterContextMenu={setNoteViewCtxBuilder}
+                    onRegisterContextMenu={registerCustomCtxBuilder}
                   />
                 )}
                 {showRendered && !noteRenderer && (

@@ -37,7 +37,7 @@ export type ContextMenuEntry = ContextMenuItemDef | ContextMenuSeparatorDef;
  * }, [onRegisterContextMenu]);
  * ```
  */
-export type NoteViewContextMenuBuilder = (target: Element | null) => ContextMenuEntry[] | null;
+export type CustomContextMenuBuilder = (target: Element | null) => ContextMenuEntry[] | null;
 
 interface ContextMenuProps {
   position: MenuPosition;
