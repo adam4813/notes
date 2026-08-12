@@ -11,7 +11,7 @@
  */
 import type { NoteTypeDetector } from "@notes/core";
 import type { ComponentType, ReactNode } from "react";
-import type { NoteViewContextMenuBuilder, ContextMenuEntry } from "@notes/ui";
+import type { CustomContextMenuBuilder } from "@notes/ui";
 import type { EditorMode, RendererProps } from "./types";
 
 export type NoteViewComponent = ComponentType<RendererProps>;
@@ -27,9 +27,6 @@ export interface NoteTypeToolbarItem {
   replace?: string;
   element: ReactNode;
 }
-
-// Re-export for convenience.
-export type { NoteViewContextMenuBuilder, ContextMenuEntry };
 
 /**
  * Complete descriptor for a note type (id, detect, and all view capabilities).
@@ -53,7 +50,7 @@ export interface NoteTypeDescriptor extends NoteTypeDetector {
   /** Toolbar items contributed by this note type. */
   toolbarItems?: NoteTypeToolbarItem[];
   /** Builds note-type-specific context menu items on right-click. */
-  contextMenuBuilder?: NoteViewContextMenuBuilder;
+  contextMenuBuilder?: CustomContextMenuBuilder;
 }
 
 // ── Accessor helpers ──────────────────────────────────────────────────────────
@@ -68,6 +65,6 @@ export function getNoteViewToolbarItems(d: NoteTypeDescriptor): NoteTypeToolbarI
 
 export function getNoteContextMenuBuilder(
   d: NoteTypeDescriptor,
-): NoteViewContextMenuBuilder | undefined {
+): CustomContextMenuBuilder | undefined {
   return d.contextMenuBuilder;
 }

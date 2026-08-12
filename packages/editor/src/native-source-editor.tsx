@@ -1,4 +1,5 @@
-﻿import {
+﻿import { useEditorCallbacks } from "@notes/web/src/state/use-editor-callbacks";
+import {
   ClipboardEventHandler,
   DragEventHandler,
   SyntheticEvent,
@@ -12,7 +13,6 @@ import { useSourcePaneSync } from "./pane-sync-context";
 
 export function NativeSourceEditor({ value, onChange }: RendererProps) {
   const {
-    callbacks,
     scrollRequest,
     onScrollChange,
     focusRequest,
@@ -20,7 +20,9 @@ export function NativeSourceEditor({ value, onChange }: RendererProps) {
     cursorRequest,
     onCursorChange,
     isReadOnly,
+    isStandalone = false,
   } = useSourcePaneSync() ?? {};
+  const callbacks = useEditorCallbacks(isStandalone);
   const effectiveOnChange = isReadOnly ? () => {} : onChange;
 
   const viewRef = useRef<HTMLTextAreaElement | null>(null);

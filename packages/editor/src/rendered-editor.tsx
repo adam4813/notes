@@ -1,6 +1,7 @@
 import { FindBar } from "@notes/web/src/components/find-bar";
 import { buildContent, parseFrontmatter } from "@notes/web/src/lib/frontmatter";
 import { useAppServices } from "@notes/web/src/state/app-services";
+import { useEditorCallbacks } from "@notes/web/src/state/use-editor-callbacks";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import { Table } from "@tiptap/extension-table";
@@ -89,7 +90,6 @@ export function RenderedEditor({
 }: Omit<RendererProps, "path"> & { toolbarDisabled?: boolean; path?: string }) {
   // Context wins over props; props are fallbacks for standalone usage.
   const {
-    callbacks,
     isStandalone = false,
     cursorRequest,
     scrollRequest,
@@ -98,6 +98,7 @@ export function RenderedEditor({
     onFocus,
     focusRequest,
   } = useRenderedPaneSync() ?? {};
+  const callbacks = useEditorCallbacks(isStandalone);
   const { settings } = useAppServices();
   const [findOpen, setFindOpen] = useState(false);
   const currentParts = parseFrontmatter(value);

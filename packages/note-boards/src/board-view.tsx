@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { usePromptDialog, type RendererProps } from "@notes/editor";
 import { debounce } from "@notes/core";
-import { type NoteViewContextMenuBuilder } from "@notes/ui";
+import { type CustomContextMenuBuilder } from "@notes/ui";
 import { useUndoStack } from "@notes/web/src/state/undo-context";
 import { BoardColumn } from "./board-column";
 import { BoardCardModal } from "./board-card-modal";
@@ -328,7 +328,7 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Rend
   // a card shows card-specific actions instead of the generic edit menu.
   useEffect(() => {
     if (!onRegisterContextMenu) return;
-    const builder: NoteViewContextMenuBuilder = (target) => {
+    const builder: CustomContextMenuBuilder = (target) => {
       const cardEl = target?.closest("[data-card-id]");
       // Return [] (not null) so the generic edit menu (undo/redo/cut…) is
       // suppressed entirely — those commands don't apply to board operations.

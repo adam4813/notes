@@ -4,25 +4,20 @@ import {
   EditorToolbar,
   type EditorMode,
   type MarkdownViewState,
-  type MarkdownPane,
   MARKDOWN_NOTE_TYPE_ID,
   NativeSourceEditor,
   NoteToolbar,
   PaneSyncProvider,
-  type PaneSyncContextValue,
   getNoteContextMenuBuilder,
   getNoteViewComponent,
   type RendererProps,
-  useCursorSync,
-  useFocusSync,
-  useScrollSync,
 } from "@notes/editor";
 import { CANVAS_NOTE_TYPE_ID } from "@notes/note-canvas";
 import type { FileTypeHandler } from "@notes/plugin-host";
 import {
   ContextMenu,
   ContextMenuEntry,
-  type NoteViewContextMenuBuilder,
+  type CustomContextMenuBuilder,
   useContextMenu,
 } from "@notes/ui";
 import {
@@ -40,7 +35,6 @@ import { connectTomeChanges } from "../api/ws";
 import { frontmatterType } from "../lib/frontmatter";
 import { isImagePath } from "../lib/images";
 import { useAppServices } from "../state/app-services";
-import { useEditorCallbacks } from "../state/use-editor-callbacks";
 import { useToasts } from "../state/toast";
 import { ModeToggle, SaveState } from "./mode-toggle";
 
@@ -127,7 +121,6 @@ export function NoteEditor({
 }) {
   const { markModified, setActiveDocument, fileHandlers, noteTypeRegistry } = useAppServices();
   const { notify } = useToasts();
-  const callbacks = useEditorCallbacks(isStandalone);
   const stateKey = editorStateKey(path);
   const initialSession = markdownSessionByPath.get(stateKey) ?? {
     mode: defaultMode,
@@ -141,33 +134,13 @@ export function NoteEditor({
   const [saveState, setSaveState] = useState<SaveState>("loading");
   const [splitScrollSync, setSplitScrollSync] = useState(initialSession.viewState.splitScrollSync);
   const ctxMenu = useContextMenu<HTMLElement | null>();
-  // Component-registered context menu builder (e.g. board view registers Delete/Duplicate).
-  // Takes priority over the descriptor-declared builder below.
-  const [componentCtxBuilder, setNoteViewCtxBuilder] = useState<NoteViewContextMenuBuilder | null>(
-    null,
-  );
+  const [customCtxBuilder, setCustomCtxBuilder] = useState<CustomContextMenuBuilder | null>(null);
   const regionRef = useRef<HTMLDivElement>(null);
   const dirtyRef = useRef(false);
   const contentRef = useRef("");
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const lastWriteAtRef = useRef(0);
   const isImage = isImagePath(path);
-
-  // ── Per-pane sync hooks (cursor, scroll, focus) ───────────────────────────
-  const sourceCursor = useCursorSync(initialSession.viewState.sourceCursor);
-  const renderedCursor = useCursorSync(initialSession.viewState.renderedCursor);
-  const sourceScroll = useScrollSync(initialSession.viewState.sourceScrollRatio);
-  const renderedScroll = useScrollSync(initialSession.viewState.renderedScrollRatio);
-  const sourceFocus = useFocusSync();
-  const renderedFocus = useFocusSync();
-
-  const activePaneRef = useRef<MarkdownPane>(initialSession.viewState.lastFocusedPane);
-  const sourceCursorPosRef = useRef(initialSession.viewState.sourceCursor);
-  const renderedCursorPosRef = useRef(initialSession.viewState.renderedCursor);
-  const prevModeRef = useRef(mode);
-  // Scroll-sync lock refs — prevent feedback loops when programmatically scrolling.
-  const sourceScrollLock = useRef(false);
-  const renderedScrollLock = useRef(false);
 
   const persistSession = useCallback(
     (nextMode: EditorMode, nextViewState: MarkdownViewState) => {
@@ -176,125 +149,10 @@ export function NoteEditor({
     [stateKey],
   );
 
-  useEffect(() => {
-    persistSession(mode, markdownViewState);
-  }, [mode, markdownViewState, persistSession]);
-
-  // ── Pane sync logic ───────────────────────────────────────────────────────
-
-  const preferredPaneForMode = useCallback((nextMode: EditorMode): MarkdownPane => {
-    if (nextMode === "edit") return "source";
-    if (nextMode === "rendered") return "rendered";
-    return activePaneRef.current;
+  const registerCustomCtxBuilder = useCallback((builder: CustomContextMenuBuilder | null) => {
+    // setState dispatch is a function, so to store a function, we need to use the function syntax
+    setCustomCtxBuilder(() => builder);
   }, []);
-
-  const { send: sendSourceFocus } = sourceFocus;
-  const { send: sendRenderedFocus } = renderedFocus;
-  const requestPaneFocus = useCallback(
-    (pane: MarkdownPane) => {
-      if (pane === "source") sendSourceFocus();
-      else sendRenderedFocus();
-    },
-    [sendSourceFocus, sendRenderedFocus],
-  );
-
-  useEffect(() => {
-    requestPaneFocus(preferredPaneForMode(mode));
-  }, [mode, preferredPaneForMode, requestPaneFocus]);
-
-  const { send: sendSourceCursor } = sourceCursor;
-  const { send: sendRenderedCursor } = renderedCursor;
-  useEffect(() => {
-    const prev = prevModeRef.current;
-    if (prev === mode) return;
-
-    if (mode === "edit") {
-      const position =
-        activePaneRef.current === "rendered"
-          ? renderedCursorPosRef.current
-          : sourceCursorPosRef.current;
-      sendSourceCursor(position);
-      requestPaneFocus("source");
-    } else if (mode === "rendered") {
-      const position =
-        activePaneRef.current === "source"
-          ? sourceCursorPosRef.current
-          : renderedCursorPosRef.current;
-      sendRenderedCursor(position);
-      requestPaneFocus("rendered");
-    } else {
-      requestPaneFocus(preferredPaneForMode(mode));
-    }
-
-    prevModeRef.current = mode;
-  }, [mode, preferredPaneForMode, requestPaneFocus, sendSourceCursor, sendRenderedCursor]);
-
-  const emitViewState = useCallback(
-    (patch: Partial<MarkdownViewState>) => {
-      setMarkdownViewState((prev) => {
-        const next = { ...prev, ...patch };
-        persistSession(mode, next);
-        return next;
-      });
-    },
-    [persistSession, mode],
-  );
-
-  const handleSourceFocus = useCallback(() => {
-    activePaneRef.current = "source";
-    emitViewState({ lastFocusedPane: "source" });
-  }, [emitViewState]);
-
-  const handleRenderedFocus = useCallback(() => {
-    activePaneRef.current = "rendered";
-    emitViewState({ lastFocusedPane: "rendered" });
-  }, [emitViewState]);
-
-  const handleSourceCursorChange = useCallback(
-    (position: number) => {
-      sourceCursorPosRef.current = position;
-      emitViewState({ sourceCursor: position });
-    },
-    [emitViewState],
-  );
-
-  const handleRenderedCursorChange = useCallback(
-    (position: number) => {
-      renderedCursorPosRef.current = position;
-      emitViewState({ renderedCursor: position });
-    },
-    [emitViewState],
-  );
-
-  const { send: sendRenderedScroll } = renderedScroll;
-  const handleSourceScrollChange = useCallback(
-    (ratio: number) => {
-      emitViewState({ sourceScrollRatio: ratio });
-      if (!splitScrollSync || mode !== "split") return;
-      if (sourceScrollLock.current) {
-        sourceScrollLock.current = false;
-        return;
-      }
-      renderedScrollLock.current = true;
-      sendRenderedScroll(ratio);
-    },
-    [emitViewState, mode, splitScrollSync, sendRenderedScroll],
-  );
-
-  const { send: sendSourceScroll } = sourceScroll;
-  const handleRenderedScrollChange = useCallback(
-    (ratio: number) => {
-      emitViewState({ renderedScrollRatio: ratio });
-      if (!splitScrollSync || mode !== "split") return;
-      if (renderedScrollLock.current) {
-        renderedScrollLock.current = false;
-        return;
-      }
-      sourceScrollLock.current = true;
-      sendSourceScroll(ratio);
-    },
-    [emitViewState, mode, splitScrollSync, sendSourceScroll],
-  );
 
   // Flush any unsaved edit when the component unmounts (tab switch / close).
   useEffect(() => {
@@ -439,32 +297,6 @@ export function NoteEditor({
   const showSource = effectiveMode === "edit" || effectiveMode === "split";
   const showRendered = effectiveMode === "rendered" || effectiveMode === "split";
 
-  // Build the pane-sync context value for the markdown editor panes.
-  const paneSyncValue: PaneSyncContextValue = {
-    source: {
-      cursorRequest: sourceCursor.request,
-      scrollRequest: descriptorSupportsScrollSync ? sourceScroll.request : undefined,
-      focusRequest: sourceFocus.request,
-      onCursorChange: handleSourceCursorChange,
-      onScrollChange: descriptorSupportsScrollSync ? handleSourceScrollChange : undefined,
-      onFocus: handleSourceFocus,
-      isReadOnly: descriptorSourceProtected,
-    },
-    rendered: {
-      cursorRequest: renderedCursor.request,
-      scrollRequest: descriptorSupportsScrollSync ? renderedScroll.request : undefined,
-      focusRequest: renderedFocus.request,
-      onCursorChange: handleRenderedCursorChange,
-      onScrollChange: descriptorSupportsScrollSync ? handleRenderedScrollChange : undefined,
-      onFocus: handleRenderedFocus,
-      // Adapt state-setter to the context's plain callback signature.
-      onRegisterContextMenu: (builder) =>
-        setNoteViewCtxBuilder(builder as NoteViewContextMenuBuilder | null),
-    },
-    callbacks,
-    isStandalone,
-  };
-
   // Publish the active document to plugins (word count, etc.).
   useEffect(() => {
     if (saveState === "loading") {
@@ -487,7 +319,7 @@ export function NoteEditor({
   const descriptorCtxBuilder = activeDescriptor
     ? (getNoteContextMenuBuilder(activeDescriptor) ?? null)
     : null;
-  const noteViewCtxBuilder = componentCtxBuilder ?? descriptorCtxBuilder;
+  const ctxBuilder = customCtxBuilder ?? descriptorCtxBuilder;
 
   const runEditCommand = useCallback(
     (command: string, target: HTMLElement | null) => {
@@ -501,8 +333,8 @@ export function NoteEditor({
   const contextMenuItems = useMemo(() => {
     const target = ctxMenu.menu?.data ?? null;
 
-    if (typeof noteViewCtxBuilder === "function") {
-      const custom = noteViewCtxBuilder(target);
+    if (ctxBuilder) {
+      const custom = ctxBuilder(target);
       if (custom) return custom;
     }
 
@@ -518,7 +350,7 @@ export function NoteEditor({
       { label: "Select All", run: () => runEditCommand("selectAll", target) },
     );
     return items;
-  }, [ctxMenu.menu?.data, noteViewCtxBuilder, runEditCommand]);
+  }, [ctxMenu.menu?.data, ctxBuilder, runEditCommand]);
 
   if (saveState === "loading") {
     return <div className="note-loading">Loading…</div>;
@@ -534,8 +366,8 @@ export function NoteEditor({
           if (!target || target.closest(".context-menu")) {
             return;
           }
-          if (typeof noteViewCtxBuilder === "function") {
-            const custom = noteViewCtxBuilder(target);
+          if (ctxBuilder) {
+            const custom = ctxBuilder(target);
             // If the note view's builder returns [] (empty), suppress the menu entirely.
             if (custom !== undefined && custom !== null && custom.length === 0) return;
           }
@@ -595,7 +427,15 @@ export function NoteEditor({
             </div>
           </div>
         ) : (
-          <PaneSyncProvider value={paneSyncValue}>
+          <PaneSyncProvider
+            setMarkdownViewState={setMarkdownViewState}
+            persistSession={persistSession}
+            mode={mode}
+            initialSession={initialSession}
+            splitScrollSync={splitScrollSync}
+            isReadOnly={descriptorSourceProtected}
+            isStandalone={isStandalone}
+          >
             <div className={`markdown-editor-shell markdown-editor-shell--${effectiveMode}`}>
               {effectiveMode === "edit" && <EditorToolbar editor={null} disabled />}
               <div className={`markdown-editor markdown-editor--${effectiveMode}`}>
@@ -610,7 +450,7 @@ export function NoteEditor({
                     path={path}
                     value={content}
                     onChange={handleChange}
-                    onRegisterContextMenu={setNoteViewCtxBuilder}
+                    onRegisterContextMenu={registerCustomCtxBuilder}
                   />
                 )}
                 {showRendered && !noteRenderer && (
