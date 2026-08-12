@@ -1,6 +1,6 @@
 {
   "name": "@notes/ui",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "private": true,
   "description": "Shared design-system components, theming tokens, and icons.",
   "type": "module",

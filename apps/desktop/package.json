@@ -1,6 +1,6 @@
 {
   "name": "@notes/desktop",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Notes — local-first knowledge tool (Electron desktop wrapper)",
   "author": "Notes Contributors",
   "desktopName": "Notes",
