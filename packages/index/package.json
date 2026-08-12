@@ -1,6 +1,6 @@
 {
   "name": "@notes/index",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "private": true,
   "description": "SQLite index: links, tags, frontmatter, and full-text search.",
   "type": "module",

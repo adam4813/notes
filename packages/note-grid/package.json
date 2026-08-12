@@ -1,6 +1,6 @@
 {
   "name": "@notes/note-grid",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "private": true,
   "description": "Grid (tile-map / graph-paper) note type with layers and tokens (first-party plugin).",
   "type": "module",
