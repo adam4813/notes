@@ -1955,6 +1955,49 @@ button {
   font-family: var(--editor-font-family, inherit);
 }
 
+.tiptap-host .ProseMirror.line-numbers {
+  counter-reset: section;
+}
+
+.tiptap-host .ProseMirror.line-numbers > *:before {
+  counter-increment: section;
+  content: counter(section) ". ";
+  position: absolute;
+  left: 8px;
+  font-family: var(--editor-font-family, inherit);
+  font-weight: 300;
+  font-size: calc(var(--editor-font-size) - 4px);
+  color: var(--fg);
+  user-select: none;
+  margin-top: 4px;
+  align-self: anchor-center;
+}
+
+.tiptap-host .ProseMirror.line-numbers li:before {
+  counter-increment: section;
+  content: counter(section) ". ";
+  position: absolute;
+  left: 8px;
+  font-family: var(--editor-font-family, inherit);
+  font-weight: 300;
+  font-size: calc(var(--editor-font-size) - 4px);
+  color: var(--fg);
+  user-select: none;
+  margin-top: 4px;
+}
+
+/* UL and OL are containers, don't increment */
+.tiptap-host .ProseMirror.line-numbers ul:before,
+.tiptap-host .ProseMirror.line-numbers ol:before {
+  counter-increment: unset !important;
+  content: "";
+}
+
+/* Make the hr flex so the line number aligns centerish */
+.tiptap-host .ProseMirror.line-numbers hr {
+  display: flex;
+}
+
 .source-editor {
   width: 100%;
   height: 100%;

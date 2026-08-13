@@ -103,6 +103,7 @@ export function RenderedEditor({
     focusRequest,
   } = useRenderedPaneSync() ?? {};
   const { callbacks, promptDialog } = useEditorCallbacks(isStandalone);
+  const [showLineNumbers, setShowLineNumbers] = useState(false);
   const { settings } = useAppServices();
   const [findOpen, setFindOpen] = useState(false);
   const currentParts = parseFrontmatter(value);
@@ -198,6 +199,9 @@ export function RenderedEditor({
         : []),
     ],
     editorProps: {
+      attributes: {
+        class: showLineNumbers ? "line-numbers" : "",
+      },
       handleKeyDown(_view, event) {
         const current = suggest;
         if (!current || current.items.length === 0) {
@@ -591,6 +595,7 @@ export function RenderedEditor({
           disabled={toolbarDisabled}
           trailing={
             <div className="editor-toolbar-meta">
+              <button onClick={() => setShowLineNumbers((prev) => !prev)}>LN</button>
               {!isStandalone && (
                 <label className="editor-width-control">
                   <span className="editor-width-label">Width</span>
