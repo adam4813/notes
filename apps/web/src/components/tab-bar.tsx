@@ -130,6 +130,8 @@ export function TabBar({ pane }: { pane: Pane }) {
         }
       }
 
+      handleDragEnd();
+
       dispatch({ type: "moveTab", fromPaneId, tabId: fromTabId, toPaneId: pane.id, toIndex });
     } catch {
       // ignore invalid drag data
