@@ -21,6 +21,7 @@ export function BoardColumn({
   updateCardState,
   handleDeleteCard,
   setModalCard,
+  boardPath,
   dragRef,
 }: {
   column: IBoardColumn;
@@ -47,6 +48,7 @@ export function BoardColumn({
   updateCardState: (updated: RichCard) => void;
   handleDeleteCard: (cardId: string) => void;
   setModalCard: (card: RichCard | null) => void;
+  boardPath: string;
   dragRef: React.RefObject<{ cardId: string; fromColumn: string } | null>;
 }) {
   const dragHandle = useDraggable(
@@ -159,6 +161,7 @@ export function BoardColumn({
                 handleDeleteCard={handleDeleteCard}
                 column={column}
                 onOpenModal={setModalCard}
+                boardPath={boardPath}
                 isColumnDragActive={Boolean(draggingColumnName)}
               />
             </Fragment>

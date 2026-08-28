@@ -5,6 +5,20 @@ import {
   parseFrontmatter,
 } from "@notes/web/src/lib/frontmatter";
 
+/** Returns the companion dot-folder for a board's card files (relative to tome root). */
+export function cardDotFolder(boardPath: string): string {
+  const lastSlash = boardPath.lastIndexOf("/");
+  const dir = lastSlash !== -1 ? boardPath.slice(0, lastSlash + 1) : "";
+  const filename = lastSlash !== -1 ? boardPath.slice(lastSlash + 1) : boardPath;
+  const base = filename.endsWith(".md") ? filename.slice(0, -3) : filename;
+  return `${dir}.${base}.cards`;
+}
+
+/** Returns the file path for a single card within a board (relative to tome root). */
+export function cardFilePath(boardPath: string, cardId: string): string {
+  return `${cardDotFolder(boardPath)}/${cardId}.md`;
+}
+
 export interface RichCard {
   id: string;
   title: string;

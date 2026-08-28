@@ -8,6 +8,7 @@ import { BoardCardModal } from "./board-card-modal";
 import {
   type IBoardColumn,
   BoardModel,
+  cardFilePath,
   parseBoard,
   type RichCard,
   serializeBoard,
@@ -339,6 +340,13 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Rend
       if (!card) return [];
       return [
         {
+          label: "Copy link",
+          run: () => {
+            const link = `![[${cardFilePath(path, cardId)}]]`;
+            void navigator.clipboard?.writeText(link);
+          },
+        },
+        {
           label: "Duplicate card",
           run: () => void duplicateCard(card),
         },
@@ -470,6 +478,7 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Rend
                 updateCardState={updateCardState}
                 handleDeleteCard={handleDeleteCard}
                 setModalCard={setModalCard}
+                boardPath={path}
                 dragRef={dragRef}
               />
             </Fragment>
