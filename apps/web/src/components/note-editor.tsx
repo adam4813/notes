@@ -135,6 +135,7 @@ export function NoteEditor({
   const [splitScrollSync, setSplitScrollSync] = useState(initialSession.viewState.splitScrollSync);
   const ctxMenu = useContextMenu<HTMLElement | null>();
   const [customCtxBuilder, setCustomCtxBuilder] = useState<CustomContextMenuBuilder | null>(null);
+  const [sourceCtxBuilder, setSourceCtxBuilder] = useState<CustomContextMenuBuilder | null>(null);
   const regionRef = useRef<HTMLDivElement>(null);
   const dirtyRef = useRef(false);
   const contentRef = useRef("");
@@ -152,6 +153,10 @@ export function NoteEditor({
   const registerCustomCtxBuilder = useCallback((builder: CustomContextMenuBuilder | null) => {
     // setState dispatch is a function, so to store a function, we need to use the function syntax
     setCustomCtxBuilder(() => builder);
+  }, []);
+
+  const registerSourceCtxBuilder = useCallback((builder: CustomContextMenuBuilder | null) => {
+    setSourceCtxBuilder(() => builder);
   }, []);
 
   // Flush any unsaved edit when the component unmounts (tab switch / close).
@@ -321,6 +326,19 @@ export function NoteEditor({
     : null;
   const ctxBuilder = customCtxBuilder ?? descriptorCtxBuilder;
 
+  /** Try each builder in priority order; return the first non-null result. */
+  const resolveCtxItems = useCallback(
+    (target: HTMLElement | null) => {
+      for (const builder of [ctxBuilder, sourceCtxBuilder]) {
+        if (!builder) continue;
+        const result = builder(target);
+        if (result !== null && result !== undefined) return result;
+      }
+      return null;
+    },
+    [ctxBuilder, sourceCtxBuilder],
+  );
+
   const runEditCommand = useCallback(
     (command: string, target: HTMLElement | null) => {
       target?.focus();
@@ -333,10 +351,8 @@ export function NoteEditor({
   const contextMenuItems = useMemo(() => {
     const target = ctxMenu.menu?.data ?? null;
 
-    if (ctxBuilder) {
-      const custom = ctxBuilder(target);
-      if (custom) return custom;
-    }
+    const custom = resolveCtxItems(target);
+    if (custom) return custom;
 
     // Default: generic text-editing commands.
     const items: ContextMenuEntry[] = [];
@@ -350,7 +366,7 @@ export function NoteEditor({
       { label: "Select All", run: () => runEditCommand("selectAll", target) },
     );
     return items;
-  }, [ctxMenu.menu?.data, ctxBuilder, runEditCommand]);
+  }, [ctxMenu.menu?.data, resolveCtxItems, runEditCommand]);
 
   if (saveState === "loading") {
     return <div className="note-loading">Loading…</div>;
@@ -366,11 +382,9 @@ export function NoteEditor({
           if (!target || target.closest(".context-menu")) {
             return;
           }
-          if (ctxBuilder) {
-            const custom = ctxBuilder(target);
-            // If the note view's builder returns [] (empty), suppress the menu entirely.
-            if (custom !== undefined && custom !== null && custom.length === 0) return;
-          }
+          const custom = resolveCtxItems(target);
+          // If any builder returns [] (empty), suppress the menu entirely.
+          if (custom !== null && custom !== undefined && custom.length === 0) return;
           event.preventDefault();
           ctxMenu.open({ x: event.clientX, y: event.clientY }, target);
         }}
@@ -441,7 +455,12 @@ export function NoteEditor({
               <div className={`markdown-editor markdown-editor--${effectiveMode}`}>
                 {showSource && (
                   <div className="editor-column editor-column--split">
-                    <NativeSourceEditor value={content} onChange={handleChange} path={path} />
+                    <NativeSourceEditor
+                      value={content}
+                      onChange={handleChange}
+                      path={path}
+                      onRegisterContextMenu={registerSourceCtxBuilder}
+                    />
                   </div>
                 )}
                 {showRendered && noteRenderer && (

@@ -107,6 +107,15 @@ export interface EditorCallbacks {
    * Use for standalone files that should not import local assets.
    */
   disableFileDrop?: boolean;
+  /**
+   * Prompts the user to name a new note, creates it with the given content,
+   * and opens it in a tab.
+   *
+   * Returns the new note's path on success, or null if the user cancelled or
+   * an error occurred.  When `mode` is `"move"` the caller is responsible for
+   * removing the selected content and inserting a wikilink after this resolves.
+   */
+  extractToNewNote?: (content: string, mode: "copy" | "move") => Promise<string | null>;
 }
 
 // ── Renderer contract ─────────────────────────────────────────────────────────
