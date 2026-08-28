@@ -211,9 +211,7 @@ describe("navigation stack", () => {
   it("navBack navigates to the previous entry", () => {
     let state = workspaceReducer(initial(), { type: "openFile", path: "a.md", title: "a" });
     state = workspaceReducer(state, { type: "openFile", path: "b.md", title: "b" });
-    expect(state.panes[0].tabs.find((t) => t.id === state.panes[0].activeTabId)?.path).toBe(
-      "b.md",
-    );
+    expect(state.panes[0].tabs.find((t) => t.id === state.panes[0].activeTabId)?.path).toBe("b.md");
 
     state = workspaceReducer(state, { type: "navBack" });
     expect(state.navIndex).toBe(0);
