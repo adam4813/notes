@@ -186,8 +186,7 @@ export function NativeSourceEditor({ value, onChange, onRegisterContextMenu }: R
             void (async () => {
               const notePath = await callbacks?.extractToNewNote?.(selectedText, "move");
               if (notePath && viewRef.current) {
-                const noteName =
-                  notePath.replace(/\.md$/i, "").split("/").pop() ?? notePath;
+                const noteName = notePath.replace(/\.md$/i, "").split("/").pop() ?? notePath;
                 viewRef.current.setRangeText(`[[${noteName}]]`, start, end, "end");
                 const inputEvent = new Event("input", { bubbles: true });
                 viewRef.current.dispatchEvent(inputEvent);

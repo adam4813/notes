@@ -471,8 +471,7 @@ export function RenderedEditor({
             void (async () => {
               const notePath = await callbacks?.extractToNewNote?.(selectedText, "move");
               if (notePath) {
-                const noteName =
-                  notePath.replace(/\.md$/i, "").split("/").pop() ?? notePath;
+                const noteName = notePath.replace(/\.md$/i, "").split("/").pop() ?? notePath;
                 editor.chain().focus().insertContentAt({ from, to }, `[[${noteName}]]`).run();
               }
             })();
