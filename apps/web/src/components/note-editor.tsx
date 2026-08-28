@@ -32,6 +32,7 @@ import {
 import { api } from "../api/client";
 import { queueWrite } from "../api/offline-queue";
 import { connectTomeChanges } from "../api/ws";
+import { exportAsHtml } from "../lib/export-html";
 import { frontmatterType } from "../lib/frontmatter";
 import { isImagePath } from "../lib/images";
 import { useAppServices } from "../state/app-services";
@@ -315,6 +316,15 @@ export function NoteEditor({
     return () => setActiveDocument(null);
   }, [path, content, saveState, setActiveDocument, isImage, fileHandlers, isStandalone, frontType]);
 
+  const handleExportHtml = useCallback(() => {
+    const el = regionRef.current?.querySelector<HTMLElement>(".rendered-scroll");
+    if (!el) return;
+    const title = basename(path);
+    void exportAsHtml(el, title).catch(() => {
+      notify("Export failed.", { kind: "error" });
+    });
+  }, [path, notify]);
+
   // Descriptor-declared builder is the fallback; component-registered takes priority.
   const descriptorCtxBuilder = activeDescriptor
     ? (getNoteContextMenuBuilder(activeDescriptor) ?? null)
@@ -400,6 +410,7 @@ export function NoteEditor({
             saveState={saveState}
             supportedModes={descriptorSupportedModes}
             supportsScrollSync={descriptorSupportsScrollSync}
+            onExportHtml={showRendered && noteRenderer ? handleExportHtml : undefined}
           />
         )}
         {pluginHandler ? (

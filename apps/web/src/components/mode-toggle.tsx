@@ -29,6 +29,8 @@ export function ModeToggle(props: {
   supportedModes?: EditorMode[];
   /** Whether to show the scroll sync toggle in split mode. Defaults to true. */
   supportsScrollSync?: boolean;
+  /** When provided, an "Export as HTML" button is shown that calls this handler. */
+  onExportHtml?: () => void;
 }) {
   const visibleModes = props.supportedModes ?? EDITOR_MODES;
   const showSyncToggle = props.supportsScrollSync ?? true;
@@ -59,6 +61,16 @@ export function ModeToggle(props: {
           aria-pressed={props.splitScrollSync}
         >
           Sync scroll
+        </button>
+      )}
+      {props.onExportHtml && (
+        <button
+          type="button"
+          className="mode-export-btn"
+          onClick={props.onExportHtml}
+          title="Export as HTML"
+        >
+          Export HTML
         </button>
       )}
       <span className={`save-status save-status--${props.saveState}`}>
