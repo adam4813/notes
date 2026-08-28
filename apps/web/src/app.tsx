@@ -523,6 +523,21 @@ export function App() {
     });
   }, [refreshTree, dispatch, tomeActive]);
 
+  // Mouse back/forward button support (button 3 = back, button 4 = forward).
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (e.button === 3) {
+        e.preventDefault();
+        dispatch({ type: "navBack" });
+      } else if (e.button === 4) {
+        e.preventDefault();
+        dispatch({ type: "navForward" });
+      }
+    };
+    window.addEventListener("mouseup", handler);
+    return () => window.removeEventListener("mouseup", handler);
+  }, [dispatch]);
+
   // Discard provisional notes whose tab was closed without modification.
   useEffect(() => {
     const openPaths = new Set(state.panes.flatMap((pane) => pane.tabs.map((tab) => tab.path)));
@@ -608,6 +623,20 @@ export function App() {
         run: () => createCalendar(),
       },
       { id: "new-grid", title: "New grid", category: "Create", run: () => createGrid() },
+      {
+        id: "navigate-back",
+        title: "Navigate back",
+        category: "Go",
+        defaultHotkey: "Alt+ArrowLeft",
+        run: () => dispatch({ type: "navBack" }),
+      },
+      {
+        id: "navigate-forward",
+        title: "Navigate forward",
+        category: "Go",
+        defaultHotkey: "Alt+ArrowRight",
+        run: () => dispatch({ type: "navForward" }),
+      },
       {
         id: "split-pane",
         title: "Split editor pane",
@@ -892,6 +921,10 @@ export function App() {
             tomeActive={tomeActive}
             onCloseTome={closeTome}
             onOpenTome={openTome}
+            canNavBack={state.navIndex > 0}
+            canNavForward={state.navIndex < state.navHistory.length - 1}
+            onNavBack={() => dispatch({ type: "navBack" })}
+            onNavForward={() => dispatch({ type: "navForward" })}
           />
           <div className="shell-body">
             <Sidebar

@@ -327,8 +327,32 @@ button {
 
 .ribbon-search {
   display: flex;
+  align-items: center;
+  gap: 4px;
   justify-content: center;
   min-width: 0;
+}
+
+.ribbon-nav {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.ribbon-nav-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ribbon-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .ribbon-search-input {
