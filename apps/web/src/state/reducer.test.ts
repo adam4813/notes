@@ -188,3 +188,68 @@ describe("workspaceReducer", () => {
     expect(state.panes[1].tabs.map((t) => t.path)).toEqual(["a.md"]); // original keeps non-active tab
   });
 });
+
+describe("navigation stack", () => {
+  it("openFile pushes to navHistory", () => {
+    let state = workspaceReducer(initial(), { type: "openFile", path: "a.md", title: "a" });
+    expect(state.navHistory).toHaveLength(1);
+    expect(state.navHistory[0]).toEqual({ path: "a.md", title: "a" });
+    expect(state.navIndex).toBe(0);
+
+    state = workspaceReducer(state, { type: "openFile", path: "b.md", title: "b" });
+    expect(state.navHistory).toHaveLength(2);
+    expect(state.navIndex).toBe(1);
+  });
+
+  it("opening same path does not duplicate history entry", () => {
+    let state = workspaceReducer(initial(), { type: "openFile", path: "a.md", title: "a" });
+    state = workspaceReducer(state, { type: "openFile", path: "a.md", title: "a" });
+    expect(state.navHistory).toHaveLength(1);
+    expect(state.navIndex).toBe(0);
+  });
+
+  it("navBack navigates to the previous entry", () => {
+    let state = workspaceReducer(initial(), { type: "openFile", path: "a.md", title: "a" });
+    state = workspaceReducer(state, { type: "openFile", path: "b.md", title: "b" });
+    expect(state.panes[0].tabs.find((t) => t.id === state.panes[0].activeTabId)?.path).toBe("b.md");
+
+    state = workspaceReducer(state, { type: "navBack" });
+    expect(state.navIndex).toBe(0);
+    const activeTab = state.panes[0].tabs.find((t) => t.id === state.panes[0].activeTabId);
+    expect(activeTab?.path).toBe("a.md");
+  });
+
+  it("navForward navigates forward after going back", () => {
+    let state = workspaceReducer(initial(), { type: "openFile", path: "a.md", title: "a" });
+    state = workspaceReducer(state, { type: "openFile", path: "b.md", title: "b" });
+    state = workspaceReducer(state, { type: "navBack" });
+    state = workspaceReducer(state, { type: "navForward" });
+    expect(state.navIndex).toBe(1);
+    const activeTab = state.panes[0].tabs.find((t) => t.id === state.panes[0].activeTabId);
+    expect(activeTab?.path).toBe("b.md");
+  });
+
+  it("navBack at start is a no-op", () => {
+    const state = workspaceReducer(initial(), { type: "openFile", path: "a.md", title: "a" });
+    const next = workspaceReducer(state, { type: "navBack" });
+    expect(next.navIndex).toBe(0);
+    expect(next).toBe(state);
+  });
+
+  it("navForward at end is a no-op", () => {
+    const state = workspaceReducer(initial(), { type: "openFile", path: "a.md", title: "a" });
+    const next = workspaceReducer(state, { type: "navForward" });
+    expect(next.navIndex).toBe(0);
+    expect(next).toBe(state);
+  });
+
+  it("opening a file after going back truncates forward history", () => {
+    let state = workspaceReducer(initial(), { type: "openFile", path: "a.md", title: "a" });
+    state = workspaceReducer(state, { type: "openFile", path: "b.md", title: "b" });
+    state = workspaceReducer(state, { type: "navBack" });
+    // Now open a new file — this should drop "b.md" from history.
+    state = workspaceReducer(state, { type: "openFile", path: "c.md", title: "c" });
+    expect(state.navHistory.map((e) => e.path)).toEqual(["a.md", "c.md"]);
+    expect(state.navIndex).toBe(1);
+  });
+});
