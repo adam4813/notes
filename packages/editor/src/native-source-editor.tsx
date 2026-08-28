@@ -1,4 +1,5 @@
 ﻿import { useEditorCallbacks } from "@notes/web/src/state/use-editor-callbacks";
+import type { ContextMenuEntry } from "@notes/ui";
 import {
   ClipboardEventHandler,
   DragEventHandler,
@@ -11,7 +12,7 @@ import {
 import { droppedPathInsertion, NOTES_PATH_MIME, RendererProps } from "./types";
 import { useSourcePaneSync } from "./pane-sync-context";
 
-export function NativeSourceEditor({ value, onChange }: RendererProps) {
+export function NativeSourceEditor({ value, onChange, onRegisterContextMenu }: RendererProps) {
   const {
     scrollRequest,
     onScrollChange,
@@ -22,7 +23,7 @@ export function NativeSourceEditor({ value, onChange }: RendererProps) {
     isReadOnly,
     isStandalone = false,
   } = useSourcePaneSync() ?? {};
-  const callbacks = useEditorCallbacks(isStandalone);
+  const { callbacks, promptDialog } = useEditorCallbacks(isStandalone);
   const effectiveOnChange = isReadOnly ? () => {} : onChange;
 
   const viewRef = useRef<HTMLTextAreaElement | null>(null);
@@ -156,19 +157,65 @@ export function NativeSourceEditor({ value, onChange }: RendererProps) {
     view.setSelectionRange(anchor, anchor);
   }, [cursorRequest, cursorRequest?.token]);
 
+  // Register context menu builder so the parent NoteEditor can show
+  // "Copy to New Note" / "Move to New Note" when the user right-clicks a
+  // non-empty selection inside the source pane.
+  useEffect(() => {
+    if (!onRegisterContextMenu) return;
+    onRegisterContextMenu((target) => {
+      const textarea = viewRef.current;
+      if (!textarea) return null;
+      const { selectionStart, selectionEnd } = textarea;
+      if (selectionStart === selectionEnd) return null;
+      const selectedText = textarea.value.slice(selectionStart, selectionEnd);
+      if (!selectedText.trim()) return null;
+      // Only activate for right-clicks inside the source column.
+      if (target && !target.closest(".editor-column--split")) return null;
+      const start = selectionStart;
+      const end = selectionEnd;
+      const items: ContextMenuEntry[] = [
+        {
+          label: "Copy to New Note",
+          run: () => {
+            void callbacks?.extractToNewNote?.(selectedText, "copy");
+          },
+        },
+        {
+          label: "Move to New Note",
+          run: () => {
+            void (async () => {
+              const notePath = await callbacks?.extractToNewNote?.(selectedText, "move");
+              if (notePath && viewRef.current) {
+                const noteName = notePath.replace(/\.md$/i, "").split("/").pop() ?? notePath;
+                viewRef.current.setRangeText(`[[${noteName}]]`, start, end, "end");
+                const inputEvent = new Event("input", { bubbles: true });
+                viewRef.current.dispatchEvent(inputEvent);
+              }
+            })();
+          },
+        },
+      ];
+      return items;
+    });
+    return () => onRegisterContextMenu(null);
+  }, [onRegisterContextMenu, callbacks]);
+
   return (
-    <textarea
-      ref={viewRef}
-      className="source-editor"
-      spellCheck="false"
-      value={value}
-      onChange={(event) => effectiveOnChange(event.target.value)}
-      onDragOver={handleDragover}
-      onDrop={handleDrop}
-      onPaste={handlePaste}
-      onFocus={onFocus}
-      onSelect={handleSelectionChange}
-      onScroll={handleScroll}
-    />
+    <>
+      <textarea
+        ref={viewRef}
+        className="source-editor"
+        spellCheck="false"
+        value={value}
+        onChange={(event) => effectiveOnChange(event.target.value)}
+        onDragOver={handleDragover}
+        onDrop={handleDrop}
+        onPaste={handlePaste}
+        onFocus={onFocus}
+        onSelect={handleSelectionChange}
+        onScroll={handleScroll}
+      />
+      {promptDialog}
+    </>
   );
 }
