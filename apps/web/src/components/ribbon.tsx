@@ -10,6 +10,10 @@ interface RibbonProps {
   tomeActive?: boolean;
   onCloseTome?: () => void;
   onOpenTome?: () => void;
+  canNavBack?: boolean;
+  canNavForward?: boolean;
+  onNavBack?: () => void;
+  onNavForward?: () => void;
 }
 
 function TopBarMenu({
@@ -81,6 +85,10 @@ export function Ribbon({
   tomeActive = true,
   onCloseTome,
   onOpenTome,
+  canNavBack = false,
+  canNavForward = false,
+  onNavBack,
+  onNavForward,
 }: RibbonProps) {
   const electronApi = window.electronAPI;
   const isDesktop = Boolean(electronApi);
@@ -169,6 +177,26 @@ export function Ribbon({
         </div>
       </div>
       <div className="ribbon-search">
+        <div className="ribbon-nav">
+          <button
+            className="btn-ghost ribbon-nav-btn"
+            title="Navigate back (Alt+Left)"
+            aria-label="Navigate back"
+            disabled={!canNavBack}
+            onClick={onNavBack}
+          >
+            ←
+          </button>
+          <button
+            className="btn-ghost ribbon-nav-btn"
+            title="Navigate forward (Alt+Right)"
+            aria-label="Navigate forward"
+            disabled={!canNavForward}
+            onClick={onNavForward}
+          >
+            →
+          </button>
+        </div>
         <input
           className="ribbon-search-input"
           type="search"
