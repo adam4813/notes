@@ -20,14 +20,14 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
     {
-      command: "npm --workspace @notes/server run dev",
+      command: "npm run dev:server",
       url: SERVER_HEALTH,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
-      env: { NOTES_TOME: "e2e-tome", NOTES_PORT: SERVER_PORT },
+      env: { NOTES_TOME: "e2e-tome", NOTES_PORT: SERVER_PORT, WEB_PORT },
     },
     {
-      command: "npm --workspace @notes/web run dev",
+      command: "npm run dev:web",
       url: WEB_URL,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
