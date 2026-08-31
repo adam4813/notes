@@ -9,6 +9,7 @@ export * from "./note-toolbar";
 export * from "./suggestion-popup";
 export * from "./wikilink-decorator";
 export * from "./embed-extension";
+export * from "./tabs-extension";
 export * from "./image-node";
 export * from "./prompt-dialog";
 export * from "./native-source-editor";
