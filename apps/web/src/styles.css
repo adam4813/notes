@@ -1610,6 +1610,63 @@ button {
   padding: 8px;
 }
 
+/* Tab group (```tabs fenced block) */
+.tab-group {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+
+.tab-group__bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  background: var(--bg-subtle, var(--bg-2));
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-group__tab {
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  color: var(--fg-muted);
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  user-select: none;
+}
+
+.tab-group__tab:hover {
+  color: var(--fg);
+}
+
+.tab-group__tab--active {
+  color: var(--accent, var(--fg));
+  border-bottom-color: var(--accent, var(--fg));
+}
+
+.tab-group__panel {
+  padding: 12px 16px;
+  background: var(--bg);
+}
+
+.tab-group__panel > *:first-child {
+  margin-top: 0;
+}
+
+.tab-group__panel > *:last-child {
+  margin-bottom: 0;
+}
+
+.tab-group__empty {
+  padding: 12px 16px;
+  color: var(--fg-muted);
+  font-style: italic;
+  font-size: 13px;
+}
+
 .image-note {
   display: flex;
   flex-direction: column;
