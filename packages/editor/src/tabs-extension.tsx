@@ -99,10 +99,7 @@ function TabGroupNodeView(props: NodeViewProps) {
  * without pulling in a full parser.
  */
 function markdownToHtml(md: string): string {
-  const escaped = md
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  const escaped = md.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   const paragraphs = escaped
     .split(/\n{2,}/)
