@@ -1,5 +1,6 @@
 ﻿import { RenderedEditor } from "@notes/editor";
 import type { RichEvent } from "./calendar-format";
+import { eventFilePath } from "./calendar-format";
 
 const DURATION_OPTIONS = [
   { value: 15, label: "15 min" },
@@ -15,16 +16,29 @@ export function EventDetails({
   setSelectedEvent,
   onUpdateEvent,
   onDeleteEvent,
+  calendarPath,
 }: {
   selectedEvent: RichEvent;
   setSelectedEvent: (event: RichEvent | null) => void;
   onUpdateEvent: (event: RichEvent) => void;
   onDeleteEvent: (eventId: string) => void;
+  calendarPath: string;
 }) {
   return (
     <div className="calendar-event-panel">
       <div className="calendar-event-panel-header">
         <span className="calendar-event-panel-title">Edit Event</span>
+        <button
+          className="calendar-event-panel-copy-link"
+          aria-label="Copy link to event"
+          title="Copy link"
+          onClick={() => {
+            const link = `![[${eventFilePath(calendarPath, selectedEvent.id)}]]`;
+            void navigator.clipboard?.writeText(link);
+          }}
+        >
+          🔗
+        </button>
         <button
           className="calendar-event-panel-close"
           aria-label="Close event editor"

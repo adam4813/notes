@@ -2,6 +2,7 @@
 import { PopupMenu, useDraggable, usePreventChildDrag } from "@notes/ui";
 import { DragEvent, useEffect, useRef, useState } from "react";
 import type { IBoardColumn, RichCard } from "./board-format";
+import { cardFilePath } from "./board-format";
 
 const LABEL_COLORS = ["#e2f0fb", "#fde8d8", "#d9f2e8", "#f5e6fb", "#fef9c3"];
 
@@ -16,6 +17,7 @@ export function BoardCard({
   updateCardState,
   column,
   onOpenModal,
+  boardPath,
   isColumnDragActive = false,
 }: {
   card: RichCard;
@@ -28,6 +30,7 @@ export function BoardCard({
   updateCardState: (card: RichCard) => void;
   column: IBoardColumn;
   onOpenModal: (card: RichCard) => void;
+  boardPath: string;
   isColumnDragActive?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -212,13 +215,26 @@ export function BoardCard({
               open={menuIsOpen}
               onClose={() => setMenuIsOpen(false)}
               menu={
-                <button
-                  className="board-card-del"
-                  aria-label="Delete card"
-                  onClick={() => void handleDeleteCard(card.id)}
-                >
-                  🗑 Delete
-                </button>
+                <>
+                  <button
+                    className="board-card-menu-item"
+                    aria-label="Copy link to card"
+                    onClick={() => {
+                      const link = `![[${cardFilePath(boardPath, card.id)}]]`;
+                      void navigator.clipboard?.writeText(link);
+                      setMenuIsOpen(false);
+                    }}
+                  >
+                    🔗 Copy link
+                  </button>
+                  <button
+                    className="board-card-del"
+                    aria-label="Delete card"
+                    onClick={() => void handleDeleteCard(card.id)}
+                  >
+                    🗑 Delete
+                  </button>
+                </>
               }
             >
               <button
