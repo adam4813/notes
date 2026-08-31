@@ -112,11 +112,11 @@ function markdownToHtml(md: string): string {
         return `<pre><code>${fence[1]}</code></pre>`;
       }
       // Unordered list
-      if (/^[*\-] /m.test(trimmed)) {
+      if (/^[*-] /m.test(trimmed)) {
         const items = trimmed
           .split("\n")
-          .filter((l) => /^[*\-] /.test(l))
-          .map((l) => `<li>${inlineMarkdown(l.replace(/^[*\-] /, ""))}</li>`)
+          .filter((l) => /^[*-] /.test(l))
+          .map((l) => `<li>${inlineMarkdown(l.replace(/^[*-] /, ""))}</li>`)
           .join("");
         return `<ul>${items}</ul>`;
       }
