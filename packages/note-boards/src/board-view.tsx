@@ -362,7 +362,7 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Rend
     };
     onRegisterContextMenu(builder);
     return () => onRegisterContextMenu(null);
-  }, [duplicateCard, handleDeleteCard, onRegisterContextMenu]);
+  }, [duplicateCard, handleDeleteCard, onRegisterContextMenu, path]);
 
   const addColumn = async () => {
     const values = await openPrompt({
