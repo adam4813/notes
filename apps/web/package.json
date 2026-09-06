@@ -20,8 +20,8 @@
     "@notes/plugin-host": "*",
     "@notes/shared": "*",
     "@notes/ui": "*",
-    "@tanstack/react-query": "^5.101.4",
-    "@tanstack/react-query-devtools": "^5.101.4",
+    "@tanstack/react-query": "^5.102.8",
+    "@tanstack/react-query-devtools": "^5.102.8",
     "buffer": "6.0.3",
     "gray-matter": "^4.0.3",
     "react": "^19.2.8",
@@ -30,8 +30,8 @@
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.0.5",
-    "vite": "^8.2.1"
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.0",
+    "vite": "^8.2.2"
   }
 }
