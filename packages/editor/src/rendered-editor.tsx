@@ -89,6 +89,7 @@ export function RenderedEditor({
   onChange,
   toolbarDisabled = false,
   onRegisterContextMenu,
+  path,
 }: Omit<RendererProps, "path"> & { toolbarDisabled?: boolean; path?: string }) {
   // Context wins over props; props are fallbacks for standalone usage.
   const {
@@ -462,14 +463,20 @@ export function RenderedEditor({
         {
           label: "Copy to New Note",
           run: () => {
-            void callbacks?.extractToNewNote?.(selectedText, "copy");
+            void callbacks?.extractToNewNote?.(
+              path ? `${selectedText}\n\nCopied from [[${path}]]` : selectedText,
+              "copy",
+            );
           },
         },
         {
           label: "Move to New Note",
           run: () => {
             void (async () => {
-              const notePath = await callbacks?.extractToNewNote?.(selectedText, "move");
+              const notePath = await callbacks?.extractToNewNote?.(
+                path ? `${selectedText}\n\nMoved from [[${path}]]` : selectedText,
+                "move",
+              );
               if (notePath) {
                 const noteName = notePath.replace(/\.md$/i, "").split("/").pop() ?? notePath;
                 editor.chain().focus().insertContentAt({ from, to }, `[[${noteName}]]`).run();
@@ -481,7 +488,7 @@ export function RenderedEditor({
       return items;
     });
     return () => onRegisterContextMenu(null);
-  }, [onRegisterContextMenu, editor, callbacks]);
+  }, [onRegisterContextMenu, editor, callbacks, path]);
 
   const handleDrop = useCallback(
     (event: ReactDragEvent<HTMLDivElement>) => {
