@@ -182,6 +182,7 @@ export function CalendarView({ value, path }: RendererProps) {
           setSelectedEvent={setSelectedEvent}
           onUpdateEvent={updateEventState}
           onDeleteEvent={handleDeleteEvent}
+          calendarPath={path}
         />
       )}
     </div>

@@ -1,4 +1,7 @@
-import type { Pane, Tab, WorkspaceAction, WorkspaceState } from "./types";
+import type { NavEntry, Pane, Tab, WorkspaceAction, WorkspaceState } from "./types";
+
+/** Maximum number of entries kept in the navigation history. */
+const NAV_MAX = 100;
 
 function generateId(prefix: string): string {
   const random = globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
@@ -14,6 +17,52 @@ function updatePane(
     ...state,
     panes: state.panes.map((pane) => (pane.id === paneId ? updater(pane) : pane)),
   };
+}
+
+/**
+ * Push `entry` to the navigation history of `state`, truncating any forward
+ * entries, and return the updated nav fields.  Returns undefined when the entry
+ * is identical to the current position (no-op).
+ */
+function pushNav(
+  state: WorkspaceState,
+  entry: NavEntry,
+): Pick<WorkspaceState, "navHistory" | "navIndex"> | undefined {
+  const current = state.navHistory[state.navIndex];
+  if (current && current.path === entry.path) {
+    // Already at this location — update title in place if it changed.
+    if (current.title === entry.title) return undefined;
+    const navHistory = [...state.navHistory];
+    navHistory[state.navIndex] = entry;
+    return { navHistory, navIndex: state.navIndex };
+  }
+  // Truncate any forward entries and append the new one.
+  const base = state.navHistory.slice(0, state.navIndex + 1);
+  const navHistory = [...base, entry].slice(-NAV_MAX);
+  return { navHistory, navIndex: navHistory.length - 1 };
+}
+
+/**
+ * Resolve the pane state when navigating to `entry` without pushing history.
+ * Activates an existing tab for the path, or opens a new tab.
+ */
+function applyNavEntry(state: WorkspaceState, entry: NavEntry): WorkspaceState {
+  // Find the pane that currently has this path open.
+  for (const pane of state.panes) {
+    const tab = pane.tabs.find((t) => t.path === entry.path);
+    if (tab) {
+      const next = updatePane(state, pane.id, (p) => ({ ...p, activeTabId: tab.id }));
+      return { ...next, activePaneId: pane.id };
+    }
+  }
+  // Not open anywhere — open it as a new tab in the active pane.
+  const pane = state.panes.find((p) => p.id === state.activePaneId) ?? state.panes[0];
+  const tab: Tab = { id: generateId("tab"), path: entry.path, title: entry.title };
+  return updatePane(state, pane.id, (p) => ({
+    ...p,
+    tabs: [...p.tabs, tab],
+    activeTabId: tab.id,
+  }));
 }
 
 export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): WorkspaceState {
@@ -81,15 +130,36 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
     case "openFile": {
       const pane = state.panes.find((p) => p.id === state.activePaneId) ?? state.panes[0];
       const existing = pane.tabs.find((tab) => tab.path === action.path);
+      const navUpdate = pushNav(state, { path: action.path, title: action.title });
       if (existing) {
-        return updatePane(state, pane.id, (p) => ({ ...p, activeTabId: existing.id }));
+        const next = updatePane(state, pane.id, (p) => ({ ...p, activeTabId: existing.id }));
+        return navUpdate ? { ...next, ...navUpdate } : next;
       }
       const tab: Tab = { id: generateId("tab"), path: action.path, title: action.title };
-      return updatePane(state, pane.id, (p) => ({
+      const next = updatePane(state, pane.id, (p) => ({
         ...p,
         tabs: [...p.tabs, tab],
         activeTabId: tab.id,
       }));
+      return navUpdate ? { ...next, ...navUpdate } : next;
+    }
+
+    case "navBack": {
+      if (state.navIndex <= 0) return state;
+      const navIndex = state.navIndex - 1;
+      const entry = state.navHistory[navIndex];
+      if (!entry) return state;
+      const next = applyNavEntry(state, entry);
+      return { ...next, navIndex };
+    }
+
+    case "navForward": {
+      if (state.navIndex >= state.navHistory.length - 1) return state;
+      const navIndex = state.navIndex + 1;
+      const entry = state.navHistory[navIndex];
+      if (!entry) return state;
+      const next = applyNavEntry(state, entry);
+      return { ...next, navIndex };
     }
 
     case "activateTab":
