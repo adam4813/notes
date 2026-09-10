@@ -1,6 +1,6 @@
 {
   "name": "@notes/note-tables",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "private": true,
   "description": "Table (lightweight database) note type (first-party plugin).",
   "type": "module",
