@@ -5,6 +5,20 @@ import {
   parseFrontmatter,
 } from "@notes/web/src/lib/frontmatter";
 
+/** Returns the companion dot-folder for a calendar's event files (relative to tome root). */
+export function eventDotFolder(calendarPath: string): string {
+  const lastSlash = calendarPath.lastIndexOf("/");
+  const dir = lastSlash !== -1 ? calendarPath.slice(0, lastSlash + 1) : "";
+  const filename = lastSlash !== -1 ? calendarPath.slice(lastSlash + 1) : calendarPath;
+  const base = filename.endsWith(".md") ? filename.slice(0, -3) : filename;
+  return `${dir}.${base}.events`;
+}
+
+/** Returns the file path for a single event within a calendar (relative to tome root). */
+export function eventFilePath(calendarPath: string, eventId: string): string {
+  return `${eventDotFolder(calendarPath)}/${eventId}.md`;
+}
+
 export interface RichEvent {
   id: string;
   title: string;
