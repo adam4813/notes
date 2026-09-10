@@ -2,6 +2,7 @@ import { FindBar } from "@notes/web/src/components/find-bar";
 import { buildContent, parseFrontmatter } from "@notes/web/src/lib/frontmatter";
 import { useAppServices } from "@notes/web/src/state/app-services";
 import { useEditorCallbacks } from "@notes/web/src/state/use-editor-callbacks";
+import type { ContextMenuEntry } from "@notes/ui";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import { Table } from "@tiptap/extension-table";
@@ -87,6 +88,8 @@ export function RenderedEditor({
   value,
   onChange,
   toolbarDisabled = false,
+  onRegisterContextMenu,
+  path,
 }: Omit<RendererProps, "path"> & { toolbarDisabled?: boolean; path?: string }) {
   // Context wins over props; props are fallbacks for standalone usage.
   const {
@@ -98,7 +101,7 @@ export function RenderedEditor({
     onFocus,
     focusRequest,
   } = useRenderedPaneSync() ?? {};
-  const callbacks = useEditorCallbacks(isStandalone);
+  const { callbacks, promptDialog } = useEditorCallbacks(isStandalone);
   const { settings } = useAppServices();
   const [findOpen, setFindOpen] = useState(false);
   const currentParts = parseFrontmatter(value);
@@ -442,6 +445,51 @@ export function RenderedEditor({
     editor.commands.focus();
   }, [editor, focusRequest, focusRequest?.token]);
 
+  // Register context menu builder so the parent NoteEditor can show
+  // "Copy to New Note" / "Move to New Note" when the user right-clicks a
+  // non-empty selection inside the rendered pane.
+  useEffect(() => {
+    if (!onRegisterContextMenu) return;
+    onRegisterContextMenu((target) => {
+      if (!editor) return null;
+      const { selection } = editor.state;
+      if (selection.empty) return null;
+      const selectedText = editor.state.doc.textBetween(selection.from, selection.to, "\n");
+      if (!selectedText.trim()) return null;
+      // Only activate for right-clicks inside the rendered column.
+      if (target && !target.closest(".editor-column--rendered")) return null;
+      const { from, to } = selection;
+      const items: ContextMenuEntry[] = [
+        {
+          label: "Copy to New Note",
+          run: () => {
+            void callbacks?.extractToNewNote?.(
+              path ? `${selectedText}\n\nCopied from [[${path}]]` : selectedText,
+              "copy",
+            );
+          },
+        },
+        {
+          label: "Move to New Note",
+          run: () => {
+            void (async () => {
+              const notePath = await callbacks?.extractToNewNote?.(
+                path ? `${selectedText}\n\nMoved from [[${path}]]` : selectedText,
+                "move",
+              );
+              if (notePath) {
+                const noteName = notePath.replace(/\.md$/i, "").split("/").pop() ?? notePath;
+                editor.chain().focus().insertContentAt({ from, to }, `[[${noteName}]]`).run();
+              }
+            })();
+          },
+        },
+      ];
+      return items;
+    });
+    return () => onRegisterContextMenu(null);
+  }, [onRegisterContextMenu, editor, callbacks, path]);
+
   const handleDrop = useCallback(
     (event: ReactDragEvent<HTMLDivElement>) => {
       if (!editor) {
@@ -625,6 +673,7 @@ export function RenderedEditor({
           />
         )}
       </div>
+      {promptDialog}
     </div>
   );
 }
