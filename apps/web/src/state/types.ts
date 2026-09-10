@@ -18,17 +18,29 @@ export interface Pane {
   activeTabId?: string;
 }
 
+/** A single entry in the navigation history (path + display title). */
+export interface NavEntry {
+  path: string;
+  title: string;
+}
+
 export interface WorkspaceState {
   tree: FileEntry[];
   panes: Pane[];
   activePaneId: string;
   theme: ThemeMode;
   status: string;
+  /** Ordered list of visited locations. */
+  navHistory: NavEntry[];
+  /** Index of the currently active entry in navHistory (−1 when empty). */
+  navIndex: number;
 }
 
 export type WorkspaceAction =
   | { type: "setTree"; tree: FileEntry[] }
   | { type: "openFile"; path: string; title: string }
+  | { type: "navBack" }
+  | { type: "navForward" }
   | { type: "closeTab"; paneId: string; tabId: string }
   | { type: "closeOtherTabs"; paneId: string; tabId: string }
   | { type: "closeTabsToRight"; paneId: string; tabId: string }
@@ -70,5 +82,7 @@ export function createInitialState(theme: ThemeMode): WorkspaceState {
     activePaneId: paneId,
     theme,
     status: "Ready",
+    navHistory: [],
+    navIndex: -1,
   };
 }
