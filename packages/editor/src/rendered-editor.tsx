@@ -22,6 +22,7 @@ import {
 } from "react";
 import { Markdown } from "tiptap-markdown";
 import { Embed } from "./embed-extension";
+import { TabGroupExtension } from "./tabs-extension";
 import { ImageNode } from "./image-node";
 import { StyledTextMark } from "./styled-text-mark";
 import { SuggestionPopup } from "./suggestion-popup";
@@ -187,6 +188,7 @@ export function RenderedEditor({
       StyledTextMark,
       Markdown.configure({ html: true, tightLists: true, transformPastedText: true }),
       WikilinkDecorator,
+      TabGroupExtension,
       ...(callbacks?.renderEmbed
         ? [
             Embed.configure({
