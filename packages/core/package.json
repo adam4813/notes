@@ -13,6 +13,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.103.1"
+    "@tanstack/react-query": "^5.103.2"
   }
 }
