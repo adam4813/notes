@@ -41,6 +41,7 @@ export function TableGrid({ value, onChange }: RendererProps) {
   const [editing, setEditing] = useState<CellPos | null>(null);
   const [draft, setDraft] = useState("");
   const [menuCol, setMenuCol] = useState<number | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -160,6 +161,7 @@ export function TableGrid({ value, onChange }: RendererProps) {
       const rows = model.rows.map((row) => row.filter((_, index) => index !== c));
       commit({ ...model, columns, rows });
       setMenuCol(null);
+      setMenuPosition(null);
     },
     [commit, model, columnCount],
   );
@@ -181,6 +183,7 @@ export function TableGrid({ value, onChange }: RendererProps) {
       );
       commit({ ...model, columns });
       setMenuCol(null);
+      setMenuPosition(null);
     },
     [commit, model, openPrompt],
   );
@@ -223,6 +226,7 @@ export function TableGrid({ value, onChange }: RendererProps) {
       });
       commit({ ...model, columns });
       setMenuCol(null);
+      setMenuPosition(null);
     },
     [commit, model, openPrompt],
   );
@@ -254,6 +258,7 @@ export function TableGrid({ value, onChange }: RendererProps) {
       );
       commit({ ...model, columns });
       setMenuCol(null);
+      setMenuPosition(null);
     },
     [commit, model, openPrompt],
   );
@@ -267,6 +272,7 @@ export function TableGrid({ value, onChange }: RendererProps) {
       });
       commit({ ...model, rows });
       setMenuCol(null);
+      setMenuPosition(null);
     },
     [commit, model],
   );
@@ -408,6 +414,7 @@ export function TableGrid({ value, onChange }: RendererProps) {
                       <PopupMenu
                         open={menuCol === c}
                         onClose={() => setMenuCol(null)}
+                        menuPosition={menuPosition}
                         menu={
                           <>
                             <button onClick={() => void renameColumn(c)}>Rename…</button>
@@ -437,7 +444,11 @@ export function TableGrid({ value, onChange }: RendererProps) {
                         <button
                           className="grid-head-menu"
                           aria-label={`Options for ${column.name}`}
-                          onClick={() => setMenuCol((prev) => (prev === c ? null : c))}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuCol((prev) => (prev === c ? null : c));
+                            setMenuPosition({ x: e.clientX, y: e.clientY });
+                          }}
                         >
                           ▾
                         </button>

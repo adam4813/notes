@@ -379,8 +379,9 @@ export function EditorToolbar({ editor, disabled = false, trailing }: EditorTool
           </div>
           {button("image", "🖼", "Insert image by URL", false, () => void insertImage())}
           {button("hr", "―", "Horizontal rule", false, () => chain().setHorizontalRule().run())}
+          <span className="tb-sep" />
+          {trailing}
         </div>
-        {trailing && <div className="editor-toolbar-trailing">{trailing}</div>}
       </div>
       {promptDialog}
     </>

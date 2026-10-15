@@ -36,6 +36,7 @@ export function BoardCard({
   const [expanded, setExpanded] = useState(false);
   const [editingTitle, setEditingTitle] = useState(isNew ?? false);
   const [menuIsOpen, setMenuIsOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   // Track whether this card was created fresh and hasn't been edited yet
@@ -213,7 +214,11 @@ export function BoardCard({
             </button>
             <PopupMenu
               open={menuIsOpen}
-              onClose={() => setMenuIsOpen(false)}
+              onClose={() => {
+                setMenuIsOpen(false);
+                setMenuPosition(null);
+              }}
+              menuPosition={menuPosition}
               menu={
                 <>
                   <button
@@ -223,6 +228,7 @@ export function BoardCard({
                       const link = `![[${cardFilePath(boardPath, card.id)}]]`;
                       void navigator.clipboard?.writeText(link);
                       setMenuIsOpen(false);
+                      setMenuPosition(null);
                     }}
                   >
                     🔗 Copy link
@@ -243,7 +249,10 @@ export function BoardCard({
                 aria-label={`${card.title} menu`}
                 aria-haspopup="menu"
                 aria-expanded={menuIsOpen}
-                onClick={() => setMenuIsOpen((open) => !open)}
+                onClick={(e) => {
+                  setMenuPosition({ x: e.clientX, y: e.clientY });
+                  setMenuIsOpen((open) => !open);
+                }}
               >
                 ···
               </button>
