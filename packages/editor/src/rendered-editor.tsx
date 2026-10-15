@@ -594,7 +594,7 @@ export function RenderedEditor({
           editor={editor}
           disabled={toolbarDisabled}
           trailing={
-            <div className="editor-toolbar-meta">
+            <>
               <button onClick={() => setShowLineNumbers((prev) => !prev)}>LN</button>
               {!isStandalone && (
                 <label className="editor-width-control">
@@ -640,7 +640,7 @@ export function RenderedEditor({
                   </div>
                 )}
               </div>
-            </div>
+            </>
           }
         />
         <div

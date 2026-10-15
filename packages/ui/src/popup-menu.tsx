@@ -7,6 +7,7 @@ export function PopupMenu({
   menu,
   role = "menu",
   style,
+  menuPosition,
 }: {
   open: boolean;
   onClose: () => void;
@@ -14,6 +15,7 @@ export function PopupMenu({
   menu?: React.ReactNode;
   role?: string;
   style?: React.CSSProperties;
+  menuPosition?: { x: number; y: number } | null;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -42,12 +44,20 @@ export function PopupMenu({
       {children}
       {open && (
         <div
-          className="popup-menu"
-          role={role}
-          onMouseDown={(e) => e.stopPropagation()}
-          style={style}
+          style={{
+            position: menuPosition ? "fixed" : undefined,
+            left: menuPosition?.x,
+            top: menuPosition?.y,
+          }}
         >
-          {menu}
+          <div
+            className="popup-menu"
+            role={role}
+            onMouseDown={(e) => e.stopPropagation()}
+            style={style}
+          >
+            {menu}
+          </div>
         </div>
       )}
     </div>
