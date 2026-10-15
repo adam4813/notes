@@ -1,6 +1,6 @@
 {
   "name": "@notes/server",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "private": true,
   "type": "module",
   "main": "./src/main.ts",
@@ -11,8 +11,8 @@
   },
   "dependencies": {
     "@fastify/rate-limit": "^11.2.0",
-    "@fastify/static": "^10.1.4",
-    "@fastify/websocket": "^11.3.0",
+    "@fastify/static": "^10.1.5",
+    "@fastify/websocket": "^11.3.1",
     "@notes/core": "*",
     "@notes/index": "*",
     "@notes/note-boards": "*",
@@ -30,6 +30,6 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "tsx": "^4.23.13"
+    "tsx": "^4.23.15"
   }
 }
