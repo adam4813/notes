@@ -19,9 +19,9 @@
     "package:linux": "electron-builder --linux"
   },
   "devDependencies": {
-    "@electron/rebuild": "^4.2.0",
+    "@electron/rebuild": "^4.2.1",
     "cross-env": "^10.1.0",
-    "electron": "44.5.1",
+    "electron": "44.7.0",
     "electron-builder": "^26.15.3",
     "png2icons": "^2.0.1",
     "sharp": "^0.35.5",

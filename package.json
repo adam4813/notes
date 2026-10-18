@@ -36,13 +36,13 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
-    "@playwright/test": "^1.63.0",
-    "@tanstack/eslint-plugin-query": "^5.104.0",
+    "@playwright/test": "^1.64.0",
+    "@tanstack/eslint-plugin-query": "^5.104.1",
     "@tiptap/core": "^3.31.4",
     "@tiptap/pm": "^3.31.4",
-    "@types/node": "^26.6.3",
+    "@types/node": "^26.6.4",
     "7zip-bin": "^5.2.0",
-    "concurrently": "^10.0.5",
+    "concurrently": "^10.0.6",
     "env-cmd": "^11.0.0",
     "esbuild": "^0.28.2",
     "eslint": "^9.39.5",
@@ -52,7 +52,7 @@
     "husky": "^9.1.7",
     "prettier": "^3.9.9",
     "typescript": "^6.0.0",
-    "typescript-eslint": "^8.71.0",
+    "typescript-eslint": "^8.71.1",
     "vitest": "^5.0.3"
   },
   "allowScripts": {
