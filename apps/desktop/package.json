@@ -19,17 +19,17 @@
     "package:linux": "electron-builder --linux"
   },
   "devDependencies": {
-    "@electron/rebuild": "^4.2.0",
+    "@electron/rebuild": "^4.2.1",
     "cross-env": "^10.1.0",
-    "electron": "44.5.1",
-    "electron-builder": "^26.15.3",
+    "electron": "44.7.2",
+    "electron-builder": "^26.17.0",
     "png2icons": "^2.0.1",
     "sharp": "^0.35.5",
-    "tsdown": "^0.23.0",
+    "tsdown": "^0.23.1",
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "electron-updater": "^6.8.9",
+    "electron-updater": "^6.8.10",
     "better-sqlite3": "^13.0.3"
   }
 }
