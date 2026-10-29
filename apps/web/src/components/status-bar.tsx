@@ -82,8 +82,8 @@ export function StatusBar({
       unsubLog();
       unsubClear();
     };
-  // Re-subscribe when consoleOpen changes so the guard captures the latest value
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Re-subscribe when consoleOpen changes so the guard captures the latest value
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [consoleOpen]);
 
   const themeOptions: { value: string; label: string }[] = [

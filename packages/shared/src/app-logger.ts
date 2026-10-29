@@ -19,12 +19,7 @@ const clearListeners = new Set<() => void>();
 let counter = 0;
 let intercepted = false;
 
-export function appLog(
-  level: LogLevel,
-  message: string,
-  source = "App",
-  stack?: string,
-): void {
+export function appLog(level: LogLevel, message: string, source = "App", stack?: string): void {
   const entry: LogEntry = {
     id: `log-${Date.now()}-${++counter}`,
     level,
@@ -98,7 +93,9 @@ export function interceptConsole(): () => void {
     (console as any)[method] = (...args: unknown[]) => {
       orig[method].call(console, ...(args as Parameters<typeof orig.error>));
       const message = args
-        .map((a) => (typeof a === "string" ? a : a instanceof Error ? a.message : JSON.stringify(a)))
+        .map((a) =>
+          typeof a === "string" ? a : a instanceof Error ? a.message : JSON.stringify(a),
+        )
         .join(" ");
       const err = args.find((a): a is Error => a instanceof Error);
       appLog(level, message, "Client", err?.stack);

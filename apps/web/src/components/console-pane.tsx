@@ -10,8 +10,6 @@ import {
 } from "@notes/shared";
 import "./console-pane.css";
 
-const LEVEL_ORDER: Record<LogLevel, number> = { error: 0, warn: 1, info: 2, debug: 3 };
-
 function formatTime(ts: number): string {
   const d = new Date(ts);
   const hh = String(d.getHours()).padStart(2, "0");
@@ -40,9 +38,7 @@ function LogEntryRow({ entry }: { entry: LogEntry }) {
             {expanded ? "▲" : "▼"}
           </button>
         )}
-        {expanded && entry.stack && (
-          <pre className="console-entry__stack">{entry.stack}</pre>
-        )}
+        {expanded && entry.stack && <pre className="console-entry__stack">{entry.stack}</pre>}
       </div>
     </div>
   );
@@ -147,24 +143,16 @@ export function ConsolePane({
     });
   }, []);
 
+  // Buffer is insertion-ordered; filter preserves order so no sort needed.
   const visibleEntries = entries.filter((e) => {
     if (e.level === "debug" && !verbose) return false;
     return activeFilters.has(e.level);
   });
 
-  // Sort by timestamp (buffer is already ordered, but be safe)
-  visibleEntries.sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level] || a.timestamp - b.timestamp);
-
   if (!open) return null;
 
   return (
-    <div
-      className="console-pane"
-      ref={paneRef}
-      style={{ height }}
-      aria-label="Console"
-      role="log"
-    >
+    <div className="console-pane" ref={paneRef} style={{ height }} aria-label="Console" role="log">
       <div
         className={`console-drag-handle${dragging ? " console-drag-handle--dragging" : ""}`}
         onPointerDown={handleDragDown}
@@ -192,11 +180,7 @@ export function ConsolePane({
           Verbose
         </button>
         <span className="console-spacer" />
-        <button
-          className="console-header-btn"
-          onClick={clearLog}
-          aria-label="Clear console"
-        >
+        <button className="console-header-btn" onClick={clearLog} aria-label="Clear console">
           Clear
         </button>
         {/* TODO: Add "Preserve until app close" toggle here */}

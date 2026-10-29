@@ -9,7 +9,7 @@ import { emptyMermaid, mermaidNoteType } from "@notes/note-mermaid";
 import { emptyTableMarkdown, tableNoteType } from "@notes/note-tables";
 import type { PluginManifest } from "@notes/plugin-host";
 import type { ThemeMeta } from "@notes/shared";
-import { appLog, clearLog, interceptConsole } from "@notes/shared";
+import { clearLog, interceptConsole } from "@notes/shared";
 import { api, type FileEntry } from "./api/client";
 import { flushQueue, pendingCount } from "./api/offline-queue";
 import { connectTomeChanges } from "./api/ws";
@@ -96,7 +96,6 @@ export function App() {
   const [sidebarView, setSidebarView] = useState<SidebarView>("explorer");
   const [sidebarSearchQuery, setSidebarSearchQuery] = useState("");
   const [renameRequestPath, setRenameRequestPath] = useState<string | null>(null);
-  const shellRef = useRef<HTMLDivElement>(null);
   // tomeActive controls whether the Tome is loaded and shown. Starts as false
   // when the app is opened via OS file association (?standalone=1 URL param).
   const [tomeActive, setTomeActive] = useState(
@@ -544,7 +543,6 @@ export function App() {
     return connectTomeChanges((change) => {
       void refreshTree();
       dispatch({ type: "setStatus", status: `${change.kind}: ${change.path}` });
-      appLog("info", `File ${change.kind}: ${change.path}`, "App");
     });
   }, [refreshTree, dispatch, tomeActive]);
 
@@ -939,7 +937,6 @@ export function App() {
         <UpdateBanner />
         <div
           className="shell"
-          ref={shellRef}
           style={
             {
               "--console-h": state.consoleOpen ? `${state.consoleHeight}px` : "0px",

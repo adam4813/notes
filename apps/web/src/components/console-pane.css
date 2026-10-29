@@ -56,7 +56,9 @@
   color: var(--fg-muted);
   cursor: pointer;
   line-height: 1.6;
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
 }
 
 .console-chip:hover {
