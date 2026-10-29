@@ -76,6 +76,15 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
     case "setStatus":
       return { ...state, status: action.status };
 
+    case "openConsole":
+      return { ...state, consoleOpen: true };
+
+    case "closeConsole":
+      return { ...state, consoleOpen: false };
+
+    case "setConsoleHeight":
+      return { ...state, consoleHeight: action.height };
+
     case "renamePath":
       return {
         ...state,

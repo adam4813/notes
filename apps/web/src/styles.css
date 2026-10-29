@@ -196,7 +196,7 @@ button {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-rows: var(--ribbon-h) 1fr var(--status-h);
+  grid-template-rows: var(--ribbon-h) 1fr var(--console-h, 0px) var(--status-h);
   gap: 0;
   padding: 0;
   background: var(--bg-app);
@@ -966,6 +966,42 @@ button {
 
 .status-path {
   opacity: 0.9;
+}
+
+.status-console-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 2px 7px;
+  font-size: 12px;
+  position: relative;
+}
+
+.status-console-btn--open {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.console-badge {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.console-badge--error {
+  background: #f87171;
+}
+
+.console-badge--warn {
+  background: #fbbf24;
+}
+
+.console-badge-count {
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.95;
 }
 
 .status-plugin-item {
