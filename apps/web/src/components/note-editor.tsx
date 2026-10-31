@@ -394,6 +394,13 @@ export function NoteEditor({
         oid={historySelection.oid}
         onClose={closeHistory}
         onRestore={async (restored) => {
+          // Cancel any pending debounced autosave: a timer armed by a pre-restore
+          // edit would otherwise fire after the write and clobber the restored
+          // content with the stale edit.
+          if (saveTimer.current) {
+            clearTimeout(saveTimer.current);
+            saveTimer.current = undefined;
+          }
           try {
             if (writeFn) {
               await writeFn(restored);

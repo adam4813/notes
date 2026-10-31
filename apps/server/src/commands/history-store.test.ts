@@ -90,6 +90,33 @@ describe("history-store", () => {
     ]);
   });
 
+  it("lists a renamed note's current version with restorable content", async () => {
+    await tome.write("old-name.md", "alpha\n");
+    await snapshot(root, "first");
+    await tome.write("old-name.md", "alpha\nbeta\n");
+    await snapshot(root, "second");
+    // A pure rename (content unchanged) is exactly what git rename-detection
+    // would "follow" across — the case that previously surfaced empty,
+    // unrestorable blobs for the pre-rename versions.
+    await tome.rename("old-name.md", "new-name.md");
+    const renamed = await snapshot(root, "renamed");
+
+    // History under the new name starts at the rename, and every listed
+    // version must resolve to real content (never an empty blob that a restore
+    // would clobber the file with).
+    const history = await fileHistory(tome, "new-name.md");
+    expect(history.initialized).toBe(true);
+    expect(history.versions.length).toBeGreaterThanOrEqual(1);
+    expect(history.versions[0].message).toBe("renamed");
+    for (const version of history.versions) {
+      const diff = await versionDiff(tome, "new-name.md", version.oid);
+      expect(diff.content.length).toBeGreaterThan(0);
+    }
+
+    const diff = await versionDiff(tome, "new-name.md", renamed.oid!);
+    expect(diff.content).toBe("alpha\nbeta\n");
+  });
+
   it("excludes the rebuildable index from snapshots via .gitignore", async () => {
     await tome.mkdir(".notes");
     await tome.write(".notes/index.db", "binary-ish");

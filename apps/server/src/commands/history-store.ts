@@ -158,9 +158,14 @@ export async function fileHistory(
     return { initialized: false, versions: [], hasUncommittedChanges: false };
   }
 
+  // Deliberately not using `follow: true`: rename-following would list
+  // pre-rename commits under the *current* path, but their blob only exists
+  // under the old name, so both the change counts and the restorable content
+  // would resolve to empty. Listing a version we cannot restore risks data
+  // loss, so a renamed note's history simply starts at its current name.
   let commits: Awaited<ReturnType<typeof git.log>> = [];
   try {
-    commits = await git.log({ fs, dir, filepath, force: true, follow: true, depth: limit });
+    commits = await git.log({ fs, dir, filepath, force: true, depth: limit });
   } catch {
     commits = [];
   }
