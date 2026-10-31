@@ -8,9 +8,13 @@ describe("chokidarEventToKind", () => {
     expect(chokidarEventToKind("unlink")).toBe("deleted");
   });
 
-  it("ignores directory and unknown events", () => {
-    expect(chokidarEventToKind("addDir")).toBeUndefined();
-    expect(chokidarEventToKind("unlinkDir")).toBeUndefined();
+  it("maps directory lifecycle events so folder changes refresh the explorer", () => {
+    expect(chokidarEventToKind("addDir")).toBe("created");
+    expect(chokidarEventToKind("unlinkDir")).toBe("deleted");
+  });
+
+  it("ignores unknown events", () => {
     expect(chokidarEventToKind("ready")).toBeUndefined();
+    expect(chokidarEventToKind("raw")).toBeUndefined();
   });
 });
