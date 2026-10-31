@@ -47,7 +47,6 @@
   color: var(--fg-muted);
   border-bottom: 1px solid var(--border);
   text-align: center;
-  user-select: none;
 }
 
 .calendar-cell {
@@ -62,7 +61,6 @@
   color: var(--fg);
   text-align: left;
   overflow: hidden;
-  user-select: none;
 }
 
 .calendar-cell--muted {
