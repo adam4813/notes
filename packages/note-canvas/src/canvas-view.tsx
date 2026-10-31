@@ -12,6 +12,7 @@ import {
 } from "react";
 import { NoteEditor } from "@notes/web/src/components/note-editor";
 import { NoteToolbar, usePromptDialog, type RendererProps } from "@notes/editor";
+import type { ContextMenuEntry, CustomContextMenuBuilder } from "@notes/ui";
 import {
   parseCanvas,
   serializeCanvas,
@@ -260,7 +261,13 @@ function center(node: CanvasNode): { x: number; y: number } {
   return { x: node.x + node.width / 2, y: node.y + node.height / 2 };
 }
 
-export function CanvasView({ value, onChange, callbacks, path }: RendererProps) {
+export function CanvasView({
+  value,
+  onChange,
+  callbacks,
+  path,
+  onRegisterContextMenu,
+}: RendererProps) {
   const { openPrompt, promptDialog } = usePromptDialog();
   const undoStack = useUndoStack();
   const [data, setData] = useState<CanvasData>(() => parseCanvas(value));
@@ -668,6 +675,55 @@ export function CanvasView({ value, onChange, callbacks, path }: RendererProps) 
     };
   }, [deleteSelection]);
 
+  // Context menu: register a canvas-specific builder so right-click offers add /
+  // delete actions instead of the host's generic clipboard commands. The builder
+  // closes over rapidly-changing canvas state, so keep the latest in a ref and
+  // register a stable wrapper once (ref writes in this file are lint-exempt).
+  const ctxBuilderRef = useRef<CustomContextMenuBuilder>(() => null);
+  ctxBuilderRef.current = (target) => {
+    const nodeEl = target?.closest<HTMLElement>("[data-node-id]");
+    const nodeId = nodeEl?.dataset.nodeId;
+    if (nodeId) {
+      const node = data.nodes.find((n) => n.id === nodeId);
+      const items: ContextMenuEntry[] = [];
+      if (node?.type === "text") {
+        items.push({
+          label: "Edit Text",
+          run: () => {
+            setSelection({ kind: "node", id: nodeId });
+            setEditing(nodeId);
+          },
+        });
+      }
+      items.push({
+        label: "Delete",
+        danger: true,
+        run: () => {
+          commit({
+            nodes: data.nodes.filter((n) => n.id !== nodeId),
+            edges: data.edges.filter((e) => e.fromNode !== nodeId && e.toNode !== nodeId),
+          });
+          setSelection((prev) => (prev?.kind === "node" && prev.id === nodeId ? null : prev));
+        },
+      });
+      return items;
+    }
+    const items: ContextMenuEntry[] = [
+      { label: "Add Text", run: addText },
+      { label: "Embed Note", run: () => void addFile() },
+      { label: "Add Link", run: () => void addLink() },
+      { separator: true },
+      { label: "Fit View", run: resetView },
+    ];
+    return items;
+  };
+
+  useEffect(() => {
+    if (!onRegisterContextMenu) return;
+    onRegisterContextMenu((target) => ctxBuilderRef.current(target));
+    return () => onRegisterContextMenu(null);
+  }, [onRegisterContextMenu]);
+
   const setEdgeLabel = (edgeId: string, label: string) =>
     commit({
       ...data,
@@ -864,6 +920,7 @@ export function CanvasView({ value, onChange, callbacks, path }: RendererProps) 
             return (
               <div
                 key={node.id}
+                data-node-id={node.id}
                 className={`canvas-node canvas-node--${node.type} ${isSelected ? "canvas-node--selected" : ""}`}
                 style={{
                   left: node.x,

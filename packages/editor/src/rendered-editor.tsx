@@ -1,5 +1,6 @@
 import { FindBar } from "@notes/web/src/components/find-bar";
 import { buildContent, parseFrontmatter } from "@notes/web/src/lib/frontmatter";
+import { copyImageToClipboard } from "@notes/web/src/lib/images";
 import { useAppServices } from "@notes/web/src/state/app-services";
 import { useEditorCallbacks } from "@notes/web/src/state/use-editor-callbacks";
 import type { ContextMenuEntry } from "@notes/ui";
@@ -34,6 +35,29 @@ import { WikilinkDecorator } from "./wikilink-decorator";
 
 interface MarkdownStorage {
   markdown: { getMarkdown: () => string };
+}
+
+/**
+ * Removes the TipTap image node backing a rendered `<img>` element.
+ *
+ * Resolves the document position from the DOM node and deletes the inline image
+ * node there. Checks the position and the one before it since `posAtDOM` for a
+ * leaf node can land on either side.
+ */
+function deleteImageNode(editor: Editor, image: HTMLImageElement): void {
+  const pos = editor.view.posAtDOM(image, 0);
+  for (const candidate of [pos, pos - 1]) {
+    if (candidate < 0) continue;
+    const node = editor.state.doc.nodeAt(candidate);
+    if (node && node.type.name === "image") {
+      editor
+        .chain()
+        .focus()
+        .deleteRange({ from: candidate, to: candidate + node.nodeSize })
+        .run();
+      return;
+    }
+  }
 }
 
 /**
@@ -451,19 +475,46 @@ export function RenderedEditor({
     editor.commands.focus();
   }, [editor, focusRequest, focusRequest?.token]);
 
-  // Register context menu builder so the parent NoteEditor can show
-  // "Copy to New Note" / "Move to New Note" when the user right-clicks a
-  // non-empty selection inside the rendered pane.
+  // Register context menu builder so the parent NoteEditor can show image
+  // actions on an embedded image, and "Copy to New Note" / "Move to New Note"
+  // when the user right-clicks a non-empty selection inside the rendered pane.
   useEffect(() => {
     if (!onRegisterContextMenu) return;
     onRegisterContextMenu((target) => {
       if (!editor) return null;
+      // Only activate for right-clicks inside the rendered column.
+      if (target && !target.closest(".editor-column--rendered")) return null;
+
+      // Embedded image: offer copy / copy address / delete.
+      const image = target?.closest<HTMLImageElement>("img");
+      if (image) {
+        const address = image.src;
+        const items: ContextMenuEntry[] = [
+          {
+            label: "Copy Image",
+            run: () => {
+              void copyImageToClipboard(address).then((ok) => {
+                if (!ok) {
+                  void navigator.clipboard.writeText(address);
+                }
+              });
+            },
+          },
+          { label: "Copy Image Address", run: () => void navigator.clipboard.writeText(address) },
+          { separator: true },
+          {
+            label: "Delete Image",
+            danger: true,
+            run: () => deleteImageNode(editor, image),
+          },
+        ];
+        return { items, includeBasicActions: false };
+      }
+
       const { selection } = editor.state;
       if (selection.empty) return null;
       const selectedText = editor.state.doc.textBetween(selection.from, selection.to, "\n");
       if (!selectedText.trim()) return null;
-      // Only activate for right-clicks inside the rendered column.
-      if (target && !target.closest(".editor-column--rendered")) return null;
       const { from, to } = selection;
       const items: ContextMenuEntry[] = [
         {
@@ -491,7 +542,7 @@ export function RenderedEditor({
           },
         },
       ];
-      return items;
+      return { items, includeBasicActions: true };
     });
     return () => onRegisterContextMenu(null);
   }, [onRegisterContextMenu, editor, callbacks, path]);

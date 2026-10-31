@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { usePromptDialog, type RendererProps } from "@notes/editor";
 import { debounce } from "@notes/core";
-import { type CustomContextMenuBuilder } from "@notes/ui";
+import { type ContextMenuEntry, type CustomContextMenuBuilder } from "@notes/ui";
 import { useUndoStack } from "@notes/web/src/state/undo-context";
 import { BoardColumn } from "./board-column";
 import { BoardCardModal } from "./board-card-modal";
@@ -325,46 +325,7 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Rend
     [path],
   );
 
-  // Register a context menu builder with the parent NoteEditor so right-clicking
-  // a card shows card-specific actions instead of the generic edit menu.
-  useEffect(() => {
-    if (!onRegisterContextMenu) return;
-    const builder: CustomContextMenuBuilder = (target) => {
-      const cardEl = target?.closest("[data-card-id]");
-      // Return [] (not null) so the generic edit menu (undo/redo/cut…) is
-      // suppressed entirely — those commands don't apply to board operations.
-      if (!cardEl) return [];
-      const cardId = cardEl.getAttribute("data-card-id");
-      if (!cardId) return [];
-      const card = cardsRef.current.get(cardId);
-      if (!card) return [];
-      return [
-        {
-          label: "Copy link",
-          run: () => {
-            const link = `![[${cardFilePath(path, cardId)}]]`;
-            void navigator.clipboard?.writeText(link);
-          },
-        },
-        {
-          label: "Duplicate card",
-          run: () => void duplicateCard(card),
-        },
-        { separator: true as const },
-        {
-          label: "Delete card",
-          run: () => {
-            void handleDeleteCard(cardId);
-          },
-          danger: true,
-        },
-      ];
-    };
-    onRegisterContextMenu(builder);
-    return () => onRegisterContextMenu(null);
-  }, [duplicateCard, handleDeleteCard, onRegisterContextMenu, path]);
-
-  const addColumn = async () => {
+  const addColumn = useCallback(async () => {
     const values = await openPrompt({
       title: "Add column",
       fields: [{ key: "name", label: "Column name", defaultValue: "New Column", required: true }],
@@ -373,32 +334,97 @@ export function BoardView({ value, onChange, path, onRegisterContextMenu }: Rend
     const name = values?.name.trim();
     if (!name) return;
     commitColumns([...model.columns, { name, cards: [] }]);
-  };
+  }, [openPrompt, commitColumns, model.columns]);
 
-  const renameColumn = async (colName: string) => {
-    const values = await openPrompt({
-      title: "Rename column",
-      fields: [{ key: "name", label: "Column name", defaultValue: colName, required: true }],
-      confirmLabel: "Rename",
-    });
-    const name = values?.name.trim();
-    if (!name || name === colName) return;
-    commitColumns(model.columns.map((c) => (c.name === colName ? { ...c, name } : c)));
-  };
+  const renameColumn = useCallback(
+    async (colName: string) => {
+      const values = await openPrompt({
+        title: "Rename column",
+        fields: [{ key: "name", label: "Column name", defaultValue: colName, required: true }],
+        confirmLabel: "Rename",
+      });
+      const name = values?.name.trim();
+      if (!name || name === colName) return;
+      commitColumns(model.columns.map((c) => (c.name === colName ? { ...c, name } : c)));
+    },
+    [openPrompt, commitColumns, model.columns],
+  );
 
-  const deleteColumn = (colName: string) => {
-    const col = model.columns.find((c) => c.name === colName);
-    if (!col) return;
-    if (!window.confirm(`Delete column "${colName}"${col.cards.length ? " and its cards?" : "?"}`))
-      return;
-    for (const cardId of col.cards) {
-      void fetch(
-        `/api/card?boardPath=${encodeURIComponent(path)}&cardId=${encodeURIComponent(cardId)}`,
-        { method: "DELETE" },
-      );
-    }
-    commitColumns(model.columns.filter((c) => c.name !== colName));
-  };
+  const deleteColumn = useCallback(
+    (colName: string) => {
+      const col = model.columns.find((c) => c.name === colName);
+      if (!col) return;
+      if (
+        !window.confirm(`Delete column "${colName}"${col.cards.length ? " and its cards?" : "?"}`)
+      )
+        return;
+      for (const cardId of col.cards) {
+        void fetch(
+          `/api/card?boardPath=${encodeURIComponent(path)}&cardId=${encodeURIComponent(cardId)}`,
+          { method: "DELETE" },
+        );
+      }
+      commitColumns(model.columns.filter((c) => c.name !== colName));
+    },
+    [commitColumns, model.columns, path],
+  );
+
+  // Register a context menu builder with the parent NoteEditor so right-clicking
+  // a card, a column, or empty board space shows board-specific actions. These
+  // are non-text surfaces, so the host's generic clipboard menu does not apply.
+  useEffect(() => {
+    if (!onRegisterContextMenu) return;
+    const builder: CustomContextMenuBuilder = (target) => {
+      const cardId = target?.closest("[data-card-id]")?.getAttribute("data-card-id");
+      const card = cardId ? cardsRef.current.get(cardId) : undefined;
+      const columnName = target
+        ?.closest<HTMLElement>("[data-column-name]")
+        ?.dataset.columnName?.toString();
+      if (card && cardId) {
+        const items: ContextMenuEntry[] = [
+          {
+            label: "Copy link",
+            run: () => {
+              const link = `![[${cardFilePath(path, cardId)}]]`;
+              void navigator.clipboard?.writeText(link);
+            },
+          },
+          { label: "Duplicate card", run: () => void duplicateCard(card) },
+        ];
+        if (columnName) {
+          items.push({ label: "Add card", run: () => void handleAddCard(columnName) });
+        }
+        items.push(
+          { separator: true },
+          { label: "Delete card", run: () => void handleDeleteCard(cardId), danger: true },
+        );
+        return items;
+      }
+      if (columnName) {
+        return [
+          { label: "Add card", run: () => void handleAddCard(columnName) },
+          { label: "Rename column", run: () => void renameColumn(columnName) },
+          { separator: true },
+          { label: "Add column", run: () => void addColumn() },
+          { separator: true },
+          { label: "Delete column", run: () => deleteColumn(columnName), danger: true },
+        ];
+      }
+      // Empty board space.
+      return [{ label: "Add column", run: () => void addColumn() }];
+    };
+    onRegisterContextMenu(builder);
+    return () => onRegisterContextMenu(null);
+  }, [
+    onRegisterContextMenu,
+    path,
+    duplicateCard,
+    handleAddCard,
+    handleDeleteCard,
+    renameColumn,
+    deleteColumn,
+    addColumn,
+  ]);
 
   // Column drag handlers
   const onColumnDragStart = (event: DragEvent, columnName: string) => {

@@ -24,6 +24,7 @@ import { StatusBar } from "./components/status-bar";
 import { Toaster } from "./components/toaster";
 import { UpdateBanner } from "./components/update-banner";
 import { Workspace } from "./components/workspace";
+import { ContextMenuProvider } from "@notes/ui";
 import { AppServicesProvider } from "./state/app-services";
 import { useWorkspace } from "./state/app-context";
 import { useToasts } from "./state/toast";
@@ -910,75 +911,77 @@ export function App() {
 
   return (
     <AppServicesProvider value={services}>
-      <div className="app-root">
-        <UpdateBanner />
-        <div className="shell">
-          <Ribbon
-            newActions={newActions}
-            onCommand={() => setPaletteMode("commands")}
-            onSearch={openSidebarSearch}
-            onOpenFile={() => void openStandaloneFile()}
-            tomeActive={tomeActive}
-            onCloseTome={closeTome}
-            onOpenTome={openTome}
-            canNavBack={state.navIndex > 0}
-            canNavForward={state.navIndex < state.navHistory.length - 1}
-            onNavBack={() => dispatch({ type: "navBack" })}
-            onNavForward={() => dispatch({ type: "navForward" })}
-          />
-          <div className="shell-body">
-            <Sidebar
-              view={sidebarView}
-              onViewChange={setSidebarView}
-              onOpenPicker={() => setPaletteMode("files")}
-              searchQuery={sidebarSearchQuery}
-              renameRequestPath={renameRequestPath}
-              onRenameRequestHandled={clearRenameRequest}
+      <ContextMenuProvider>
+        <div className="app-root">
+          <UpdateBanner />
+          <div className="shell">
+            <Ribbon
+              newActions={newActions}
+              onCommand={() => setPaletteMode("commands")}
+              onSearch={openSidebarSearch}
+              onOpenFile={() => void openStandaloneFile()}
               tomeActive={tomeActive}
+              onCloseTome={closeTome}
               onOpenTome={openTome}
+              canNavBack={state.navIndex > 0}
+              canNavForward={state.navIndex < state.navHistory.length - 1}
+              onNavBack={() => dispatch({ type: "navBack" })}
+              onNavForward={() => dispatch({ type: "navForward" })}
             />
-            <Workspace />
-            <RightPanel />
+            <div className="shell-body">
+              <Sidebar
+                view={sidebarView}
+                onViewChange={setSidebarView}
+                onOpenPicker={() => setPaletteMode("files")}
+                searchQuery={sidebarSearchQuery}
+                renameRequestPath={renameRequestPath}
+                onRenameRequestHandled={clearRenameRequest}
+                tomeActive={tomeActive}
+                onOpenTome={openTome}
+              />
+              <Workspace />
+              <RightPanel />
+            </div>
+            <StatusBar
+              pluginItems={plugins.statusItems}
+              theme={state.theme}
+              externalThemes={externalThemes}
+              onThemeChange={(theme) => dispatch({ type: "setTheme", theme })}
+              onOpenSettings={openSettings}
+            />
+            {paletteMode && (
+              <Palette
+                mode={paletteMode}
+                files={flatFiles}
+                commands={commands}
+                recentCommandIds={recentCommandIds}
+                hotkeyFor={hotkeyFor}
+                onOpenFile={(path, title) => dispatch({ type: "openFile", path, title })}
+                onRunCommand={runCommand}
+                onCreateNote={createNamedNote}
+                onClose={() => setPaletteMode(null)}
+              />
+            )}
+            {settingsOpen && (
+              <SettingsModal {...settingsProps} onClose={() => setSettingsOpen(false)} />
+            )}
+            {helpOpen && (
+              <HelpOverlay
+                commands={settingsProps.hotkeys.commands}
+                hotkeyFor={hotkeyFor}
+                onClose={() => setHelpOpen(false)}
+              />
+            )}
+            {replaceOpen && (
+              <TomeReplace
+                onClose={() => setReplaceOpen(false)}
+                onChanged={() => void refreshTree()}
+              />
+            )}
+            <Toaster />
           </div>
-          <StatusBar
-            pluginItems={plugins.statusItems}
-            theme={state.theme}
-            externalThemes={externalThemes}
-            onThemeChange={(theme) => dispatch({ type: "setTheme", theme })}
-            onOpenSettings={openSettings}
-          />
-          {paletteMode && (
-            <Palette
-              mode={paletteMode}
-              files={flatFiles}
-              commands={commands}
-              recentCommandIds={recentCommandIds}
-              hotkeyFor={hotkeyFor}
-              onOpenFile={(path, title) => dispatch({ type: "openFile", path, title })}
-              onRunCommand={runCommand}
-              onCreateNote={createNamedNote}
-              onClose={() => setPaletteMode(null)}
-            />
-          )}
-          {settingsOpen && (
-            <SettingsModal {...settingsProps} onClose={() => setSettingsOpen(false)} />
-          )}
-          {helpOpen && (
-            <HelpOverlay
-              commands={settingsProps.hotkeys.commands}
-              hotkeyFor={hotkeyFor}
-              onClose={() => setHelpOpen(false)}
-            />
-          )}
-          {replaceOpen && (
-            <TomeReplace
-              onClose={() => setReplaceOpen(false)}
-              onChanged={() => void refreshTree()}
-            />
-          )}
-          <Toaster />
         </div>
-      </div>
+      </ContextMenuProvider>
     </AppServicesProvider>
   );
 }

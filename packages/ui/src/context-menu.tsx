@@ -18,11 +18,32 @@ export interface ContextMenuSeparatorDef {
 export type ContextMenuEntry = ContextMenuItemDef | ContextMenuSeparatorDef;
 
 /**
+ * A note view's contribution to the right-click menu.
+ *
+ * `items` are the view-specific actions (e.g. "Delete card", "Copy image").
+ * `includeBasicActions` tells the host whether the generic clipboard actions
+ * (Undo/Redo/Cut/Copy/Paste/Select All) also apply for this target — set it to
+ * `true` for text surfaces so a selection keeps its clipboard actions, and omit
+ * it (or set `false`) for non-text surfaces like canvas/board/table nodes.
+ */
+export interface ContextMenuContribution {
+  items: ContextMenuEntry[];
+  includeBasicActions?: boolean;
+}
+
+/**
  * Callback type that note-view components register with their parent NoteEditor
  * to supply content-specific context menu items.
  *
- * Receive the element that was right-clicked; return an array of items to
- * replace the generic edit menu, or `null` to fall back to the default items.
+ * Receive the element that was right-clicked and return either:
+ * - an array of items (equivalent to `{ items, includeBasicActions: false }`),
+ * - a {@link ContextMenuContribution} to also opt into the basic clipboard
+ *   actions, or
+ * - `null` to decline, letting the host fall back to the basic actions.
+ *
+ * Unlike the previous contract, returning an empty `items` array no longer
+ * suppresses the menu — the host always shows at least the basic actions so a
+ * right-click is never a dead click.
  *
  * @example
  * ```ts
@@ -37,7 +58,9 @@ export type ContextMenuEntry = ContextMenuItemDef | ContextMenuSeparatorDef;
  * }, [onRegisterContextMenu]);
  * ```
  */
-export type CustomContextMenuBuilder = (target: Element | null) => ContextMenuEntry[] | null;
+export type CustomContextMenuBuilder = (
+  target: Element | null,
+) => ContextMenuEntry[] | ContextMenuContribution | null;
 
 interface ContextMenuProps {
   position: MenuPosition;

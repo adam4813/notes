@@ -93,6 +93,7 @@ export function BoardColumn({
     <section
       key={column.name}
       className="board-column"
+      data-column-name={column.name}
       onDragEnter={(e) => {
         e.stopPropagation();
         if (draggingColumnName) {
