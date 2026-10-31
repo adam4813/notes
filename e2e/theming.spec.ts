@@ -11,6 +11,7 @@ test("theming: accent color and theme apply from settings", async ({ page }) => 
     .toBe("dark");
 
   await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("tab", { name: "Appearance" }).click();
 
   // Pick the blue accent preset and confirm the token updates.
   await page.getByTestId("accent-blue").click();

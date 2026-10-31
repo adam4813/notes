@@ -976,13 +976,35 @@ button {
 
 .settings-view {
   height: 100%;
-  overflow: auto;
-  padding: 0 8px 24px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   user-select: none;
 }
 
 .settings-view-header {
-  padding: 16px 18px 4px;
+  padding: 16px 18px 8px;
+  flex-shrink: 0;
+}
+
+/* Vertical-tab layout shared by the settings modal and in-tab view. */
+.settings-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.settings-tabs {
+  flex: 0 0 auto;
+  width: 160px;
+  border-right: 1px solid var(--border);
+}
+
+.settings-panels {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
 }
 
 .settings-view-header h2 {
