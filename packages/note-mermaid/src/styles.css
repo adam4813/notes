@@ -13,7 +13,6 @@
   gap: 2px;
   padding: 6px 10px;
   border-block: 1px solid var(--border);
-  user-select: none;
 }
 
 .mermaid-body {
@@ -42,7 +41,6 @@
   align-items: flex-start;
   justify-content: center;
   background: var(--bg);
-  user-select: none;
 }
 
 .mermaid-diagram {
