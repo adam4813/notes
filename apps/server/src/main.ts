@@ -10,6 +10,7 @@ import fastifyRateLimit from "@fastify/rate-limit";
 import { registerFileCommands } from "./commands/file-commands";
 import { registerCardCommands } from "./commands/card-commands";
 import { registerEventCommands } from "./commands/event-commands";
+import { registerHistoryCommands } from "./commands/history-commands";
 import { registerIndexCommands } from "./commands/index-commands";
 import { registerNoteTypeCommands } from "./commands/note-type-commands";
 import { createCommandEventMiddleware } from "./commands/command-event-middleware";
@@ -66,6 +67,7 @@ export async function startServer(overrides?: Partial<ServerConfig>): Promise<St
   registerFileCommands(bus, () => tower.active, serverEvents);
   registerCardCommands(bus, () => tower.active, serverEvents);
   registerEventCommands(bus, () => tower.active, serverEvents);
+  registerHistoryCommands(bus, () => tower.active);
   registerNoteTypeCommands(bus, () => tower.active);
 
   const ctx = { tomePath: config.tomePath };

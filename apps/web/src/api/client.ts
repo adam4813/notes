@@ -24,6 +24,42 @@ export interface TagCount {
   count: number;
 }
 
+export interface HistoryVersion {
+  oid: string;
+  shortOid: string;
+  message: string;
+  /** Author time in milliseconds since the epoch. */
+  timestamp: number;
+  author: string;
+  additions: number;
+  deletions: number;
+}
+
+export interface FileHistory {
+  initialized: boolean;
+  versions: HistoryVersion[];
+  hasUncommittedChanges: boolean;
+}
+
+export type DiffRowType = "add" | "del" | "context";
+
+export interface DiffRow {
+  type: DiffRowType;
+  text: string;
+  oldLine?: number;
+  newLine?: number;
+}
+
+export interface VersionDiff {
+  rows: DiffRow[];
+  additions: number;
+  deletions: number;
+  content: string;
+  message: string;
+  timestamp: number;
+  author: string;
+}
+
 export interface SearchFilters {
   tag?: string;
   type?: string;
@@ -113,4 +149,15 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ contentBase64 }),
     }),
+  history: {
+    status: () => request<{ initialized: boolean }>("/api/history/status"),
+    log: (path: string) => request<FileHistory>(`/api/history?${query({ path })}`),
+    diff: (path: string, oid: string) =>
+      request<VersionDiff>(`/api/history/diff?${query({ path, oid })}`),
+    snapshot: (message?: string) =>
+      request<{ created: boolean; oid?: string }>("/api/history/snapshot", {
+        method: "POST",
+        body: JSON.stringify(message ? { message } : {}),
+      }),
+  },
 };

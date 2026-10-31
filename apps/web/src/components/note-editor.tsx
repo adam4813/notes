@@ -36,8 +36,10 @@ import { exportAsHtml } from "../lib/export-html";
 import { frontmatterType } from "../lib/frontmatter";
 import { isImagePath } from "../lib/images";
 import { useAppServices } from "../state/app-services";
+import { useHistoryView } from "../state/history-context";
 import { useToasts } from "../state/toast";
 import { ModeToggle, SaveState } from "./mode-toggle";
+import { HistoryDiffView } from "./history-diff-view";
 
 function basename(path: string): string {
   return (path.split("/").pop() ?? path).replace(/\.[^.]+$/, "");
@@ -122,6 +124,7 @@ export function NoteEditor({
 }) {
   const { markModified, setActiveDocument, fileHandlers, noteTypeRegistry } = useAppServices();
   const { notify } = useToasts();
+  const { selection: historySelection, close: closeHistory } = useHistoryView();
   const stateKey = editorStateKey(path);
   const initialSession = markdownSessionByPath.get(stateKey) ?? {
     mode: defaultMode,
@@ -380,6 +383,36 @@ export function NoteEditor({
 
   if (saveState === "loading") {
     return <div className="note-loading">Loading…</div>;
+  }
+
+  // While a saved version is selected for this file, replace the editor body
+  // with a read-only diff of that version (Google-Docs-style version viewer).
+  if (historySelection && historySelection.path === path && !isImage) {
+    return (
+      <HistoryDiffView
+        path={path}
+        oid={historySelection.oid}
+        onClose={closeHistory}
+        onRestore={async (restored) => {
+          try {
+            if (writeFn) {
+              await writeFn(restored);
+            } else {
+              await api.write(path, restored);
+            }
+            contentRef.current = restored;
+            dirtyRef.current = false;
+            setContent(restored);
+            setSaveState("saved");
+            lastWriteAtRef.current = Date.now();
+            closeHistory();
+            notify("Version restored.", { kind: "success" });
+          } catch {
+            notify("Couldn't restore this version.", { kind: "error" });
+          }
+        }}
+      />
+    );
   }
 
   return (
