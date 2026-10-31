@@ -99,9 +99,7 @@ export function HistoryPanelSection({ path }: { path: string }) {
                       <span className="history-count history-count--add">+{version.additions}</span>
                     )}
                     {version.deletions > 0 && (
-                      <span className="history-count history-count--del">
-                        −{version.deletions}
-                      </span>
+                      <span className="history-count history-count--del">−{version.deletions}</span>
                     )}
                   </span>
                 </button>

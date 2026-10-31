@@ -3,13 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Tome } from "@notes/tome";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  fileHistory,
-  historyStatus,
-  isRepo,
-  snapshot,
-  versionDiff,
-} from "./history-store";
+import { fileHistory, historyStatus, isRepo, snapshot, versionDiff } from "./history-store";
 
 let root = "";
 let tome: Tome;

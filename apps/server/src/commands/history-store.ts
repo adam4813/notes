@@ -148,11 +148,7 @@ export async function historyStatus(dir: string): Promise<{ initialized: boolean
  * Lists the versions (commits) that touched a file, newest first, with the
  * number of lines each version changed relative to its parent.
  */
-export async function fileHistory(
-  tome: Tome,
-  filepath: string,
-  limit = 100,
-): Promise<FileHistory> {
+export async function fileHistory(tome: Tome, filepath: string, limit = 100): Promise<FileHistory> {
   const dir = tome.root;
   if (!(await isRepo(dir))) {
     return { initialized: false, versions: [], hasUncommittedChanges: false };
@@ -204,11 +200,7 @@ export async function fileHistory(
  * Computes the diff a version introduced (its content versus its parent) and
  * returns that version's full content so the UI can restore it.
  */
-export async function versionDiff(
-  tome: Tome,
-  filepath: string,
-  oid: string,
-): Promise<VersionDiff> {
+export async function versionDiff(tome: Tome, filepath: string, oid: string): Promise<VersionDiff> {
   const dir = tome.root;
   const commit = await git.readCommit({ fs, dir, oid });
   const parentOid = commit.commit.parent[0];
