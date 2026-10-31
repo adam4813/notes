@@ -261,7 +261,13 @@ function center(node: CanvasNode): { x: number; y: number } {
   return { x: node.x + node.width / 2, y: node.y + node.height / 2 };
 }
 
-export function CanvasView({ value, onChange, callbacks, path, onRegisterContextMenu }: RendererProps) {
+export function CanvasView({
+  value,
+  onChange,
+  callbacks,
+  path,
+  onRegisterContextMenu,
+}: RendererProps) {
   const { openPrompt, promptDialog } = usePromptDialog();
   const undoStack = useUndoStack();
   const [data, setData] = useState<CanvasData>(() => parseCanvas(value));
