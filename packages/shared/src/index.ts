@@ -38,3 +38,4 @@ export function term(key: TermKey): string {
 }
 
 export * from "./schemas";
+export * from "./app-logger";

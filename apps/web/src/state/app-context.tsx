@@ -25,6 +25,7 @@ const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
 const THEME_KEY = "notes.theme";
 const LAYOUT_KEY = "notes.layout";
+const CONSOLE_KEY = "notes.console";
 
 function loadInitialTheme(): ThemeMode {
   const stored = window.localStorage.getItem(THEME_KEY);
@@ -92,10 +93,49 @@ function saveLayout(state: WorkspaceState): void {
   }
 }
 
+interface PersistedConsole {
+  consoleOpen: boolean;
+  consoleHeight: number;
+}
+
+function loadConsole(): PersistedConsole {
+  try {
+    const raw = window.localStorage.getItem(CONSOLE_KEY);
+    if (!raw) return { consoleOpen: false, consoleHeight: 200 };
+    const parsed = JSON.parse(raw) as Partial<PersistedConsole>;
+    return {
+      consoleOpen: Boolean(parsed.consoleOpen),
+      consoleHeight:
+        typeof parsed.consoleHeight === "number" && parsed.consoleHeight >= 80
+          ? parsed.consoleHeight
+          : 200,
+    };
+  } catch {
+    return { consoleOpen: false, consoleHeight: 200 };
+  }
+}
+
+function saveConsole(state: WorkspaceState): void {
+  try {
+    const data: PersistedConsole = {
+      consoleOpen: state.consoleOpen,
+      consoleHeight: state.consoleHeight,
+    };
+    window.localStorage.setItem(CONSOLE_KEY, JSON.stringify(data));
+  } catch {
+    // ignore storage quota/access errors
+  }
+}
+
 function initState(theme: ThemeMode): WorkspaceState {
   const base = createInitialState(theme);
   const layout = loadLayout();
-  return layout ? { ...base, panes: layout.panes, activePaneId: layout.activePaneId } : base;
+  const console_ = loadConsole();
+  return {
+    ...(layout ? { ...base, panes: layout.panes, activePaneId: layout.activePaneId } : base),
+    consoleOpen: console_.consoleOpen,
+    consoleHeight: console_.consoleHeight,
+  };
 }
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
@@ -104,6 +144,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     saveLayout(state);
   }, [state.panes, state.activePaneId, state]);
+
+  useEffect(() => {
+    saveConsole(state);
+  }, [state.consoleOpen, state.consoleHeight]);
 
   return (
     <WorkspaceContext.Provider value={{ state, dispatch }}>{children}</WorkspaceContext.Provider>
