@@ -19,6 +19,7 @@
     "@notes/note-calendar": "*",
     "@notes/note-canvas": "*",
     "@notes/note-grid": "*",
+    "@notes/note-home": "*",
     "@notes/note-mermaid": "*",
     "@notes/note-tables": "*",
     "@notes/shared": "*",

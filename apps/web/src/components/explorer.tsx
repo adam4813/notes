@@ -72,6 +72,7 @@ const TYPE_LABEL: Record<string, string> = {
   mermaid: "Diagram",
   calendar: "Calendar",
   grid: "Grid",
+  home: "Homepage",
 };
 
 interface FlatRow {
@@ -465,6 +466,7 @@ export function Explorer({
         { label: "New diagram", run: () => services.createMermaid(dir) },
         { label: "New calendar", run: () => services.createCalendar(dir) },
         { label: "New grid", run: () => services.createGrid(dir) },
+        { label: "New homepage", run: () => services.createHome(dir) },
         { label: "New folder…", run: () => void newFolder(dir) },
       );
     }
