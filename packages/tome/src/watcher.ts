@@ -18,10 +18,12 @@ export interface TomeEventMap extends Record<string, unknown> {
 export function chokidarEventToKind(event: string): TomeChangeKind | undefined {
   switch (event) {
     case "add":
+    case "addDir":
       return "created";
     case "change":
       return "modified";
     case "unlink":
+    case "unlinkDir":
       return "deleted";
     default:
       return undefined;
