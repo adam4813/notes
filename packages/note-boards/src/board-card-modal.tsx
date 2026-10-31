@@ -12,7 +12,7 @@ export function BoardCardModal({
   updateCardState: (card: RichCard) => void;
 }) {
   return (
-    <Modal open onClose={onClose} ariaLabel="Edit card">
+    <Modal open contained onClose={onClose} ariaLabel="Edit card">
       <ModalHeader onClose={onClose}>
         <input
           className="board-modal-title"

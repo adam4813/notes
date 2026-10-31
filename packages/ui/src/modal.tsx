@@ -1,4 +1,4 @@
-﻿import { type ReactNode, useEffect } from "react";
+﻿import { type ReactNode, useEffect, useRef } from "react";
 
 interface ModalProps {
   /** Whether the modal is visible. When false, nothing is rendered. */
@@ -9,11 +9,19 @@ interface ModalProps {
   width?: string;
   className?: string;
   ariaLabel?: string;
+  /**
+   * Scope the modal to its nearest positioned ancestor (e.g. a note editor
+   * tab's region) instead of covering the whole viewport. In this mode the
+   * overlay background does not close the modal, and Escape only closes it
+   * while focus is within the scoped area — so other tabs stay interactive and
+   * notes can be dragged onto the modal.
+   */
+  contained?: boolean;
 }
 
 /**
- * Modal overlay + dialog shell. Closes on Escape or overlay click.
- * Compose with `ModalHeader`, `ModalBody`, and `ModalFooter`.
+ * Modal overlay + dialog shell. Closes on Escape, and on overlay click unless
+ * `contained`. Compose with `ModalHeader`, `ModalBody`, and `ModalFooter`.
  *
  * @example
  * ```tsx
@@ -37,23 +45,39 @@ export function Modal({
   width,
   className,
   ariaLabel = "Dialog",
+  contained = false,
 }: ModalProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      if (contained) {
+        // Only close when the scoped area (this tab's editor region) holds
+        // focus, so Escape in another tab doesn't dismiss this modal.
+        const scope = overlayRef.current?.offsetParent ?? overlayRef.current?.parentElement;
+        if (!scope || !scope.contains(document.activeElement)) return;
+      }
+      onClose();
     };
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
-  }, [onClose]);
+  }, [onClose, contained]);
 
   if (!open) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div
+      ref={overlayRef}
+      className={["modal-overlay", contained && "modal-overlay--contained"]
+        .filter(Boolean)
+        .join(" ")}
+      onClick={contained ? undefined : onClose}
+    >
       <div
         className={["modal", className].filter(Boolean).join(" ")}
         role="dialog"
-        aria-modal="true"
+        aria-modal={!contained}
         aria-label={ariaLabel}
         style={width ? { width } : undefined}
         onClick={(e) => e.stopPropagation()}
