@@ -14,6 +14,7 @@ import StarterKit from "@tiptap/starter-kit";
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ClipboardEvent as ReactClipboardEvent,
@@ -23,6 +24,8 @@ import {
 import { Markdown } from "tiptap-markdown";
 import { Embed } from "./embed-extension";
 import { TabGroupExtension } from "./tabs-extension";
+import { ScriptBlockExtension, ScriptSandboxApiContext } from "./script-block-extension";
+import type { ScriptSandboxApi } from "./script-sandbox";
 import { ImageNode } from "./image-node";
 import { StyledTextMark } from "./styled-text-mark";
 import { SuggestionPopup } from "./suggestion-popup";
@@ -44,6 +47,18 @@ interface MarkdownStorage {
 function readMarkdown(instance: Editor): string {
   const markdown = (instance.storage as unknown as MarkdownStorage).markdown.getMarkdown();
   return markdown.replace(/\\([[\]])/g, "$1").replace(/\\#(?=[\p{L}\p{N}])/gu, "#");
+}
+
+/** Derives the note type exposed to scripts from a file path's extension. */
+function noteTypeFromPath(path: string | undefined): string {
+  if (!path) {
+    return "markdown";
+  }
+  const lower = path.toLowerCase();
+  if (lower.endsWith(".canvas")) {
+    return "canvas";
+  }
+  return "markdown";
 }
 
 type RenderedWidthMode = "normal" | "wide";
@@ -135,6 +150,22 @@ export function RenderedEditor({
   const fetchKeyRef = useRef("");
   const recomputeRef = useRef<() => void>(() => {});
 
+  // Read-only scripting API exposed to sandboxed `run-js` blocks. Built fresh
+  // from the current note + host callbacks and handed to node views through
+  // context, so scripts always see the active document without any refs.
+  const scriptSandboxApi = useMemo<ScriptSandboxApi>(
+    () => ({
+      getActiveDocument: () =>
+        path || value ? { path: path ?? "", content: value, type: noteTypeFromPath(path) } : null,
+      listNotes: async () => {
+        const notes = (await callbacks?.listNotes?.()) ?? [];
+        return notes.map((note) => ({ title: note.title, path: note.path }));
+      },
+      listTags: async () => (await callbacks?.listTags?.()) ?? [],
+    }),
+    [callbacks, path, value],
+  );
+
   const applySuggest = useCallback(
     (editor: Editor | null, pickIndex?: number) => {
       const current = suggest;
@@ -190,6 +221,7 @@ export function RenderedEditor({
       Markdown.configure({ html: true, tightLists: true, transformPastedText: true }),
       WikilinkDecorator,
       TabGroupExtension,
+      ScriptBlockExtension.configure({ api: scriptSandboxApi }),
       ...(callbacks?.renderEmbed
         ? [
             Embed.configure({
