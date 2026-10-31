@@ -1,6 +1,7 @@
 import type { PluginInfo, PluginManifest } from "@notes/plugin-host";
 import type { ThemeMeta } from "@notes/shared";
-import { useRef, useState } from "react";
+import { VerticalTabs, type VerticalTabItem } from "@notes/ui";
+import { type ReactNode, useRef, useState } from "react";
 import type { ThemeMode } from "../state/types";
 import { HotkeyRow } from "./hotkey-row";
 
@@ -71,6 +72,14 @@ const BUILT_IN_THEME_OPTIONS: { value: string; label: string }[] = [
   { value: "default", label: "Default" },
   { value: "solarized", label: "Solarized" },
   { value: "contrast", label: "High contrast" },
+];
+
+/** Vertical tab sections shown in the settings surface. */
+const SETTINGS_TABS: VerticalTabItem[] = [
+  { id: "general", label: "General", icon: "⚙" },
+  { id: "appearance", label: "Appearance", icon: "🎨" },
+  { id: "hotkeys", label: "Hotkeys", icon: "⌨" },
+  { id: "plugins", label: "Plugins", icon: "🧩" },
 ];
 
 /** Drag-drop / file-picker zone for installing a plugin from a .zip file. */
@@ -184,7 +193,9 @@ export function SettingsBody(props: SettingsBodyProps) {
     return command ? command.title : id;
   };
 
-  return (
+  const [activeTab, setActiveTab] = useState<string>("general");
+
+  const generalPanel = (
     <>
       <section className="settings-section">
         <h3>General</h3>
@@ -217,222 +228,254 @@ export function SettingsBody(props: SettingsBodyProps) {
           />
         </div>
       </section>
+    </>
+  );
 
-      <section className="settings-section">
-        <h3>Appearance</h3>
-        <div className="settings-field">
-          <span className="settings-label">Theme</span>
-          <div className="segmented" role="radiogroup" aria-label="Theme">
-            {allThemeOptions.map((option) => (
-              <button
-                key={option.value}
-                role="radio"
-                aria-checked={selectedTheme === option.value}
-                className={`segmented-btn ${selectedTheme === option.value ? "segmented-btn--active" : ""}`}
-                onClick={() => onThemeChange(resolveThemeSelection(option.value, theme))}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+  const appearancePanel = (
+    <section className="settings-section">
+      <h3>Appearance</h3>
+      <div className="settings-field">
+        <span className="settings-label">Theme</span>
+        <div className="segmented" role="radiogroup" aria-label="Theme">
+          {allThemeOptions.map((option) => (
+            <button
+              key={option.value}
+              role="radio"
+              aria-checked={selectedTheme === option.value}
+              className={`segmented-btn ${selectedTheme === option.value ? "segmented-btn--active" : ""}`}
+              onClick={() => onThemeChange(resolveThemeSelection(option.value, theme))}
+            >
+              {option.label}
+            </button>
+          ))}
         </div>
-        <div className="settings-field">
-          <span className="settings-label">Add-ons</span>
+      </div>
+      <div className="settings-field">
+        <span className="settings-label">Add-ons</span>
+        <button
+          className="settings-import-btn"
+          onClick={() => void onImportDefaultThemes()}
+          title="Copy bundled theme add-ons into your Tome's .notes/themes folder"
+        >
+          Import default themes
+        </button>
+      </div>
+      <div className="settings-field">
+        <span className="settings-label">Accent</span>
+        <div className="accent-swatches" role="radiogroup" aria-label="Accent color">
+          {accentPresets.map((preset) => (
+            <button
+              key={preset.id}
+              role="radio"
+              aria-checked={accent === preset.value}
+              aria-label={preset.label}
+              title={preset.label}
+              data-testid={`accent-${preset.id}`}
+              className={`accent-swatch ${accent === preset.value ? "accent-swatch--active" : ""}`}
+              style={{ background: preset.value || "var(--accent)" }}
+              onClick={() => onAccentChange(preset.value)}
+            />
+          ))}
+          <input
+            type="color"
+            className="accent-custom"
+            aria-label="Custom accent color"
+            data-testid="accent-custom"
+            value={/^#[0-9a-fA-F]{6}$/.test(accent) ? accent : "#7c3aed"}
+            onChange={(event) => onAccentChange(event.target.value)}
+          />
+        </div>
+      </div>
+      <div className="settings-field">
+        <span className="settings-label">App font</span>
+        <input
+          type="range"
+          min={12}
+          max={22}
+          step={1}
+          aria-label="App font size"
+          data-testid="app-font-size"
+          value={appFontSize}
+          onChange={(event) => onAppFontSizeChange(Number(event.target.value))}
+        />
+        <span className="settings-value">{appFontSize}px</span>
+      </div>
+      <div className="settings-field">
+        <span className="settings-label">App font family</span>
+        <select
+          aria-label="App font family"
+          data-testid="app-font-family"
+          className="settings-select"
+          value={appFontFamily}
+          onChange={(event) => onAppFontFamilyChange(event.target.value)}
+        >
+          {fontFamilyOptions.map((option) => (
+            <option key={option.id} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="settings-field">
+        <span className="settings-label">Editor font</span>
+        <input
+          type="range"
+          min={12}
+          max={22}
+          step={1}
+          aria-label="Editor font size"
+          data-testid="editor-font-size"
+          value={editorFontSize}
+          onChange={(event) => onEditorFontSizeChange(Number(event.target.value))}
+        />
+        <span className="settings-value">{editorFontSize}px</span>
+      </div>
+      <div className="settings-field">
+        <span className="settings-label">Editor font family</span>
+        <select
+          aria-label="Editor font family"
+          data-testid="editor-font-family"
+          className="settings-select"
+          value={editorFontFamily}
+          onChange={(event) => onEditorFontFamilyChange(event.target.value)}
+        >
+          <option value="__use_app__">Use app font</option>
+          {fontFamilyOptions.map((option) => (
+            <option key={option.id} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="settings-field">
+        <span className="settings-label">Rendered note width</span>
+        <div className="segmented" role="radiogroup" aria-label="Default rendered note width">
           <button
-            className="settings-import-btn"
-            onClick={() => void onImportDefaultThemes()}
-            title="Copy bundled theme add-ons into your Tome's .notes/themes folder"
+            role="radio"
+            aria-checked={renderedWidthDefault === "normal"}
+            className={`segmented-btn ${renderedWidthDefault === "normal" ? "segmented-btn--active" : ""}`}
+            onClick={() => onRenderedWidthDefaultChange("normal")}
           >
-            Import default themes
+            Normal
+          </button>
+          <button
+            role="radio"
+            aria-checked={renderedWidthDefault === "wide"}
+            className={`segmented-btn ${renderedWidthDefault === "wide" ? "segmented-btn--active" : ""}`}
+            onClick={() => onRenderedWidthDefaultChange("wide")}
+          >
+            Wide
           </button>
         </div>
-        <div className="settings-field">
-          <span className="settings-label">Accent</span>
-          <div className="accent-swatches" role="radiogroup" aria-label="Accent color">
-            {accentPresets.map((preset) => (
-              <button
-                key={preset.id}
-                role="radio"
-                aria-checked={accent === preset.value}
-                aria-label={preset.label}
-                title={preset.label}
-                data-testid={`accent-${preset.id}`}
-                className={`accent-swatch ${accent === preset.value ? "accent-swatch--active" : ""}`}
-                style={{ background: preset.value || "var(--accent)" }}
-                onClick={() => onAccentChange(preset.value)}
+      </div>
+    </section>
+  );
+
+  const hotkeysPanel = (
+    <section className="settings-section">
+      <h3>Hotkeys</h3>
+      <p className="settings-hint">
+        Click a shortcut, then press a key combo to rebind. Conflicts are highlighted.
+      </p>
+      <ul className="hotkey-list">
+        {hotkeys.commands.map((command) => (
+          <HotkeyRow
+            key={command.id}
+            command={command}
+            combo={hotkeys.comboFor(command.id)}
+            format={hotkeys.format}
+            custom={hotkeys.isCustom(command.id)}
+            conflictWith={findConflictLabel(hotkeys, command.id, commandTitle)}
+            onRebind={(combo) => hotkeys.rebind(command.id, combo)}
+            onReset={() => hotkeys.reset(command.id)}
+          />
+        ))}
+      </ul>
+    </section>
+  );
+
+  const pluginsPanel = (
+    <section className="settings-section">
+      <h3>Plugins</h3>
+      <p className="settings-hint">
+        Local, trusted plugins load in-process. See docs/plugins.md to write your own.
+      </p>
+      {tomePluginsPath && (
+        <p className="settings-hint">
+          Drop plugin folders into <code className="settings-path">{tomePluginsPath}</code> and
+          restart to install.
+        </p>
+      )}
+      <PluginInstallZone onInstall={(file) => void onInstallPlugin(file)} />
+      <p className="settings-hint settings-hint--sm">
+        Drag a .zip or click to browse. Installed plugins load on the next restart.
+      </p>
+      {plugins.length === 0 && <div className="panel-empty">No plugins installed.</div>}
+      <ul className="plugin-list">
+        {plugins.map((plugin) => (
+          <li key={plugin.manifest.id} className="plugin-row">
+            <div className="plugin-meta">
+              <span className="plugin-name">{plugin.manifest.name}</span>
+              <span className="plugin-version">v{plugin.manifest.version}</span>
+              {plugin.manifest.description && (
+                <span className="plugin-desc">{plugin.manifest.description}</span>
+              )}
+              {plugin.error && <span className="plugin-error">⚠ {plugin.error}</span>}
+            </div>
+            <label className="switch">
+              <input
+                type="checkbox"
+                data-testid={`plugin-toggle-${plugin.manifest.id}`}
+                checked={plugin.enabled}
+                onChange={(event) => onToggle(plugin.manifest.id, event.target.checked)}
               />
-            ))}
-            <input
-              type="color"
-              className="accent-custom"
-              aria-label="Custom accent color"
-              data-testid="accent-custom"
-              value={/^#[0-9a-fA-F]{6}$/.test(accent) ? accent : "#7c3aed"}
-              onChange={(event) => onAccentChange(event.target.value)}
-            />
-          </div>
-        </div>
-        <div className="settings-field">
-          <span className="settings-label">App font</span>
-          <input
-            type="range"
-            min={12}
-            max={22}
-            step={1}
-            aria-label="App font size"
-            data-testid="app-font-size"
-            value={appFontSize}
-            onChange={(event) => onAppFontSizeChange(Number(event.target.value))}
-          />
-          <span className="settings-value">{appFontSize}px</span>
-        </div>
-        <div className="settings-field">
-          <span className="settings-label">App font family</span>
-          <select
-            aria-label="App font family"
-            data-testid="app-font-family"
-            className="settings-select"
-            value={appFontFamily}
-            onChange={(event) => onAppFontFamilyChange(event.target.value)}
-          >
-            {fontFamilyOptions.map((option) => (
-              <option key={option.id} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="settings-field">
-          <span className="settings-label">Editor font</span>
-          <input
-            type="range"
-            min={12}
-            max={22}
-            step={1}
-            aria-label="Editor font size"
-            data-testid="editor-font-size"
-            value={editorFontSize}
-            onChange={(event) => onEditorFontSizeChange(Number(event.target.value))}
-          />
-          <span className="settings-value">{editorFontSize}px</span>
-        </div>
-        <div className="settings-field">
-          <span className="settings-label">Editor font family</span>
-          <select
-            aria-label="Editor font family"
-            data-testid="editor-font-family"
-            className="settings-select"
-            value={editorFontFamily}
-            onChange={(event) => onEditorFontFamilyChange(event.target.value)}
-          >
-            <option value="__use_app__">Use app font</option>
-            {fontFamilyOptions.map((option) => (
-              <option key={option.id} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="settings-field">
-          <span className="settings-label">Rendered note width</span>
-          <div className="segmented" role="radiogroup" aria-label="Default rendered note width">
-            <button
-              role="radio"
-              aria-checked={renderedWidthDefault === "normal"}
-              className={`segmented-btn ${renderedWidthDefault === "normal" ? "segmented-btn--active" : ""}`}
-              onClick={() => onRenderedWidthDefaultChange("normal")}
-            >
-              Normal
+              <span>{plugin.enabled ? "Enabled" : "Disabled"}</span>
+            </label>
+          </li>
+        ))}
+        {pendingRestartPlugins.map((manifest) => (
+          <li key={manifest.id} className="plugin-row plugin-row--pending">
+            <div className="plugin-meta">
+              <span className="plugin-name">{manifest.name}</span>
+              <span className="plugin-version">v{manifest.version}</span>
+              {manifest.description && <span className="plugin-desc">{manifest.description}</span>}
+              <span className="plugin-pending-badge">⏳ Installed — restart required</span>
+            </div>
+            <button className="plugin-restart-btn" onClick={onRestart}>
+              Restart
             </button>
-            <button
-              role="radio"
-              aria-checked={renderedWidthDefault === "wide"}
-              className={`segmented-btn ${renderedWidthDefault === "wide" ? "segmented-btn--active" : ""}`}
-              onClick={() => onRenderedWidthDefaultChange("wide")}
-            >
-              Wide
-            </button>
-          </div>
-        </div>
-      </section>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 
-      <section className="settings-section">
-        <h3>Hotkeys</h3>
-        <p className="settings-hint">
-          Click a shortcut, then press a key combo to rebind. Conflicts are highlighted.
-        </p>
-        <ul className="hotkey-list">
-          {hotkeys.commands.map((command) => (
-            <HotkeyRow
-              key={command.id}
-              command={command}
-              combo={hotkeys.comboFor(command.id)}
-              format={hotkeys.format}
-              custom={hotkeys.isCustom(command.id)}
-              conflictWith={findConflictLabel(hotkeys, command.id, commandTitle)}
-              onRebind={(combo) => hotkeys.rebind(command.id, combo)}
-              onReset={() => hotkeys.reset(command.id)}
-            />
-          ))}
-        </ul>
-      </section>
+  const panels: Record<string, ReactNode> = {
+    general: generalPanel,
+    appearance: appearancePanel,
+    hotkeys: hotkeysPanel,
+    plugins: pluginsPanel,
+  };
+  const activePanel = panels[activeTab] ?? generalPanel;
 
-      <section className="settings-section">
-        <h3>Plugins</h3>
-        <p className="settings-hint">
-          Local, trusted plugins load in-process. See docs/plugins.md to write your own.
-        </p>
-        {tomePluginsPath && (
-          <p className="settings-hint">
-            Drop plugin folders into <code className="settings-path">{tomePluginsPath}</code> and
-            restart to install.
-          </p>
-        )}
-        <PluginInstallZone onInstall={(file) => void onInstallPlugin(file)} />
-        <p className="settings-hint settings-hint--sm">
-          Drag a .zip or click to browse. Installed plugins load on the next restart.
-        </p>
-        {plugins.length === 0 && <div className="panel-empty">No plugins installed.</div>}
-        <ul className="plugin-list">
-          {plugins.map((plugin) => (
-            <li key={plugin.manifest.id} className="plugin-row">
-              <div className="plugin-meta">
-                <span className="plugin-name">{plugin.manifest.name}</span>
-                <span className="plugin-version">v{plugin.manifest.version}</span>
-                {plugin.manifest.description && (
-                  <span className="plugin-desc">{plugin.manifest.description}</span>
-                )}
-                {plugin.error && <span className="plugin-error">⚠ {plugin.error}</span>}
-              </div>
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  data-testid={`plugin-toggle-${plugin.manifest.id}`}
-                  checked={plugin.enabled}
-                  onChange={(event) => onToggle(plugin.manifest.id, event.target.checked)}
-                />
-                <span>{plugin.enabled ? "Enabled" : "Disabled"}</span>
-              </label>
-            </li>
-          ))}
-          {pendingRestartPlugins.map((manifest) => (
-            <li key={manifest.id} className="plugin-row plugin-row--pending">
-              <div className="plugin-meta">
-                <span className="plugin-name">{manifest.name}</span>
-                <span className="plugin-version">v{manifest.version}</span>
-                {manifest.description && (
-                  <span className="plugin-desc">{manifest.description}</span>
-                )}
-                <span className="plugin-pending-badge">⏳ Installed — restart required</span>
-              </div>
-              <button className="plugin-restart-btn" onClick={onRestart}>
-                Restart
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </>
+  return (
+    <div className="settings-layout">
+      <VerticalTabs
+        className="settings-tabs"
+        ariaLabel="Settings sections"
+        items={SETTINGS_TABS}
+        activeId={activeTab}
+        onSelect={setActiveTab}
+      />
+      <div
+        className="settings-panels"
+        role="tabpanel"
+        id={`vtabpanel-${activeTab}`}
+        aria-labelledby={`vtab-${activeTab}`}
+      >
+        {activePanel}
+      </div>
+    </div>
   );
 }
 
