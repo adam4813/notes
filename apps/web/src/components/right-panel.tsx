@@ -11,6 +11,7 @@ import {
   stripFrontmatter,
 } from "../lib/frontmatter";
 import { isStandalonePath } from "../lib/standalone-handles";
+import { HistoryPanelSection } from "./history-panel";
 
 const HIDDEN_FRONTMATTER_KEYS = new Set(["type", "__notes_rendered_width", "columns", "events"]);
 
@@ -266,6 +267,7 @@ export function RightPanel() {
               )}
             </PanelSection>
           )}
+          {isNote && path && <HistoryPanelSection path={path} />}
         </PanelGroup>
       </IslandBody>
     </Island>

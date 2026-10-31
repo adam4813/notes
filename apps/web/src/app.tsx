@@ -669,6 +669,21 @@ export function App() {
         run: () => void api.reindex(),
       },
       {
+        id: "save-version",
+        title: "Save version (backup)",
+        category: "File",
+        icon: "🕑",
+        run: () =>
+          void api.history
+            .snapshot()
+            .then((result) =>
+              notify(result.created ? "Version saved." : "No changes to save.", {
+                kind: result.created ? "success" : "info",
+              }),
+            )
+            .catch(() => notify("Couldn't save version.", { kind: "error" })),
+      },
+      {
         id: "replace-tome",
         title: "Find & replace in Tome",
         category: "Edit",
@@ -705,6 +720,7 @@ export function App() {
       openStandaloneFile,
       openTome,
       closeTome,
+      notify,
     ],
   );
 

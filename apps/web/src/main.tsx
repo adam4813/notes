@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { App } from "./app";
 import { ErrorBoundary } from "./components/error-boundary";
 import { WorkspaceProvider } from "./state/app-context";
+import { HistoryViewProvider } from "./state/history-context";
 import { ToastProvider } from "./state/toast";
 import { UndoStackProvider } from "./state/undo-context";
 import "./styles.css";
@@ -40,7 +41,9 @@ createRoot(container).render(
           <ReactQueryDevtools />
           <WorkspaceProvider>
             <UndoStackProvider>
-              <App />
+              <HistoryViewProvider>
+                <App />
+              </HistoryViewProvider>
             </UndoStackProvider>
           </WorkspaceProvider>
         </QueryClientProvider>
