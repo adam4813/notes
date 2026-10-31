@@ -195,7 +195,7 @@ export function NativeSourceEditor({ value, onChange, onRegisterContextMenu }: R
           },
         },
       ];
-      return items;
+      return { items, includeBasicActions: true };
     });
     return () => onRegisterContextMenu(null);
   }, [onRegisterContextMenu, callbacks]);

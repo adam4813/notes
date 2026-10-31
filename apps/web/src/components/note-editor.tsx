@@ -15,17 +15,16 @@ import {
 import { CANVAS_NOTE_TYPE_ID } from "@notes/note-canvas";
 import type { FileTypeHandler } from "@notes/plugin-host";
 import {
-  ContextMenu,
   ContextMenuEntry,
+  type ContextMenuContribution,
   type CustomContextMenuBuilder,
-  useContextMenu,
+  useContextMenuController,
 } from "@notes/ui";
 import {
   type ComponentType,
   type MouseEvent,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -34,7 +33,7 @@ import { queueWrite } from "../api/offline-queue";
 import { connectTomeChanges } from "../api/ws";
 import { exportAsHtml } from "../lib/export-html";
 import { frontmatterType } from "../lib/frontmatter";
-import { isImagePath } from "../lib/images";
+import { copyImageToClipboard, isImagePath } from "../lib/images";
 import { useAppServices } from "../state/app-services";
 import { useToasts } from "../state/toast";
 import { ModeToggle, SaveState } from "./mode-toggle";
@@ -120,7 +119,8 @@ export function NoteEditor({
   /** When true, disables file drop/paste and frontmatter type detection. */
   isStandalone?: boolean;
 }) {
-  const { markModified, setActiveDocument, fileHandlers, noteTypeRegistry } = useAppServices();
+  const { markModified, setActiveDocument, fileHandlers, noteTypeRegistry, deletePath } =
+    useAppServices();
   const { notify } = useToasts();
   const stateKey = editorStateKey(path);
   const initialSession = markdownSessionByPath.get(stateKey) ?? {
@@ -134,7 +134,7 @@ export function NoteEditor({
   const [mode, setMode] = useState<EditorMode>(initialSession.mode);
   const [saveState, setSaveState] = useState<SaveState>("loading");
   const [splitScrollSync, setSplitScrollSync] = useState(initialSession.viewState.splitScrollSync);
-  const ctxMenu = useContextMenu<HTMLElement | null>();
+  const contextMenu = useContextMenuController();
   const [customCtxBuilder, setCustomCtxBuilder] = useState<CustomContextMenuBuilder | null>(null);
   const [sourceCtxBuilder, setSourceCtxBuilder] = useState<CustomContextMenuBuilder | null>(null);
   const regionRef = useRef<HTMLDivElement>(null);
@@ -336,37 +336,39 @@ export function NoteEditor({
     : null;
   const ctxBuilder = customCtxBuilder ?? descriptorCtxBuilder;
 
-  /** Try each builder in priority order; return the first non-null result. */
-  const resolveCtxItems = useCallback(
-    (target: HTMLElement | null) => {
+  /** Normalize a builder's return value into a contribution (array ⇒ no basic actions). */
+  const toContribution = useCallback(
+    (
+      result: ContextMenuEntry[] | ContextMenuContribution | null,
+    ): ContextMenuContribution | null => {
+      if (result === null || result === undefined) return null;
+      if (Array.isArray(result)) return { items: result, includeBasicActions: false };
+      return result;
+    },
+    [],
+  );
+
+  /** Try each registered builder in priority order; return the first contribution. */
+  const resolveContribution = useCallback(
+    (target: HTMLElement | null): ContextMenuContribution | null => {
       for (const builder of [ctxBuilder, sourceCtxBuilder]) {
         if (!builder) continue;
-        const result = builder(target);
-        if (result !== null && result !== undefined) return result;
+        const contribution = toContribution(builder(target));
+        if (contribution) return contribution;
       }
       return null;
     },
-    [ctxBuilder, sourceCtxBuilder],
+    [ctxBuilder, sourceCtxBuilder, toContribution],
   );
 
-  const runEditCommand = useCallback(
-    (command: string, target: HTMLElement | null) => {
-      target?.focus();
-      document.execCommand(command);
-      ctxMenu.close();
-    },
-    [ctxMenu],
-  );
+  const runEditCommand = useCallback((command: string, target: HTMLElement | null) => {
+    target?.focus();
+    document.execCommand(command);
+  }, []);
 
-  const contextMenuItems = useMemo(() => {
-    const target = ctxMenu.menu?.data ?? null;
-
-    const custom = resolveCtxItems(target);
-    if (custom) return custom;
-
-    // Default: generic text-editing commands.
-    const items: ContextMenuEntry[] = [];
-    items.push(
+  /** Generic clipboard actions, shown whenever a view does not fully override them. */
+  const basicEditActions = useCallback(
+    (target: HTMLElement | null): ContextMenuEntry[] => [
       { label: "Undo", run: () => runEditCommand("undo", target) },
       { label: "Redo", run: () => runEditCommand("redo", target) },
       { separator: true },
@@ -374,9 +376,56 @@ export function NoteEditor({
       { label: "Copy", run: () => runEditCommand("copy", target) },
       { label: "Paste", run: () => runEditCommand("paste", target) },
       { label: "Select All", run: () => runEditCommand("selectAll", target) },
-    );
-    return items;
-  }, [ctxMenu.menu?.data, resolveCtxItems, runEditCommand]);
+    ],
+    [runEditCommand],
+  );
+
+  /** Image-note actions: copy pixels, copy address, or delete the file. */
+  const imageNoteActions = useCallback((): ContextMenuEntry[] => {
+    const rawUrl = api.fileRawUrl(path);
+    const address = new URL(rawUrl, window.location.origin).href;
+    return [
+      {
+        label: "Copy Image",
+        run: () => {
+          void copyImageToClipboard(rawUrl).then((ok) => {
+            if (ok) {
+              notify("Image copied.", { kind: "info" });
+            } else {
+              void navigator.clipboard.writeText(address);
+              notify("Couldn't copy the image — copied its address instead.", { kind: "info" });
+            }
+          });
+        },
+      },
+      { label: "Copy Image Address", run: () => void navigator.clipboard.writeText(address) },
+      { separator: true },
+      { label: "Delete Image", danger: true, run: () => void deletePath(path) },
+    ];
+  }, [path, deletePath, notify]);
+
+  /** Assemble the full menu for a right-click target. Always returns a usable menu. */
+  const buildMenuItems = useCallback(
+    (target: HTMLElement | null): ContextMenuEntry[] => {
+      if (isImage) {
+        return imageNoteActions();
+      }
+      const contribution = resolveContribution(target);
+      if (!contribution) {
+        return basicEditActions(target);
+      }
+      if (!contribution.includeBasicActions) {
+        return contribution.items;
+      }
+      const items = [...contribution.items];
+      if (items.length > 0) {
+        items.push({ separator: true });
+      }
+      items.push(...basicEditActions(target));
+      return items;
+    },
+    [isImage, imageNoteActions, resolveContribution, basicEditActions],
+  );
 
   if (saveState === "loading") {
     return <div className="note-loading">Loading…</div>;
@@ -392,11 +441,12 @@ export function NoteEditor({
           if (!target || target.closest(".context-menu")) {
             return;
           }
-          const custom = resolveCtxItems(target);
-          // If any builder returns [] (empty), suppress the menu entirely.
-          if (custom !== null && custom !== undefined && custom.length === 0) return;
+          const items = buildMenuItems(target);
+          if (items.length === 0) {
+            return;
+          }
           event.preventDefault();
-          ctxMenu.open({ x: event.clientX, y: event.clientY }, target);
+          contextMenu.open({ x: event.clientX, y: event.clientY }, items);
         }}
       >
         {canToggleMode && (
@@ -493,15 +543,6 @@ export function NoteEditor({
           </PaneSyncProvider>
         )}
       </div>
-
-      {ctxMenu.menu && (
-        <ContextMenu
-          position={ctxMenu.menu.position}
-          items={contextMenuItems}
-          onClose={ctxMenu.close}
-          menuRef={ctxMenu.menuRef}
-        />
-      )}
     </div>
   );
 }

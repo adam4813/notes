@@ -4,7 +4,17 @@ export const PACKAGE_NAME = "@notes/ui";
 export { PopupMenu } from "./popup-menu";
 export { Island, IslandHeader, IslandBody, IslandFooter } from "./island";
 export { TabStrip, Tab } from "./tabs";
-export { ContextMenu, type ContextMenuEntry, type CustomContextMenuBuilder } from "./context-menu";
+export {
+  ContextMenu,
+  type ContextMenuEntry,
+  type ContextMenuContribution,
+  type CustomContextMenuBuilder,
+} from "./context-menu";
+export {
+  ContextMenuProvider,
+  useContextMenuController,
+  type ContextMenuController,
+} from "./context-menu-provider";
 export { PanelGroup, PanelSection, PanelHeader, PanelBody, PanelEmpty } from "./panel";
 export { Modal, ModalHeader, ModalBody, ModalFooter } from "./modal";
 

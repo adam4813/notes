@@ -122,3 +122,54 @@ export function toBase64(bytes: Uint8Array): string {
   }
   return btoa(binary);
 }
+
+/** Re-encodes an arbitrary image blob as a PNG blob, or returns it unchanged if already PNG. */
+async function toPngBlob(blob: Blob): Promise<Blob | null> {
+  if (blob.type === "image/png") {
+    return blob;
+  }
+  const bitmap = await createImageBitmap(blob);
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      return null;
+    }
+    ctx.drawImage(bitmap, 0, 0);
+    return await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+  } finally {
+    bitmap.close();
+  }
+}
+
+/**
+ * Copies the pixels of an image URL to the clipboard as a PNG.
+ *
+ * Fetches the image (same-origin raw files load without CORS issues) and writes
+ * an `image/png` blob via the async Clipboard API, re-encoding other formats to
+ * PNG since that is the only broadly clipboard-supported image type. Returns
+ * `true` on success; on any failure (unsupported browser, SVG/cross-origin that
+ * cannot be rasterized) it returns `false` so callers can fall back to copying
+ * the image address.
+ */
+export async function copyImageToClipboard(url: string): Promise<boolean> {
+  if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
+    return false;
+  }
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      return false;
+    }
+    const png = await toPngBlob(await response.blob());
+    if (!png) {
+      return false;
+    }
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
+    return true;
+  } catch {
+    return false;
+  }
+}
