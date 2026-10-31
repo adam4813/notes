@@ -60,9 +60,7 @@ export function RightPanel() {
   // notes. They have no frontmatter, outline, or backlinks — reading their
   // binary content here would surface garbage, so exclude them from `isNote`.
   const isImage = Boolean(path && isImagePath(path));
-  const isNote = Boolean(
-    path && !path.startsWith("notes://") && !isStandalone && !isImage,
-  );
+  const isNote = Boolean(path && !path.startsWith("notes://") && !isStandalone && !isImage);
   const isCanvas = Boolean(path?.toLowerCase().endsWith(".canvas"));
   const ext = path
     ? path.lastIndexOf(".") !== -1
@@ -166,9 +164,7 @@ export function RightPanel() {
       <IslandBody>
         <PanelGroup>
           {!isNote && !isStandalone && (
-            <PanelEmpty>
-              {isImage ? "No outline for this file." : "Open a note."}
-            </PanelEmpty>
+            <PanelEmpty>{isImage ? "No outline for this file." : "Open a note."}</PanelEmpty>
           )}
 
           {isStandalone && (
