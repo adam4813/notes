@@ -5,6 +5,7 @@ import { canvasNoteType, emptyCanvas } from "@notes/note-canvas";
 import { boardNoteType, emptyBoard } from "@notes/note-boards";
 import { calendarNoteType, emptyCalendar } from "@notes/note-calendar";
 import { emptyGrid, gridNoteType } from "@notes/note-grid";
+import { emptyHome, homeNoteType } from "@notes/note-home";
 import { emptyMermaid, mermaidNoteType } from "@notes/note-mermaid";
 import { emptyTableMarkdown, tableNoteType } from "@notes/note-tables";
 import type { PluginManifest } from "@notes/plugin-host";
@@ -61,6 +62,8 @@ import {
 type PaletteMode = "files" | "commands" | null;
 type RenderedWidthSetting = "normal" | "wide";
 const RENDERED_WIDTH_SETTING_KEY = "notes.settings.renderedWidthDefault";
+/** localStorage key holding the tome-relative path of the active homepage. */
+const HOMEPAGE_KEY = "notes.homepage";
 
 function normalizeRenderedWidthSetting(value: string | null | undefined): RenderedWidthSetting {
   return value === "wide" ? "wide" : "normal";
@@ -132,6 +135,7 @@ export function App() {
     registry.register(mermaidNoteType);
     registry.register(calendarNoteType);
     registry.register(gridNoteType);
+    registry.register(homeNoteType);
     return registry;
   }, []);
 
@@ -218,6 +222,37 @@ export function App() {
     (dir?: string) => createOfType("New Grid", ".md", () => emptyGrid(), dir),
     [createOfType],
   );
+  const createHome = useCallback(
+    (dir?: string) => createOfType("New Home", ".md", () => emptyHome(), dir),
+    [createOfType],
+  );
+
+  // Path of the note focused in the active pane (used by "Set as homepage").
+  const activeTabPath = useMemo(() => {
+    const pane = state.panes.find((p) => p.id === state.activePaneId) ?? state.panes[0];
+    return pane?.tabs.find((tab) => tab.id === pane.activeTabId)?.path;
+  }, [state.panes, state.activePaneId]);
+
+  const setHomepage = useCallback(
+    (path: string) => {
+      globalThis.localStorage?.setItem(HOMEPAGE_KEY, path);
+      notify(`Set "${baseNoExt(path)}" as the homepage`, { kind: "success" });
+    },
+    [notify],
+  );
+
+  const goHome = useCallback(() => {
+    const path = globalThis.localStorage?.getItem(HOMEPAGE_KEY) ?? "";
+    if (!path) {
+      notify('No homepage set yet. Open a note and choose "Set as homepage".', { kind: "info" });
+      return;
+    }
+    if (!flattenFiles(state.tree).some((entry) => entry.path === path)) {
+      notify("The homepage note no longer exists.", { kind: "error" });
+      return;
+    }
+    dispatch({ type: "openFile", path, title: baseNoExt(path) });
+  }, [dispatch, notify, state.tree]);
 
   const createNamedNote = useCallback(
     (name: string) => {
@@ -623,6 +658,27 @@ export function App() {
         run: () => createCalendar(),
       },
       { id: "new-grid", title: "New grid", category: "Create", run: () => createGrid() },
+      { id: "new-home", title: "New homepage", category: "Create", run: () => createHome() },
+      {
+        id: "set-homepage",
+        title: "Set as homepage",
+        category: "Go",
+        icon: "🏠",
+        run: () => {
+          if (activeTabPath) {
+            setHomepage(activeTabPath);
+          } else {
+            notify("Open a note to set it as the homepage.", { kind: "info" });
+          }
+        },
+      },
+      {
+        id: "open-homepage",
+        title: "Open homepage",
+        category: "Go",
+        icon: "🏠",
+        run: goHome,
+      },
       {
         id: "navigate-back",
         title: "Navigate back",
@@ -699,6 +755,11 @@ export function App() {
       createMermaid,
       createCalendar,
       createGrid,
+      createHome,
+      activeTabPath,
+      setHomepage,
+      goHome,
+      notify,
       plugins.pluginCommands,
       state.activePaneId,
       openSettings,
@@ -743,8 +804,18 @@ export function App() {
       { id: "mermaid", label: "Diagram (Mermaid)", run: () => createMermaid() },
       { id: "calendar", label: "Calendar", run: () => createCalendar() },
       { id: "grid", label: "Grid", run: () => createGrid() },
+      { id: "home", label: "Homepage", run: () => createHome() },
     ],
-    [createNote, createTable, createCanvas, createBoard, createMermaid, createCalendar, createGrid],
+    [
+      createNote,
+      createTable,
+      createCanvas,
+      createBoard,
+      createMermaid,
+      createCalendar,
+      createGrid,
+      createHome,
+    ],
   );
 
   const importDefaultThemes = useCallback(async () => {
@@ -878,6 +949,7 @@ export function App() {
       createMermaid,
       createCalendar,
       createGrid,
+      createHome,
       seedSampleNotes,
       noteTypes,
       setActiveDocument: (doc: { path: string; content: string; type: string } | null) =>
@@ -898,6 +970,7 @@ export function App() {
       createMermaid,
       createCalendar,
       createGrid,
+      createHome,
       seedSampleNotes,
       noteTypes,
       plugins.documentSignal,
@@ -921,6 +994,7 @@ export function App() {
             tomeActive={tomeActive}
             onCloseTome={closeTome}
             onOpenTome={openTome}
+            onGoHome={goHome}
             canNavBack={state.navIndex > 0}
             canNavForward={state.navIndex < state.navHistory.length - 1}
             onNavBack={() => dispatch({ type: "navBack" })}

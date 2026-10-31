@@ -10,6 +10,7 @@ interface RibbonProps {
   tomeActive?: boolean;
   onCloseTome?: () => void;
   onOpenTome?: () => void;
+  onGoHome?: () => void;
   canNavBack?: boolean;
   canNavForward?: boolean;
   onNavBack?: () => void;
@@ -85,6 +86,7 @@ export function Ribbon({
   tomeActive = true,
   onCloseTome,
   onOpenTome,
+  onGoHome,
   canNavBack = false,
   canNavForward = false,
   onNavBack,
@@ -178,6 +180,14 @@ export function Ribbon({
       </div>
       <div className="ribbon-search">
         <div className="ribbon-nav">
+          <button
+            className="btn-ghost ribbon-nav-btn"
+            title="Open homepage"
+            aria-label="Open homepage"
+            onClick={onGoHome}
+          >
+            🏠
+          </button>
           <button
             className="btn-ghost ribbon-nav-btn"
             title="Navigate back (Alt+Left)"

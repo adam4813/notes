@@ -12,6 +12,7 @@ import "@notes/ui/src/styles.css";
 import "@notes/note-mermaid/src/styles.css";
 import "@notes/note-calendar/src/styles.css";
 import "@notes/note-grid/src/styles.css";
+import "@notes/note-home/src/styles.css";
 import "@notes/note-tables/src/styles.css";
 import "@notes/note-boards/src/styles.css";
 import "@notes/note-canvas/src/styles.css";

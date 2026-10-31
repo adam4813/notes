@@ -4,6 +4,7 @@ import { boardNoteType } from "@notes/note-boards";
 import { calendarNoteType } from "@notes/note-calendar";
 import { canvasNoteType } from "@notes/note-canvas";
 import { gridNoteType } from "@notes/note-grid";
+import { homeNoteType } from "@notes/note-home";
 import { mermaidNoteType } from "@notes/note-mermaid";
 import { tableNoteType } from "@notes/note-tables";
 import type { Tome } from "@notes/tome";
@@ -23,6 +24,7 @@ export function registerNoteTypeCommands(bus: CommandBus, getTome: () => Tome): 
   registry.register(mermaidNoteType);
   registry.register(calendarNoteType);
   registry.register(gridNoteType);
+  registry.register(homeNoteType);
 
   bus.register<{ path: string }, { type: string | null }>({
     name: "note.detectType",
