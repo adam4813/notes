@@ -1,10 +1,6 @@
 import { NoteEditor } from "@notes/web/src/components/note-editor";
 import { useUndoStack } from "@notes/web/src/state/undo-context";
-import {
-  NOTES_PATH_MIME,
-  noteNameFromPath,
-  type RendererProps,
-} from "@notes/editor";
+import { NOTES_PATH_MIME, noteNameFromPath, type RendererProps } from "@notes/editor";
 import {
   useEffect,
   useRef,
@@ -270,7 +266,9 @@ export function HomeView({ value, onChange, callbacks }: RendererProps) {
             ↷
           </button>
         </div>
-        <div className="home-toolbar-hint">Drag notes from the explorer to add them as widgets.</div>
+        <div className="home-toolbar-hint">
+          Drag notes from the explorer to add them as widgets.
+        </div>
       </div>
 
       <div

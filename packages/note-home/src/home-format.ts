@@ -107,7 +107,9 @@ export function parseHome(markdown: string): HomeModel {
   const widgets = Array.isArray(data.widgets)
     ? data.widgets
         .filter((widget) => widget && typeof widget.id === "string")
-        .map((widget) => clampWidget({ ...widget, kind: widget.kind === "note" ? "note" : "text" }, columns))
+        .map((widget) =>
+          clampWidget({ ...widget, kind: widget.kind === "note" ? "note" : "text" }, columns),
+        )
     : [];
 
   return {
