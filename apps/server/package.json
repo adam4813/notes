@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@fastify/rate-limit": "^11.2.1",
-    "@fastify/static": "^10.1.6",
+    "@fastify/static": "^10.1.7",
     "@fastify/websocket": "^11.3.4",
     "@notes/core": "*",
     "@notes/index": "*",
