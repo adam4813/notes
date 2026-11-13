@@ -34,6 +34,10 @@ export interface WorkspaceState {
   navHistory: NavEntry[];
   /** Index of the currently active entry in navHistory (−1 when empty). */
   navIndex: number;
+  /** Whether the Console pane is visible. */
+  consoleOpen: boolean;
+  /** Height of the Console pane in pixels. */
+  consoleHeight: number;
 }
 
 export type WorkspaceAction =
@@ -72,7 +76,10 @@ export type WorkspaceAction =
   | { type: "closePath"; path: string }
   | { type: "closePrefix"; path: string }
   | { type: "setTheme"; theme: ThemeMode }
-  | { type: "setStatus"; status: string };
+  | { type: "setStatus"; status: string }
+  | { type: "openConsole" }
+  | { type: "closeConsole" }
+  | { type: "setConsoleHeight"; height: number };
 
 export function createInitialState(theme: ThemeMode): WorkspaceState {
   const paneId = "pane-root";
@@ -84,5 +91,7 @@ export function createInitialState(theme: ThemeMode): WorkspaceState {
     status: "Ready",
     navHistory: [],
     navIndex: -1,
+    consoleOpen: false,
+    consoleHeight: 200,
   };
 }
