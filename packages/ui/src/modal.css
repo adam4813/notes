@@ -10,6 +10,12 @@
   z-index: 900;
 }
 
+/* Scope the overlay to its nearest positioned ancestor (e.g. a note editor
+   tab's region) rather than the whole viewport. */
+.modal-overlay--contained {
+  position: absolute;
+}
+
 .modal {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
