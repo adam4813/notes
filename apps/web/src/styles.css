@@ -82,6 +82,27 @@
   scrollbar-color: var(--border) var(--bg-island);
 }
 
+/* App-like selection model: nothing is selectable by default. This cascades to
+   every element via inheritance, so new chrome never needs `user-select: none`.
+   Text selection is opted back in below for content and form controls. */
+:root {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Opt back into text selection for editable/content surfaces: all form
+   controls, the markdown source editor, and the rendered (TipTap) editor —
+   which also covers read mode, so note text and code stay selectable/copyable.
+   The value inherits into their descendants. */
+input,
+textarea,
+[contenteditable="true"],
+.source-editor,
+.tiptap-host .ProseMirror {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 html,
 body,
 #root {
@@ -297,8 +318,6 @@ button {
   padding: 0 12px;
   background: var(--bg-elevated);
   border-bottom: 1px solid var(--border);
-  user-select: none;
-  -webkit-user-select: none;
 }
 
 .ribbon--desktop {
@@ -364,13 +383,10 @@ button {
   color: var(--fg);
   font-size: 12px;
   padding: 0 10px;
-  user-select: text;
-  -webkit-user-select: text;
 }
 
 .ribbon-search-input::placeholder {
   color: var(--fg-muted);
-  user-select: none;
 }
 
 .ribbon-actions {
@@ -419,7 +435,6 @@ button {
   align-items: center;
   gap: 12px;
   padding: 24px 12px;
-  user-select: none;
 }
 
 .sidebar-no-tome-message {
@@ -449,7 +464,6 @@ button {
   flex-direction: column;
   gap: 8px;
   padding: 4px;
-  user-select: none;
 }
 
 .search-input,
@@ -476,7 +490,6 @@ button {
   background: var(--bg);
   color: var(--fg);
   font-size: 12px;
-  user-select: none;
 }
 
 /* Search/results and find/replace UI */
@@ -490,10 +503,6 @@ button {
   list-style: none;
   margin: 0;
   padding: 0;
-}
-
-.tag-list {
-  user-select: none;
 }
 
 .search-results {
@@ -944,7 +953,6 @@ button {
   align-items: center;
   gap: 8px;
   margin-right: 8px;
-  user-select: none;
 }
 
 .status-action-btn {
@@ -978,7 +986,6 @@ button {
   height: 100%;
   overflow: auto;
   padding: 0 8px 24px;
-  user-select: none;
 }
 
 .settings-view-header {
@@ -1050,7 +1057,6 @@ button {
   color: var(--fg);
   padding: 6px 8px;
   font-size: 13px;
-  user-select: none;
 }
 
 .settings-import-btn {
@@ -1207,7 +1213,6 @@ button {
   cursor: pointer;
   /* prettier-ignore */
   transition: border-color 0.15s, background 0.15s;
-  user-select: none;
   margin-bottom: 4px;
 }
 
@@ -1661,7 +1666,6 @@ button {
   transition:
     color 0.15s,
     border-color 0.15s;
-  user-select: none;
 }
 
 .tab-group__tab:hover {
@@ -1717,7 +1721,6 @@ button {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  user-select: none;
 }
 
 .image-note-preview {
@@ -1781,7 +1784,6 @@ button {
   opacity: 0.55;
   transition: opacity 0.15s ease;
   pointer-events: none;
-  user-select: none;
 }
 
 .mode-float:hover,
@@ -1859,7 +1861,6 @@ button {
   color: var(--fg);
   font-size: 12px;
   padding: 3px 6px;
-  user-select: none;
 }
 
 .editor-find-btn {
@@ -2127,7 +2128,6 @@ button {
   padding: 6px 10px;
   min-height: 40px;
   border-bottom: 1px solid var(--border);
-  user-select: none;
 }
 
 .editor-toolbar-main,

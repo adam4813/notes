@@ -28,10 +28,6 @@
   font-size: 13px;
 }
 
-.data-grid th {
-  user-select: none;
-}
-
 .data-grid th,
 .data-grid td {
   border: 1px solid var(--border);
@@ -98,7 +94,6 @@
   min-width: 34px;
   text-align: center;
   color: var(--fg-muted);
-  user-select: none;
 }
 
 .grid-gutter .grid-rownum {
@@ -126,7 +121,6 @@ tr:hover .grid-row-delete {
   min-width: 120px;
   height: 28px;
   cursor: cell;
-  user-select: none;
 }
 
 .grid-cell--selected {
@@ -172,7 +166,6 @@ tr:hover .grid-row-delete {
   color: var(--fg);
   font: inherit;
   padding: 3px 6px;
-  user-select: none;
 }
 
 .grid-select:focus {

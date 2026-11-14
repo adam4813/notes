@@ -96,7 +96,6 @@
   align-content: start;
   overflow: auto;
   padding: 12px;
-  user-select: none;
   background: var(--bg);
   flex: 1;
 }
@@ -133,7 +132,6 @@
   border-left: 1px solid var(--border);
   padding: 8px;
   overflow: auto;
-  user-select: none;
 }
 
 .grid-layers-head {
