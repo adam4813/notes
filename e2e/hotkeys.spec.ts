@@ -4,6 +4,7 @@ test("hotkeys: rebind the command palette shortcut and use it", async ({ page })
   await page.goto("/");
 
   await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("tab", { name: "Hotkeys" }).click();
   const combo = page.getByTestId("hotkey-command-palette");
   await expect(combo).toBeVisible();
 
