@@ -11,6 +11,7 @@ import {
   stripFrontmatter,
 } from "../lib/frontmatter";
 import { isStandalonePath } from "../lib/standalone-handles";
+import { isImagePath } from "../lib/images";
 
 const HIDDEN_FRONTMATTER_KEYS = new Set(["type", "__notes_rendered_width", "columns", "events"]);
 
@@ -55,7 +56,11 @@ export function RightPanel() {
   const activeTab = activePane?.tabs.find((tab) => tab.id === activePane.activeTabId);
   const path = activeTab?.path;
   const isStandalone = Boolean(path && isStandalonePath(path));
-  const isNote = Boolean(path && !path.startsWith("notes://") && !isStandalone);
+  // Images (and other binary files) are opened as viewer tabs, not markdown
+  // notes. They have no frontmatter, outline, or backlinks — reading their
+  // binary content here would surface garbage, so exclude them from `isNote`.
+  const isImage = Boolean(path && isImagePath(path));
+  const isNote = Boolean(path && !path.startsWith("notes://") && !isStandalone && !isImage);
   const isCanvas = Boolean(path?.toLowerCase().endsWith(".canvas"));
   const ext = path
     ? path.lastIndexOf(".") !== -1
@@ -158,7 +163,9 @@ export function RightPanel() {
     <Island>
       <IslandBody>
         <PanelGroup>
-          {!isNote && !isStandalone && <PanelEmpty>Open a note.</PanelEmpty>}
+          {!isNote && !isStandalone && (
+            <PanelEmpty>{isImage ? "No outline for this file." : "Open a note."}</PanelEmpty>
+          )}
 
           {isStandalone && (
             <PanelSection title="Properties">
