@@ -6,7 +6,7 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { PopupMenu } from "@notes/ui";
+import { PopupMenu, type ContextMenuEntry, type CustomContextMenuBuilder } from "@notes/ui";
 import { NoteToolbar, type RendererProps, usePromptDialog } from "@notes/editor";
 import {
   COLUMN_TYPES,
@@ -32,7 +32,7 @@ function compareValues(a: string, b: string, type: ColumnType): number {
   return a.localeCompare(b);
 }
 
-export function TableGrid({ value, onChange }: RendererProps) {
+export function TableGrid({ value, onChange, onRegisterContextMenu }: RendererProps) {
   const { openPrompt, promptDialog } = usePromptDialog();
   const undoStack = useUndoStack();
   const [model, setModel] = useState<TableModel>(() => parseTable(value));
@@ -277,6 +277,78 @@ export function TableGrid({ value, onChange }: RendererProps) {
     [commit, model],
   );
 
+  // Register a right-click context menu so right-clicking a cell, a column
+  // header, or empty grid space surfaces table-specific row/column/cell actions.
+  // The grid is a non-text surface, so the host's generic clipboard menu does
+  // not apply (the builder returns a plain array ⇒ includeBasicActions: false).
+  useEffect(() => {
+    if (!onRegisterContextMenu) {
+      return;
+    }
+    const builder: CustomContextMenuBuilder = (target) => {
+      const cell = target?.closest<HTMLElement>("[data-cell-row]");
+      if (cell) {
+        const r = Number(cell.dataset.cellRow);
+        const c = Number(cell.dataset.cellCol);
+        const items: ContextMenuEntry[] = [
+          {
+            label: "Copy",
+            run: () => void navigator.clipboard?.writeText(model.rows[r]?.[c] ?? ""),
+          },
+          { label: "Clear cell", run: () => setCell(r, c, "") },
+          { separator: true },
+          { label: "Delete row", run: () => deleteRow(r), danger: true },
+          { separator: true },
+          { label: "Rename column…", run: () => void renameColumn(c) },
+          { label: "Sort ascending", run: () => sortByColumn(c, "asc") },
+          { label: "Sort descending", run: () => sortByColumn(c, "desc") },
+          {
+            label: "Delete column",
+            run: () => deleteColumn(c),
+            danger: true,
+            disabled: columnCount <= 1,
+          },
+        ];
+        return items;
+      }
+      const head = target?.closest<HTMLElement>("[data-column-index]");
+      if (head) {
+        const c = Number(head.dataset.columnIndex);
+        return [
+          { label: "Rename column…", run: () => void renameColumn(c) },
+          { label: "Sort ascending", run: () => sortByColumn(c, "asc") },
+          { label: "Sort descending", run: () => sortByColumn(c, "desc") },
+          { separator: true },
+          { label: "Add column", run: addColumn },
+          {
+            label: "Delete column",
+            run: () => deleteColumn(c),
+            danger: true,
+            disabled: columnCount <= 1,
+          },
+        ];
+      }
+      // Empty grid space (outside any cell or header).
+      return [
+        { label: "Add row", run: addRow },
+        { label: "Add column", run: addColumn },
+      ];
+    };
+    onRegisterContextMenu(builder);
+    return () => onRegisterContextMenu(null);
+  }, [
+    onRegisterContextMenu,
+    model,
+    columnCount,
+    setCell,
+    deleteRow,
+    deleteColumn,
+    renameColumn,
+    sortByColumn,
+    addRow,
+    addColumn,
+  ]);
+
   const onGridKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLDivElement>) => {
       if (editing) {
@@ -406,7 +478,7 @@ export function TableGrid({ value, onChange }: RendererProps) {
               <tr>
                 <th className="grid-gutter" />
                 {model.columns.map((column, c) => (
-                  <th key={c} className="grid-head">
+                  <th key={c} className="grid-head" data-column-index={c}>
                     <div className="grid-head-inner">
                       <span className="grid-head-name" title={`${column.name} (${column.type})`}>
                         {column.name}
@@ -475,6 +547,8 @@ export function TableGrid({ value, onChange }: RendererProps) {
                     <td
                       key={c}
                       className={`table-grid-cell ${sel.r === r && sel.c === c ? "grid-cell--selected" : ""}`}
+                      data-cell-row={r}
+                      data-cell-col={c}
                       onMouseDown={() => setSel({ r, c })}
                       onDoubleClick={() => startEdit({ r, c })}
                     >

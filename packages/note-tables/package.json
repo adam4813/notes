@@ -16,6 +16,7 @@
   "dependencies": {
     "@notes/core": "*",
     "@notes/editor": "*",
+    "@notes/ui": "*",
     "papaparse": "^5.7.0"
   },
   "devDependencies": {
