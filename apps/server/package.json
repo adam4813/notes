@@ -26,6 +26,7 @@
     "fastify": "^5.12.7",
     "fflate": "^0.8.3",
     "gray-matter": "^4.0.3",
+    "isomorphic-git": "^1.44.8",
     "yaml": "^2.9.1",
     "zod": "^4.6.7"
   },

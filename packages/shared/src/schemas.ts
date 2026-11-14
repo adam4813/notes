@@ -21,6 +21,9 @@ export const searchPayload = z.object({
 export const tagPayload = z.object({ tag: z.string().min(1) });
 export const resolvePayload = z.object({ text: z.string().min(1) });
 
+export const historySnapshotPayload = z.object({ message: z.string().optional() });
+export const historyDiffPayload = z.object({ path: z.string().min(1), oid: z.string().min(1) });
+
 export type FilePathPayload = z.infer<typeof filePathPayload>;
 export type FileWritePayload = z.infer<typeof fileWritePayload>;
 export type FileBinaryPayload = z.infer<typeof fileBinaryPayload>;
@@ -47,4 +50,8 @@ export const commandSchemas: Record<string, z.ZodTypeAny> = {
   "index.notes": emptyPayload,
   "index.rebuild": emptyPayload,
   "note.detectType": filePathPayload,
+  "history.status": emptyPayload,
+  "history.snapshot": historySnapshotPayload,
+  "history.log": filePathPayload,
+  "history.diff": historyDiffPayload,
 };

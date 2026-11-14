@@ -148,6 +148,23 @@ export function registerRoutes(app: FastifyInstance, bus: CommandBus, ctx: Reque
 
   app.get("/api/tome", async () => ({ id: (ctx as { tomePath?: string }).tomePath ?? "default" }));
 
+  // ── Version history (git-backed) ──────────────────────────────────────────
+  app.get("/api/history/status", async () => bus.dispatch("history.status", {}, ctx));
+
+  app.post("/api/history/snapshot", async (request) =>
+    bus.dispatch("history.snapshot", request.body ?? {}, ctx),
+  );
+
+  app.get("/api/history", async (request) => {
+    const { path = "" } = request.query as PathQuery;
+    return bus.dispatch("history.log", { path }, ctx);
+  });
+
+  app.get("/api/history/diff", async (request) => {
+    const { path = "", oid = "" } = request.query as { path?: string; oid?: string };
+    return bus.dispatch("history.diff", { path, oid }, ctx);
+  });
+
   app.get("/api/notetype", async (request) => {
     const { path = "" } = request.query as PathQuery;
     return bus.dispatch("note.detectType", { path }, ctx);

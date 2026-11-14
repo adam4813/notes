@@ -2333,3 +2333,225 @@ button {
   background: var(--hover);
   color: var(--fg);
 }
+
+/* ─── Version history panel ──────────────────────────────────────────────── */
+.history-save {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.history-save-input {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 12px;
+}
+
+.history-save-btn {
+  flex: 0 0 auto;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.history-save-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.history-hint {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.history-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "time counts" "message message";
+  gap: 2px 8px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 5px 7px;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.history-item:hover {
+  background: var(--hover);
+}
+
+.history-item--active {
+  background: var(--hover);
+  border-color: var(--accent);
+}
+
+.history-item-time {
+  grid-area: time;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.history-item-message {
+  grid-area: message;
+  font-size: 11px;
+  color: var(--fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-item-counts {
+  grid-area: counts;
+  display: inline-flex;
+  gap: 6px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.history-count--add {
+  color: var(--status-ok);
+}
+
+.history-count--del {
+  color: var(--status-offline);
+}
+
+/* ─── Version diff view ──────────────────────────────────────────────────── */
+.history-diff {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.history-diff-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.history-diff-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.history-diff-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.history-diff-meta {
+  font-size: 12px;
+  color: var(--fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-diff-actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.history-btn {
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.history-btn--primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+}
+
+.history-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.history-diff-body {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 0;
+}
+
+.history-diff-rows {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.history-diff-row {
+  display: grid;
+  grid-template-columns: 3ch 3ch 2ch 1fr;
+  gap: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.history-diff-row--add {
+  background: color-mix(in srgb, var(--status-ok) 16%, transparent);
+}
+
+.history-diff-row--del {
+  background: color-mix(in srgb, var(--status-offline) 16%, transparent);
+}
+
+.history-diff-gutter {
+  text-align: right;
+  padding-right: 8px;
+  color: var(--fg-muted);
+  user-select: none;
+}
+
+.history-diff-sign {
+  text-align: center;
+  user-select: none;
+  color: var(--fg-muted);
+}
+
+.history-diff-row--add .history-diff-sign {
+  color: var(--status-ok);
+}
+
+.history-diff-row--del .history-diff-sign {
+  color: var(--status-offline);
+}
+
+.history-diff-text {
+  padding-right: 12px;
+}
