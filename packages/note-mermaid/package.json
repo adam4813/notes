@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@notes/core": "*",
-    "mermaid": "^12.2.0"
+    "mermaid": "^12.3.0"
   },
   "peerDependencies": {
     "react": "^19.3.1",
